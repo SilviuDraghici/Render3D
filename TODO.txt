@@ -1,0 +1,8 @@
+- migrate code to c++ for opperator overloading
+- merge Raytracer and Pathtracer
+- rewrite Paco's code
+- add full support for meshes
+- implement acceleration using BVH or Quadtrees
+- implement ray-marching for:
+  - volumetrics
+  - sub-surface scattering
