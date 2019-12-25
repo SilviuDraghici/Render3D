@@ -9,4 +9,5 @@
 - implement ray-marching for:
   - volumetrics
   - sub-surface scattering
-- move animation capabilites from script into program
+- move animation capabilities from script into program
+- use opengl to make program interactive
