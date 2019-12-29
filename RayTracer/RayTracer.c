@@ -43,34 +43,24 @@ void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct 
    //
 
    struct color tmp_col; // Accumulator for colour components
-   double R, G, B;           // Colour for the object in R G and B
+   struct color objcol;  // Colour for the object in R G and B
 
    // This will hold the colour as we process all the components of
    // the Phong illumination model
-   tmp_col.R = 0;
-   tmp_col.G = 0;
-   tmp_col.B = 0;
-   col->R = 0;
-   col->G = 0;
-   col->B = 0;
+   tmp_col = 0;
+   *col = 0;
 
    if (obj->texImg == NULL) // Not textured, use object colour
    {
-      R = obj->col.R;
-      G = obj->col.G;
-      B = obj->col.B;
+      objcol = obj->col;
    }
    else
    {
       // Get object colour from the texture given the texture coordinates (a,b), and the texturing function
       // for the object. Note that we will use textures also for Photon Mapping.
-      obj->textureMap(obj->texImg, a, b, &R, &G, &B);
+      
+      //obj->textureMap(obj->texImg, a, b, &R, &G, &B);
    }
-
-   //////////////////////////////////////////////////////////////
-   // TO DO: Implement this function. Refer to the notes for
-   // details about the shading model.
-   //////////////////////////////////////////////////////////////
 
    //vector from intersection point to camera
    struct point3D c;
@@ -89,9 +79,7 @@ void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct 
 #endif
 
    struct color ambient;
-   ambient.R = R * ra;
-   ambient.G = G * ra;
-   ambient.B = B * ra;
+   ambient = objcol * ra;
 
    struct color diffuse;
    diffuse.R = 0, diffuse.G = 0, diffuse.B = 0;
@@ -170,9 +158,7 @@ void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct 
             printf("n_dot_s; %f\n", n_dot_s);
          }
 #endif
-         diffuse.R += R * rd * light->col.R * n_dot_s;
-         diffuse.G += G * rd * light->col.G * n_dot_s;
-         diffuse.B += B * rd * light->col.B * n_dot_s;
+         diffuse += objcol * rd * light->col * n_dot_s;
 
          //perfect light ray reflection
          struct ray3D light_reflection;
@@ -183,9 +169,7 @@ void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct 
          rayReflect(&pToLight, p, n, &light_reflection);
          double c_dot_m = dot(&c, &(light_reflection.d));
 
-         specular.R += rs * light->col.R * pow(MAX(0, c_dot_m), obj->shinyness);
-         specular.G += rs * light->col.G * pow(MAX(0, c_dot_m), obj->shinyness);
-         specular.B += rs * light->col.B * pow(MAX(0, c_dot_m), obj->shinyness);
+         specular += light->col * rs * pow(MAX(0, c_dot_m), obj->shinyness);
 
 #ifdef REFLECTION
 
@@ -205,11 +189,11 @@ void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct 
    rayTrace(&cam_reflection, depth + 1, &global, obj);
    if (global.R == -1)
    {
-      global.R = 0, global.G = 0, global.B = 0;
+      global = 0;
    }
    else
    {
-      global.R = rg * global.R, global.G = rg * global.G, global.B = rg * global.B;
+      global *= rg;
    }
 #ifdef DEBUG
    if (1)

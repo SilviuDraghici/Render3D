@@ -105,14 +105,55 @@ struct color
    double G;
    double B;
 
-   // color operator+(const color& a) const
-   //  {
-   //      color newcol;
-   //      newcol.R = R + a.R;
-   //      newcol.G = G + a.G;
-   //      newcol.B = B + a.B;
-   //      return newcol;
-   //  }
+   color& operator=(const color& col){
+      R = col.R;
+      G = col.G;
+      B = col.B;
+      return *this;
+   }
+   color& operator+=(const color& col){
+      R += col.R;
+      G += col.G;
+      B += col.B;
+      return *this;
+   }
+   color& operator=(const double val){
+      R = val;
+      G = val;
+      B = val;
+      return *this;
+   }
+   color operator*(const double scalar) const{
+      color newcol;
+      newcol.R = R * scalar;
+      newcol.G = G * scalar;
+      newcol.B = B * scalar;
+      return newcol;
+   }
+   color operator*=(const double scalar){
+      R *= scalar;
+      G *= scalar;
+      B *= scalar;
+      return *this;
+   }
+
+   color operator*(const color &a) const
+   {
+      color newcol;
+      newcol.R = R * a.R;
+      newcol.G = G * a.G;
+      newcol.B = B * a.B;
+      return newcol;
+   }
+
+   color operator+(const color &a) const
+   {
+      color newcol;
+      newcol.R = R + a.R;
+      newcol.G = G + a.G;
+      newcol.B = B + a.B;
+      return newcol;
+   }
 };
 
 /*
@@ -134,7 +175,7 @@ struct color
 struct object3D
 {
    struct albedosPhong alb; // Object's albedos for Phong model
-   struct color col;    // Object's colour in RGB
+   struct color col;        // Object's colour in RGB
    double T[4][4];          // T holds the transformation applied to this object.
    double Tinv[4][4];       // Tinv holds the inverse transformation
 
@@ -187,7 +228,7 @@ struct object3D
 /* The structure below defines a point light source */
 struct pointLS
 {
-   struct color col; // Light source colour
+   struct color col;     // Light source colour
    struct point3D p0;    // Light source location
    struct pointLS *next; // Pointer to next light in the scene
 };
@@ -214,7 +255,7 @@ struct view
 int main(int argc, char *argv[]); // Main raytracing function.
 
 // Raytracing
-void buildScene(void);                                                                   // Scene set up. Defines objects and object transformations
+void buildScene(void);                                                               // Scene set up. Defines objects and object transformations
 void rayTrace(struct ray3D *ray, int depth, struct color *col, struct object3D *Os); // RayTracing routine
 void findFirstHit(struct ray3D *ray, double *lambda, struct object3D *Os, struct object3D **obj, struct point3D *p, struct point3D *n, double *a, double *b);
 void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct ray3D *ray, int depth, double a, double b, struct color *col);
