@@ -22,38 +22,38 @@ double eye4x4[4][4] = {{1.0, 0.0, 0.0, 0.0},
 /////////////////////////////////////////////
 // Primitive data structure section
 /////////////////////////////////////////////
-struct point3D *newPoint(double px, double py, double pz)
+struct point *newPoint(double px, double py, double pz)
 {
    // Allocate a new point structure, initialize it to
    // the specified coordinates, and return a pointer
    // to it.
 
-   struct point3D *pt = (struct point3D *)calloc(1, sizeof(struct point3D));
+   struct point *pt = (struct point *)calloc(1, sizeof(struct point));
    if (!pt)
       fprintf(stderr, "Out of memory allocating point structure!\n");
    else
    {
-      pt->px = px;
-      pt->py = py;
-      pt->pz = pz;
-      pt->pw = 1.0;
+      pt->x = px;
+      pt->y = py;
+      pt->z = pz;
+      pt->w = 1.0;
    }
    return (pt);
 }
 
-void rayReflect(struct ray3D *ray_orig, struct point3D *p, struct point3D *n, struct ray3D *ray_reflected)
+void rayReflect(struct ray3D *ray_orig, struct point *p, struct point *n, struct ray3D *ray_reflected)
 {
    //this function assumes n is unit length!
 
    //reflection starts at point of intersection
-   memcpy(&(ray_reflected->p0), p, sizeof(struct point3D));
+   memcpy(&(ray_reflected->p0), p, sizeof(struct point));
 
    //r=d−2(d⋅n)n
    double ddotn = dot(&(ray_orig->d), n);
-   ray_reflected->d.px = ray_orig->d.px - 2 * ddotn * n->px;
-   ray_reflected->d.py = ray_orig->d.py - 2 * ddotn * n->py;
-   ray_reflected->d.pz = ray_orig->d.pz - 2 * ddotn * n->pz;
-   ray_reflected->d.pw = 1;
+   ray_reflected->d.x = ray_orig->d.x - 2 * ddotn * n->x;
+   ray_reflected->d.y = ray_orig->d.y - 2 * ddotn * n->y;
+   ray_reflected->d.z = ray_orig->d.z - 2 * ddotn * n->z;
+   ray_reflected->d.w = 1;
    normalize(&ray_reflected->d);
 }
 
@@ -65,9 +65,6 @@ inline void rayTransform(struct ray3D *ray_orig, struct ray3D *ray_transformed, 
    // Transforms a ray using the inverse transform for the specified object. This is so that we can
    // use the intersection test for the canonical object. Note that this has to be done carefully!
 
-   ///////////////////////////////////////////
-   // TO DO: Complete this function
-   ///////////////////////////////////////////
    //copy original ray to new ray
    memcpy(ray_transformed, ray_orig, sizeof(struct ray3D));
    //apply negative translation
@@ -76,22 +73,19 @@ inline void rayTransform(struct ray3D *ray_orig, struct ray3D *ray_transformed, 
    matVecMult(obj->Tinv, &(ray_transformed->p0));
 
    //inverse tranform ray direction without translation
-   ray_transformed->d.pw = 0;
+   ray_transformed->d.w = 0;
    matVecMult(obj->Tinv, &(ray_transformed->d));
-   ray_transformed->d.pw = 1;
+   ray_transformed->d.w = 1;
 }
 
-inline void normalTransform(struct point3D *n_orig, struct point3D *n_transformed, struct object3D *obj)
+inline void normalTransform(struct point *n_orig, struct point *n_transformed, struct object3D *obj)
 {
    // Computes the normal at an affinely transformed point given the original normal and the
    // object's inverse transformation. From the notes:
    // n_transformed=A^-T*n normalized.
 
-   ///////////////////////////////////////////
-   // TO DO: Complete this function
-   ///////////////////////////////////////////
-   memcpy(n_transformed, n_orig, sizeof(struct point3D));
-   n_transformed->pw = 0;
+   memcpy(n_transformed, n_orig, sizeof(struct point));
+   n_transformed->w = 0;
 
    //take the transpose of Tinv without the transformation
    double A[4][4];
@@ -104,7 +98,7 @@ inline void normalTransform(struct point3D *n_orig, struct point3D *n_transforme
    }
 
    matVecMult(A, n_transformed);
-   n_transformed->pw = 1;
+   n_transformed->w = 1;
    normalize(n_transformed);
 }
 
@@ -221,10 +215,6 @@ struct object3D *newSphere(double diffPct, double reflPct, double tranPct, doubl
 
 struct object3D *newCyl(double diffPct, double reflPct, double tranPct, double r, double g, double b, double refl_sig, double r_index)
 {
-   ///////////////////////////////////////////////////////////////////////////////////////
-   // TO DO:
-   //	Complete the code to create and initialize a new cylinder object.
-   ///////////////////////////////////////////////////////////////////////////////////////
    struct object3D *cylinder = (struct object3D *)calloc(1, sizeof(struct object3D));
 
    if (!cylinder)
@@ -303,17 +293,12 @@ struct object3D *newBox(double diffPct, double reflPct, double tranPct, double r
 
 struct object3D *newMesh(char *file, double diffPct, double reflPct, double tranPct, double r, double g, double b, double refl_sig, double r_index)
 {
-   ///////////////////////////////////////////////////////////////////////////////////////
-   // TO DO:
-   //	Complete the code to create and initialize a new cylinder object.
-   // The canonical cylinder will be defined as x^2 + y^2 = 1 for |z| <= 1
-   ///////////////////////////////////////////////////////////////////////////////////////
    struct object3D *mesh = (struct object3D *)calloc(1, sizeof(struct object3D));
    struct triangle *triangles;
-   struct point3D *vertices;
-   struct point3D *normals;
-   struct point3D *min_pt = (struct point3D *)calloc(1, sizeof(struct point3D));
-   struct point3D *max_pt = (struct point3D *)calloc(1, sizeof(struct point3D));
+   struct point *vertices;
+   struct point *normals;
+   struct point *min_pt = (struct point *)calloc(1, sizeof(struct point));
+   struct point *max_pt = (struct point *)calloc(1, sizeof(struct point));
    importMesh(file, &triangles, &vertices, &normals, max_pt, min_pt);
 
    if (!mesh)
@@ -353,7 +338,7 @@ struct object3D *newMesh(char *file, double diffPct, double reflPct, double tran
    return (mesh);
 }
 
-void importMesh(char *filename, struct triangle **tg_list, struct point3D **v, struct point3D **n, struct point3D *max_pt, struct point3D *min_pt)
+void importMesh(char *filename, struct triangle **tg_list, struct point **v, struct point **n, struct point *max_pt, struct point *min_pt)
 {
    FILE *f = fopen(filename, "r");
 
@@ -364,42 +349,42 @@ void importMesh(char *filename, struct triangle **tg_list, struct point3D **v, s
    }
    char t1, t2;
    double x, y, z;
-   struct point3D v2_v1, v3_v1;
+   struct point v2_v1, v3_v1;
    int num_vertices = 0, num_lines = 0;
    // will store the extent of the box
-   min_pt->pw = 1;
-   max_pt->pw = 1;
+   min_pt->w = 1;
+   max_pt->w = 1;
    while (fscanf(f, "%c", &t1) && t1 == 'v' && fscanf(f, " %lf %lf %lf\n", &x, &y, &z) != EOF)
    {
-      min_pt->px = x;
-      min_pt->py = y;
-      min_pt->pz = z;
-      max_pt->px = x;
-      max_pt->py = y;
-      max_pt->pz = z;
+      min_pt->x = x;
+      min_pt->y = y;
+      min_pt->z = z;
+      max_pt->x = x;
+      max_pt->y = y;
+      max_pt->z = z;
 
       //printf("x %f, y %f, z %f\n", x, y, z);
       num_vertices++;
    }
-   printf("min x %f y %f z %f\n", min_pt->px, min_pt->py, min_pt->pz);
-   printf("max x %f y %f z %f\n", max_pt->px, max_pt->py, max_pt->pz);
+   printf("min x %f y %f z %f\n", min_pt->x, min_pt->y, min_pt->pz;
+   printf("max x %f y %f z %f\n", max_pt->x, max_pt->y, max_pt->pz;
 
-   struct point3D *vertices = (struct point3D *)calloc(num_vertices, sizeof(struct point3D));
-   struct point3D *normals = (struct point3D *)calloc(num_vertices, sizeof(struct point3D));
+   struct point *vertices = (struct point *)calloc(num_vertices, sizeof(struct point));
+   struct point *normals = (struct point *)calloc(num_vertices, sizeof(struct point));
    rewind(f);
    num_vertices = 0;
    while (fscanf(f, "%c", &t1) && t1 == 'v' && fscanf(f, " %lf %lf %lf\n", &x, &y, &z) != EOF)
    {
-      (vertices + num_vertices)->px = x;
-      (vertices + num_vertices)->py = y;
-      (vertices + num_vertices)->pz = z;
-      min_pt->px = MIN(x, min_pt->px);
-      min_pt->py = MIN(y, min_pt->py);
-      min_pt->pz = MIN(z, min_pt->pz);
+      (vertices + num_vertices)->x = x;
+      (vertices + num_vertices)->y = y;
+      (vertices + num_vertices)->z = z;
+      min_pt->x = MIN(x, min_pt->x);
+      min_pt->y = MIN(y, min_pt->y);
+      min_pt->z = MIN(z, min_pt->z);
 
-      max_pt->px = MAX(x, max_pt->px);
-      max_pt->py = MAX(y, max_pt->py);
-      max_pt->pz = MAX(z, max_pt->pz);
+      max_pt->x = MAX(x, max_pt->x);
+      max_pt->y = MAX(y, max_pt->y);
+      max_pt->z = MAX(z, max_pt->z);
 
       num_vertices++;
       num_lines++;
@@ -409,9 +394,9 @@ void importMesh(char *filename, struct triangle **tg_list, struct point3D **v, s
    num_vertices = 0;
    while (fscanf(f, "%c%c", &t1, &t2) && t1 == 'v' && t2 == 'n' && fscanf(f, " %lf %lf %lf\n", &x, &y, &z) != EOF)
    {
-      (normals + num_vertices)->px = x;
-      (normals + num_vertices)->py = y;
-      (normals + num_vertices)->pz = z;
+      (normals + num_vertices)->x = x;
+      (normals + num_vertices)->y = y;
+      (normals + num_vertices)->z = z;
       num_vertices++;
 
       num_lines++;
@@ -433,18 +418,18 @@ void importMesh(char *filename, struct triangle **tg_list, struct point3D **v, s
       tg->v1 = v1;
       tg->v2 = v2;
       tg->v3 = v3;
-      v2_v1.px = (vertices + v2 - 1)->px - (vertices + v1 - 1)->px;
-      v2_v1.py = (vertices + v2 - 1)->py - (vertices + v1 - 1)->py;
-      v2_v1.pz = (vertices + v2 - 1)->pz - (vertices + v1 - 1)->pz;
+      v2_v1.x = (vertices + v2 - 1)->x - (vertices + v1 - 1)->x;
+      v2_v1.y = (vertices + v2 - 1)->y - (vertices + v1 - 1)->y;
+      v2_v1.z = (vertices + v2 - 1)->z - (vertices + v1 - 1)->z;
 
-      v3_v1.px = (vertices + v3 - 1)->px - (vertices + v1 - 1)->px;
-      v3_v1.py = (vertices + v3 - 1)->py - (vertices + v1 - 1)->py;
-      v3_v1.pz = (vertices + v3 - 1)->pz - (vertices + v1 - 1)->pz;
+      v3_v1.x = (vertices + v3 - 1)->x - (vertices + v1 - 1)->x;
+      v3_v1.y = (vertices + v3 - 1)->y - (vertices + v1 - 1)->y;
+      v3_v1.z = (vertices + v3 - 1)->z - (vertices + v1 - 1)->z;
 
-      tg->n.px = ((v2_v1.py * v3_v1.pz) - (v3_v1.py * v2_v1.pz));
-      tg->n.py = ((v3_v1.px * v2_v1.pz) - (v2_v1.px * v3_v1.pz));
-      tg->n.pz = ((v2_v1.px * v3_v1.py) - (v3_v1.px * v2_v1.py));
-      tg->n.pw = 1;
+      tg->n.x = ((v2_v1.y * v3_v1.pz - (v3_v1.y * v2_v1.pzz;
+      tg->n.y = ((v3_v1.x * v2_v1.pz - (v2_v1.x * v3_v1.pz);
+      tg->n.z = ((v2_v1.x * v3_v1.y) - (v3_v1.x * v2_v1.y));
+      tg->n.w = 1;
       //printf("before px: %f py: %f pz: %f\n", tg->n.px, tg->n.py, tg->n.pz);
       normalize(&(tg->n));
       //printf("after px: %f py: %f pz: %f\n", tg->n.px, tg->n.py, tg->n.pz);
@@ -467,13 +452,13 @@ void importMesh(char *filename, struct triangle **tg_list, struct point3D **v, s
    fclose(f);
 }
 
-void meshIntersect(struct object3D *mesh, struct ray3D *ray, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b)
+void meshIntersect(struct object3D *mesh, struct ray3D *ray, double *lambda, struct point *p, struct point *n, double *a, double *b)
 {
    // check if the bounding box is intersected before checking the mesh
    // struct ray3D ray_transformed;
    // rayTransform(ray, &ray_transformed, mesh);
    double temp_l, temp_a, temp_b;
-   struct point3D temp_n, temp_p;
+   struct point temp_n, temp_p;
    *lambda = -1;
 
    boundingBoxIntersect(mesh, ray, &temp_l);
@@ -483,7 +468,7 @@ void meshIntersect(struct object3D *mesh, struct ray3D *ray, double *lambda, str
    }
    struct triangle *t = mesh->triangles;
    double l = -1;
-   struct point3D p1, n1;
+   struct point p1, n1;
    while (t != NULL)
    {
       //fprintf(stderr, "v1 %d v2 %d v3 %d\n", t->v1, t->v2, t->v3);
@@ -491,41 +476,41 @@ void meshIntersect(struct object3D *mesh, struct ray3D *ray, double *lambda, str
       if (l > THR && (l < *lambda || *lambda == -1))
       {
          *lambda = l;
-         memcpy(n, &n1, sizeof(struct point3D));
-         memcpy(p, &p1, sizeof(struct point3D));
+         memcpy(n, &n1, sizeof(struct point));
+         memcpy(p, &p1, sizeof(struct point));
       }
       t = t->next;
    }
 }
 
-void triangleIntersect(struct triangle *triangle, struct object3D *mesh, struct ray3D *ray, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b)
+void triangleIntersect(struct triangle *triangle, struct object3D *mesh, struct ray3D *ray, double *lambda, struct point *p, struct point *n, double *a, double *b)
 {
    // Computes and returns the value of 'lambda' at the intersection
    // between the specified ray and the specified canonical plane.
    struct ray3D ray_transformed;
    rayTransform(ray, &ray_transformed, mesh);
 
-   struct point3D v1, v2, v3;
+   struct point v1, v2, v3;
    double M, betta, gamma;
-   struct point3D norm;
+   struct point norm;
 
    double A, B, C, D, E, F, G, H, I, J, K, L;
    v1 = *(mesh->vertices + triangle->v1 - 1);
    v2 = *(mesh->vertices + triangle->v2 - 1);
    v3 = *(mesh->vertices + triangle->v3 - 1);
 
-   A = v1.px - v2.px;
-   B = v1.py - v2.py;
-   C = v1.pz - v2.pz;
-   D = v1.px - v3.px;
-   E = v1.py - v3.py;
-   F = v1.pz - v3.pz;
-   G = ray_transformed.d.px;
-   H = ray_transformed.d.py;
-   I = ray_transformed.d.pz;
-   J = v1.px - ray_transformed.p0.px;
-   K = v1.py - ray_transformed.p0.py;
-   L = v1.pz - ray_transformed.p0.pz;
+   A = v1.x - v2.x;
+   B = v1.y - v2.y;
+   C = v1.z - v2.z;
+   D = v1.x - v3.x;
+   E = v1.y - v3.y;
+   F = v1.z - v3.z;
+   G = ray_transformed.d.x;
+   H = ray_transformed.d.y;
+   I = ray_transformed.d.z;
+   J = v1.x - ray_transformed.p0.x;
+   K = v1.y - ray_transformed.p0.y;
+   L = v1.z - ray_transformed.p0.z;
    //fprintf(stderr, "A: %f B: %f C: %f D: %f E: %f F: %f \n", A, B, C, D, E, F);
 
    *lambda = -1;
@@ -551,48 +536,48 @@ void triangleIntersect(struct triangle *triangle, struct object3D *mesh, struct 
       *lambda /= M;
 
       rayPosition(ray, *lambda, p);
-      struct point3D temp_p;
+      struct point temp_p;
       rayPosition(&ray_transformed, *lambda, &temp_p);
 
-      struct point3D n1, n2, n3;
+      struct point n1, n2, n3;
       n1 = *(mesh->normals + triangle->v1 - 1);
       n2 = *(mesh->normals + triangle->v2 - 1);
       n3 = *(mesh->normals + triangle->v3 - 1);
 
       //Barycentric
-      struct point3D v1_p, v2_p, v3_p, v1_v2, v1_v3;
-      v1_p.px = v1.px - temp_p.px;
-      v1_p.py = v1.py - temp_p.py;
-      v1_p.pz = v1.pz - temp_p.pz;
-      v2_p.px = v2.px - temp_p.px;
-      v2_p.py = v2.py - temp_p.py;
-      v2_p.pz = v2.pz - temp_p.pz;
-      v3_p.px = v3.px - temp_p.px;
-      v3_p.py = v3.py - temp_p.py;
-      v3_p.pz = v3.pz - temp_p.pz;
-      v1_v2.px = v1.px - v2.px;
-      v1_v2.py = v1.py - v2.py;
-      v1_v2.pz = v1.pz - v2.pz;
-      v1_v3.px = v1.px - v3.px;
-      v1_v3.py = v1.py - v3.py;
-      v1_v3.pz = v1.pz - v3.pz;
+      struct point v1_p, v2_p, v3_p, v1_v2, v1_v3;
+      v1_p.x = v1.x - temp_p.x;
+      v1_p.y = v1.y - temp_p.y;
+      v1_p.z = v1.z - temp_p.z;
+      v2_p.x = v2.x - temp_p.x;
+      v2_p.y = v2.y - temp_p.y;
+      v2_p.z = v2.z - temp_p.z;
+      v3_p.x = v3.x - temp_p.x;
+      v3_p.y = v3.y - temp_p.y;
+      v3_p.z = v3.z - temp_p.z;
+      v1_v2.x = v1.x - v2.x;
+      v1_v2.y = v1.y - v2.y;
+      v1_v2.z = v1.z - v2.z;
+      v1_v3.x = v1.x - v3.x;
+      v1_v3.y = v1.y - v3.y;
+      v1_v3.z = v1.z - v3.z;
 
       double a1, a2, a3, abig;
-      abig = fabs((v1_v2.py * v1_v3.pz - v1_v2.pz * v1_v3.py) - (v1_v2.px * v1_v3.pz - v1_v2.pz * v1_v3.px) + (v1_v2.px * v1_v3.py - v1_v2.py * v1_v3.px));
+      abig = fabs((v1_v2.y * v1_v3.pz- v1_v2.pz* v1_v3.y) - (v1_v2.x * v1_v3.pzz v1_v2.pzz v1_v3.x) + (v1_v2.x * v1_v3.y - v1_v2.y * v1_v3.x));
 
-      a3 = fabs((v1_p.py * v2_p.pz - v1_p.pz * v2_p.py) - (v1_p.px * v2_p.pz - v1_p.pz * v2_p.px) + (v1_p.px * v2_p.py - v1_p.py * v2_p.px)) / abig;
-      a2 = fabs((v3_p.py * v1_p.pz - v3_p.pz * v1_p.py) - (v3_p.px * v1_p.pz - v3_p.pz * v1_p.px) + (v3_p.px * v1_p.py - v3_p.py * v1_p.px)) / abig;
-      a1 = fabs((v2_p.py * v3_p.pz - v2_p.pz * v3_p.py) - (v2_p.px * v3_p.pz - v2_p.pz * v3_p.px) + (v2_p.px * v3_p.py - v2_p.py * v3_p.px)) / abig;
-      struct point3D temp_n;
-      temp_n.px = a1 * (n1.px) + a2 * (n2.px) + a3 * (n3.px);
-      temp_n.py = a1 * (n1.py) + a2 * (n2.py) + a3 * (n3.py);
-      temp_n.pz = a1 * (n1.pz) + a2 * (n2.pz) + a3 * (n3.pz);
+      a3 = fabs((v1_p.y * v2_p.pz- v1_p.pz* v2_p.y) - (v1_p.x * v2_p.pzz v1_p.pzz v2_p.x) + (v1_p.x * v2_p.y - v1_p.y * v2_p.x)) / abig;
+      a2 = fabs((v3_p.y * v1_p.pz- v3_p.pz* v1_p.y) - (v3_p.x * v1_p.pzz v3_p.pzz v1_p.x) + (v3_p.x * v1_p.y - v3_p.y * v1_p.x)) / abig;
+      a1 = fabs((v2_p.y * v3_p.pz- v2_p.pz* v3_p.y) - (v2_p.x * v3_p.pzz v2_p.pzz v3_p.x) + (v2_p.x * v3_p.y - v2_p.y * v3_p.x)) / abig;
+      struct point temp_n;
+      temp_n.x = a1 * (n1.x) + a2 * (n2.x) + a3 * (n3.x);
+      temp_n.y = a1 * (n1.y) + a2 * (n2.y) + a3 * (n3.y);
+      temp_n.z = a1 * (n1.z) + a2 * (n2.z) + a3 * (n3.z);
       normalize(&temp_n);
       normalTransform(&temp_n, n, mesh);
    }
 }
 
-void planeIntersect(struct object3D *plane, struct ray3D *ray, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b)
+void planeIntersect(struct object3D *plane, struct ray3D *ray, double *lambda, struct point *p, struct point *n, double *a, double *b)
 {
    // Computes and returns the value of 'lambda' at the intersection
    // between the specified ray and the specified canonical plane.
@@ -602,29 +587,29 @@ void planeIntersect(struct object3D *plane, struct ray3D *ray, double *lambda, s
 
    rayTransform(ray, &ray_transformed, plane);
    *lambda = -1;
-   struct point3D norm;
+   struct point norm;
    // normal of canonical plane
-   norm.px = 0;
-   norm.py = 0;
-   norm.pz = 1;
-   norm.pw = 1;
-   struct point3D p1;
+   norm.x = 0;
+   norm.y = 0;
+   norm.z = 1;
+   norm.w = 1;
+   struct point p1;
 
    double l;
    double d_dot_n = dot(&(ray_transformed.d), &norm);
    if (d_dot_n != 0)
    {
-      p1.px = -ray_transformed.p0.px;
-      p1.py = -ray_transformed.p0.py;
-      p1.pz = -ray_transformed.p0.pz;
-      p1.pw = 1;
+      p1.x = -ray_transformed.p0.x;
+      p1.y = -ray_transformed.p0.y;
+      p1.z = -ray_transformed.p0.z;
+      p1.w = 1;
 
       l = dot(&(p1), &norm) / d_dot_n;
       // Check if the intersection point is inside the plane
       rayPosition(&ray_transformed, l, p);
-      double x = p->px;
-      double y = p->py;
-      if (fabs(p->pz) < THR && fabs(p->px) <= 1 + THR && fabs(p->py) <= 1 + THR)
+      double x = p->x;
+      double y = p->y;
+      if (fabs(p->z) < THR && fabs(p->x) <= 1 + THR && fabs(p->y) <= 1 + THR)
       {
          *lambda = l;
          rayPosition(ray, l, p);
@@ -642,37 +627,37 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
    struct ray3D ray_transformed;
    rayTransform(ray, &ray_transformed, mesh);
    *lambda = -1;
-   struct point3D norm;
-   struct point3D temp_p;
-   struct point3D p1;
-   struct point3D e;
+   struct point norm;
+   struct point temp_p;
+   struct point p1;
+   struct point e;
    double x;
    double y;
    // printf("ray px %f py %f pz %f dx %f dy %f dz %f \n", ray->d.px, ray->d.py, ray->d.pz, ray->p0.px, ray->p0.py, ray->p0.pz);
 
    double l = -1;
    double d_dot_n;
-   e.px = ray_transformed.p0.px;
-   e.py = ray_transformed.p0.py;
-   e.pz = ray_transformed.p0.pz;
-   double min_x = mesh->min->px;
-   double min_y = mesh->min->py;
-   double min_z = mesh->min->pz;
+   e.x = ray_transformed.p0.x;
+   e.y = ray_transformed.p0.y;
+   e.z = ray_transformed.p0.z;
+   double min_x = mesh->min->x;
+   double min_y = mesh->min->y;
+   double min_z = mesh->min->z;
 
-   double max_x = mesh->max->px;
-   double max_y = mesh->max->py;
-   double max_z = mesh->max->pz;
+   double max_x = mesh->max->x;
+   double max_y = mesh->max->y;
+   double max_z = mesh->max->z;
 
-   norm.px = 1;
-   norm.py = 0;
-   norm.pz = 0;
-   norm.pw = 1;
+   norm.x = 1;
+   norm.y = 0;
+   norm.z = 0;
+   norm.w = 1;
    d_dot_n = dot(&(ray_transformed.d), &norm);
    if (d_dot_n != 0)
    {
-      p1.px = max_x - e.px;
-      p1.py = -e.py;
-      p1.pz = -e.pz;
+      p1.x = max_x - e.x;
+      p1.y = -e.y;
+      p1.z = -e.z;
 
       l = dot(&(p1), &norm) / d_dot_n;
 
@@ -681,7 +666,7 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
          // Check if the intersection point is inside the plane
          rayPosition(&ray_transformed, l, &temp_p);
 
-         if (fabs(temp_p.px - max_x) < THR && temp_p.pz < max_z + THR && temp_p.pz > min_z + THR && temp_p.py < max_y + THR && temp_p.py > min_y + THR && (*lambda == -1 || l < *lambda))
+         if (fabs(temp_p.x - max_x) < THR && temp_p.z < max_z + THR && temp_p.z > min_z + THR && temp_p.y < max_y + THR && temp_p.y > min_y + THR && (*lambda == -1 || l < *lambda))
          {
             // printf("l1 ray px %f py %f pz %f dx %f dy %f dz %f \n", ray->d.px, ray->d.py, ray->d.pz, ray->p0.px, ray->p0.py, ray->p0.pz);
             *lambda = l;
@@ -691,16 +676,16 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
    }
 
    l = -1;
-   norm.px = -1;
-   norm.py = 0;
-   norm.pz = 0;
-   norm.pw = 1;
+   norm.x = -1;
+   norm.y = 0;
+   norm.z = 0;
+   norm.w = 1;
    d_dot_n = dot(&(ray_transformed.d), &norm);
    if (d_dot_n != 0)
    {
-      p1.px = min_x - e.px;
-      p1.py = -e.py;
-      p1.pz = -e.pz;
+      p1.x = min_x - e.x;
+      p1.y = -e.y;
+      p1.z = -e.z;
 
       l = dot(&(p1), &norm) / d_dot_n;
 
@@ -711,7 +696,7 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
 
          rayPosition(&ray_transformed, l, &temp_p);
 
-         if (fabs(temp_p.px - min_x) < THR && temp_p.pz < max_z + THR && temp_p.pz > min_z + THR && temp_p.py < max_y + THR && temp_p.py > min_y + THR && (*lambda == -1 || l < *lambda))
+         if (fabs(temp_p.x - min_x) < THR && temp_p.z < max_z + THR && temp_p.z > min_z + THR && temp_p.y < max_y + THR && temp_p.y > min_y + THR && (*lambda == -1 || l < *lambda))
          {
             // printf("l2 ray px %f py %f pz %f dx %f dy %f dz %f \n", ray->d.px, ray->d.py, ray->d.pz, ray->p0.px, ray->p0.py, ray->p0.pz);
             *lambda = l;
@@ -721,17 +706,17 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
    }
 
    l = -1;
-   norm.px = 0;
-   norm.py = 1;
-   norm.pz = 0;
-   norm.pw = 1;
+   norm.x = 0;
+   norm.y = 1;
+   norm.z = 0;
+   norm.w = 1;
 
    d_dot_n = dot(&(ray_transformed.d), &norm);
    if (d_dot_n != 0)
    {
-      p1.px = -e.px;
-      p1.py = max_y - e.py;
-      p1.pz = -e.pz;
+      p1.x = -e.x;
+      p1.y = max_y - e.y;
+      p1.z = -e.z;
 
       l = dot(&(p1), &norm) / d_dot_n;
 
@@ -740,7 +725,7 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
          // Check if the intersection point is inside the plane
          rayPosition(&ray_transformed, l, &temp_p);
 
-         if (temp_p.px < max_x + THR && temp_p.px > min_x + THR && temp_p.pz < max_z + THR && temp_p.pz > min_z + THR && fabs(temp_p.py - max_y) < THR && (*lambda == -1 || l < *lambda))
+         if (temp_p.x < max_x + THR && temp_p.x > min_x + THR && temp_p.z < max_z + THR && temp_p.z > min_z + THR && fabs(temp_p.y - max_y) < THR && (*lambda == -1 || l < *lambda))
          {
 
             *lambda = l;
@@ -750,17 +735,17 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
    }
 
    l = -1;
-   norm.px = 0;
-   norm.py = -1;
-   norm.pz = 0;
-   norm.pw = 1;
+   norm.x = 0;
+   norm.y = -1;
+   norm.z = 0;
+   norm.w = 1;
 
    d_dot_n = dot(&(ray_transformed.d), &norm);
    if (d_dot_n != 0)
    {
-      p1.px = -e.px;
-      p1.py = min_y - e.py;
-      p1.pz = -e.pz;
+      p1.x = -e.x;
+      p1.y = min_y - e.y;
+      p1.z = -e.z;
 
       l = dot(&(p1), &norm) / d_dot_n;
       if (l >= 0)
@@ -768,7 +753,7 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
          // Check if the intersection point is inside the plane
          rayPosition(&ray_transformed, l, &temp_p);
 
-         if (temp_p.px < max_x + THR && temp_p.px > min_x + THR && temp_p.pz < max_z + THR && temp_p.pz > min_z + THR && fabs(temp_p.py - min_y) < THR && (*lambda == -1 || l < *lambda))
+         if (temp_p.x < max_x + THR && temp_p.x > min_x + THR && temp_p.z < max_z + THR && temp_p.z > min_z + THR && fabs(temp_p.y - min_y) < THR && (*lambda == -1 || l < *lambda))
          {
             *lambda = l;
             //printf("l4 %f px %f py %f pz %f\n", l, p->px, p->py, p->pz);
@@ -777,17 +762,17 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
    }
 
    l = -1;
-   norm.px = 0;
-   norm.py = 0;
-   norm.pz = 1;
-   norm.pw = 1;
+   norm.x = 0;
+   norm.y = 0;
+   norm.z = 1;
+   norm.w = 1;
 
    d_dot_n = dot(&(ray_transformed.d), &norm);
    if (d_dot_n != 0)
    {
-      p1.px = -e.px;
-      p1.py = -e.py;
-      p1.pz = max_z - e.pz;
+      p1.x = -e.x;
+      p1.y = -e.y;
+      p1.z = max_z - e.z;
 
       l = dot(&(p1), &norm) / d_dot_n;
       if (l >= 0)
@@ -795,7 +780,7 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
          // Check if the intersection point is inside the plane
          rayPosition(&ray_transformed, l, &temp_p);
 
-         if (temp_p.px < max_x + THR && temp_p.px > min_x + THR && temp_p.py < max_y + THR && temp_p.py > min_y + THR && fabs(temp_p.pz - max_z) < THR && (*lambda == -1 || l < *lambda))
+         if (temp_p.x < max_x + THR && temp_p.x > min_x + THR && temp_p.y < max_y + THR && temp_p.y > min_y + THR && fabs(temp_p.pzz max_z) < THR && (*lambda == -1 || l < *lambda))
          {
             *lambda = l;
             //printf("l5 %f px %f py %f pz %f\n", l, p->px, p->py, p->pz);
@@ -804,17 +789,17 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
    }
 
    l = -1;
-   norm.px = 0;
-   norm.py = 0;
-   norm.pz = -1;
-   norm.pw = 1;
+   norm.x = 0;
+   norm.y = 0;
+   norm.z = -1;
+   norm.w = 1;
 
    d_dot_n = dot(&(ray_transformed.d), &norm);
    if (d_dot_n != 0)
    {
-      p1.px = -e.px;
-      p1.py = -e.py;
-      p1.pz = min_z - e.pz;
+      p1.x = -e.x;
+      p1.y = -e.y;
+      p1.z = min_z - e.z;
 
       l = dot(&(p1), &norm) / d_dot_n;
       if (l >= 0)
@@ -822,7 +807,7 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
          // Check if the intersection point is inside the plane
          rayPosition(&ray_transformed, l, &temp_p);
 
-         if (temp_p.px < max_x + THR && temp_p.px > min_x + THR && temp_p.py < max_y + THR && temp_p.py > min_y + THR && fabs(temp_p.pz - min_z) < THR && (*lambda == -1 || l < *lambda))
+         if (temp_p.x < max_x + THR && temp_p.x > min_x + THR && temp_p.y < max_y + THR && temp_p.y > min_y + THR && fabs(temp_p.pzz min_z) < THR && (*lambda == -1 || l < *lambda))
          {
             *lambda = l;
             //printf("l6 %f px %f py %f pz %f\n", l, p->px, p->py, p->pz);
@@ -840,34 +825,34 @@ void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lamb
    // }
 }
 
-void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b)
+void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struct point *p, struct point *n, double *a, double *b)
 {
    struct ray3D ray_transformed;
    rayTransform(ray, &ray_transformed, box);
    *lambda = -1;
-   struct point3D norm;
-   struct point3D temp_p;
-   struct point3D p1;
-   struct point3D e;
+   struct point norm;
+   struct point temp_p;
+   struct point p1;
+   struct point e;
    double x;
    double y;
 
    double l = -1;
    double d_dot_n;
-   e.px = ray_transformed.p0.px;
-   e.py = ray_transformed.p0.py;
-   e.pz = ray_transformed.p0.pz;
+   e.x = ray_transformed.p0.x;
+   e.y = ray_transformed.p0.y;
+   e.z = ray_transformed.p0.z;
 
-   norm.px = 1;
-   norm.py = 0;
-   norm.pz = 0;
-   norm.pw = 1;
+   norm.x = 1;
+   norm.y = 0;
+   norm.z = 0;
+   norm.w = 1;
    d_dot_n = dot(&(ray_transformed.d), &norm);
    if (d_dot_n != 0)
    {
-      p1.px = 0.5 - e.px;
-      p1.py = -e.py;
-      p1.pz = -e.pz;
+      p1.x = 0.5 - e.x;
+      p1.y = -e.y;
+      p1.z = -e.z;
 
       l = dot(&(p1), &norm) / d_dot_n;
 
@@ -876,7 +861,7 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
          // Check if the intersection point is inside the plane
          rayPosition(&ray_transformed, l, &temp_p);
 
-         if (fabs(temp_p.px - 0.5) < THR && fabs(temp_p.pz) < 0.5 + THR && fabs(temp_p.py) < 0.5 + THR && (*lambda == -1 || l < *lambda))
+         if (fabs(temp_p.x - 0.5) < THR && fabs(temp_p.z) < 0.5 + THR && fabs(temp_p.y) < 0.5 + THR && (*lambda == -1 || l < *lambda))
          {
             rayPosition(ray, l, p);
             *lambda = l;
@@ -886,16 +871,16 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
    }
 
    l = -1;
-   norm.px = -1;
-   norm.py = 0;
-   norm.pz = 0;
-   norm.pw = 1;
+   norm.x = -1;
+   norm.y = 0;
+   norm.z = 0;
+   norm.w = 1;
    d_dot_n = dot(&(ray_transformed.d), &norm);
    if (d_dot_n != 0)
    {
-      p1.px = -0.5 - e.px;
-      p1.py = -e.py;
-      p1.pz = -e.pz;
+      p1.x = -0.5 - e.x;
+      p1.y = -e.y;
+      p1.z = -e.z;
 
       l = dot(&(p1), &norm) / d_dot_n;
 
@@ -905,7 +890,7 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
 
          rayPosition(&ray_transformed, l, &temp_p);
 
-         if (fabs(temp_p.px + 0.5) < THR && fabs(temp_p.pz) < 0.5 + THR && fabs(temp_p.py) < 0.5 + THR && (*lambda == -1 || l < *lambda))
+         if (fabs(temp_p.x + 0.5) < THR && fabs(temp_p.z) < 0.5 + THR && fabs(temp_p.y) < 0.5 + THR && (*lambda == -1 || l < *lambda))
          {
             rayPosition(ray, l, p);
             *lambda = l;
@@ -915,17 +900,17 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
    }
 
    l = -1;
-   norm.px = 0;
-   norm.py = 1;
-   norm.pz = 0;
-   norm.pw = 1;
+   norm.x = 0;
+   norm.y = 1;
+   norm.z = 0;
+   norm.w = 1;
 
    d_dot_n = dot(&(ray_transformed.d), &norm);
    if (d_dot_n != 0)
    {
-      p1.px = -e.px;
-      p1.py = 0.5 - e.py;
-      p1.pz = -e.pz;
+      p1.x = -e.x;
+      p1.y = 0.5 - e.y;
+      p1.z = -e.z;
 
       l = dot(&(p1), &norm) / d_dot_n;
 
@@ -934,30 +919,30 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
          // Check if the intersection point is inside the plane
          rayPosition(&ray_transformed, l, &temp_p);
 
-         if (fabs(temp_p.pz) < 0.5 + THR && fabs(temp_p.px) < 0.5 + THR && fabs(temp_p.py - 0.5) < THR && (*lambda == -1 || l < *lambda))
+         if (fabs(temp_p.z) < 0.5 + THR && fabs(temp_p.x) < 0.5 + THR && fabs(temp_p.y - 0.5) < THR && (*lambda == -1 || l < *lambda))
          {
             rayPosition(ray, l, p);
 
             *lambda = l;
             normalTransform(&norm, n, box);
-            x = p->px;
-            y = p->py;
+            x = p->x;
+            y = p->y;
          }
       }
    }
 
    l = -1;
-   norm.px = 0;
-   norm.py = -1;
-   norm.pz = 0;
-   norm.pw = 1;
+   norm.x = 0;
+   norm.y = -1;
+   norm.z = 0;
+   norm.w = 1;
 
    d_dot_n = dot(&(ray_transformed.d), &norm);
    if (d_dot_n != 0)
    {
-      p1.px = -e.px;
-      p1.py = -0.5 - e.py;
-      p1.pz = -e.pz;
+      p1.x = -e.x;
+      p1.y = -0.5 - e.y;
+      p1.z = -e.z;
 
       l = dot(&(p1), &norm) / d_dot_n;
       if (l >= 0)
@@ -965,35 +950,7 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
          // Check if the intersection point is inside the plane
          rayPosition(&ray_transformed, l, &temp_p);
 
-         if (fabs(temp_p.pz) < 0.5 + THR && fabs(temp_p.px) < 0.5 + THR && fabs(temp_p.py + 0.5) < THR && (*lambda == -1 || l < *lambda))
-         {
-            rayPosition(ray, l, p);
-            *lambda = l;
-            normalTransform(&norm, n, box);
-         }
-      }
-   }
-
-   l = -1;
-   norm.px = 0;
-   norm.py = 0;
-   norm.pz = 1;
-   norm.pw = 1;
-
-   d_dot_n = dot(&(ray_transformed.d), &norm);
-   if (d_dot_n != 0)
-   {
-      p1.px = -e.px;
-      p1.py = -e.py;
-      p1.pz = 0.5 - e.pz;
-
-      l = dot(&(p1), &norm) / d_dot_n;
-      if (l >= 0)
-      {
-         // Check if the intersection point is inside the plane
-         rayPosition(&ray_transformed, l, &temp_p);
-
-         if (fabs(temp_p.pz - 0.5) < THR && fabs(temp_p.px) < 0.5 + THR && fabs(temp_p.py) < 0.5 + THR && (*lambda == -1 || l < *lambda))
+         if (fabs(temp_p.z) < 0.5 + THR && fabs(temp_p.x) < 0.5 + THR && fabs(temp_p.y + 0.5) < THR && (*lambda == -1 || l < *lambda))
          {
             rayPosition(ray, l, p);
             *lambda = l;
@@ -1003,17 +960,17 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
    }
 
    l = -1;
-   norm.px = 0;
-   norm.py = 0;
-   norm.pz = -1;
-   norm.pw = 1;
+   norm.x = 0;
+   norm.y = 0;
+   norm.z = 1;
+   norm.w = 1;
 
    d_dot_n = dot(&(ray_transformed.d), &norm);
    if (d_dot_n != 0)
    {
-      p1.px = -e.px;
-      p1.py = -e.py;
-      p1.pz = -0.5 - e.pz;
+      p1.x = -e.x;
+      p1.y = -e.y;
+      p1.z = 0.5 - e.z;
 
       l = dot(&(p1), &norm) / d_dot_n;
       if (l >= 0)
@@ -1021,7 +978,35 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
          // Check if the intersection point is inside the plane
          rayPosition(&ray_transformed, l, &temp_p);
 
-         if (fabs(temp_p.pz + 0.5) < THR && fabs(temp_p.px) < 0.5 + THR && fabs(temp_p.py) < 0.5 + THR && (*lambda == -1 || l < *lambda))
+         if (fabs(temp_p.z - 0.5) < THR && fabs(temp_p.x) < 0.5 + THR && fabs(temp_p.y) < 0.5 + THR && (*lambda == -1 || l < *lambda))
+         {
+            rayPosition(ray, l, p);
+            *lambda = l;
+            normalTransform(&norm, n, box);
+         }
+      }
+   }
+
+   l = -1;
+   norm.x = 0;
+   norm.y = 0;
+   norm.z = -1;
+   norm.w = 1;
+
+   d_dot_n = dot(&(ray_transformed.d), &norm);
+   if (d_dot_n != 0)
+   {
+      p1.x = -e.x;
+      p1.y = -e.y;
+      p1.z = -0.5 - e.z;
+
+      l = dot(&(p1), &norm) / d_dot_n;
+      if (l >= 0)
+      {
+         // Check if the intersection point is inside the plane
+         rayPosition(&ray_transformed, l, &temp_p);
+
+         if (fabs(temp_p.z + 0.5) < THR && fabs(temp_p.x) < 0.5 + THR && fabs(temp_p.y) < 0.5 + THR && (*lambda == -1 || l < *lambda))
          {
             rayPosition(ray, l, p);
             *lambda = l;
@@ -1033,8 +1018,8 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
 
    if (*lambda > -1)
    {
-      x = p->px;
-      y = p->py;
+      x = p->x;
+      y = p->y;
       if (box->texImg != NULL)
       {
          *a = (x + 1) / 2;
@@ -1045,7 +1030,7 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
 
 void solveQuadratic(struct ray3D *ray, double *l1, double *l2)
 {
-   struct point3D a_sub_c;
+   struct point a_sub_c;
    double A, B, C, D;
    a_sub_c = ray->p0;
    A = dot(&(ray->d), &(ray->d));
@@ -1065,7 +1050,7 @@ void solveQuadratic(struct ray3D *ray, double *l1, double *l2)
    }
 }
 
-void sphereIntersect(struct object3D *sphere, struct ray3D *ray, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b)
+void sphereIntersect(struct object3D *sphere, struct ray3D *ray, double *lambda, struct point *p, struct point *n, double *a, double *b)
 {
    // Computes and returns the value of 'lambda' at the intersection
    // between the specified ray and the specified canonical sphere.
@@ -1106,13 +1091,13 @@ void sphereIntersect(struct object3D *sphere, struct ray3D *ray, double *lambda,
    {
 
       rayPosition(&ray_transformed, *lambda, p);
-      n->px = p->px;
-      n->py = p->py;
-      n->pz = p->pz;
-      x = p->px;
-      y = p->py;
-      z = p->pz;
-      n->pw = 1;
+      n->x = p->x;
+      n->y = p->y;
+      n->z = p->z;
+      x = p->x;
+      y = p->y;
+      z = p->z;
+      n->w = 1;
 
       //Source: https://en.wikipedia.org/wiki/UV_mapping
       *a = 0.5 + (atan2(z, x)) / (2 * PI);
@@ -1126,7 +1111,7 @@ void sphereIntersect(struct object3D *sphere, struct ray3D *ray, double *lambda,
    }
 }
 
-void cylIntersect(struct object3D *cylinder, struct ray3D *r, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b)
+void cylIntersect(struct object3D *cylinder, struct ray3D *r, double *lambda, struct point *p, struct point *n, double *a, double *b)
 {
    // Computes and returns the value of 'lambda' at the intersection
    // between the specified ray and the specified canonical cylinder.
@@ -1137,46 +1122,46 @@ void cylIntersect(struct object3D *cylinder, struct ray3D *r, double *lambda, st
    rayTransform(r, &ray_transformed, cylinder);
    *lambda = -1;
    rayTransform(r, &ray_copy, cylinder);
-   ray_copy.d.pz = 0;
-   ray_copy.p0.pz = 0;
+   ray_copy.d.z = 0;
+   ray_copy.p0.z = 0;
    (*a) = 0;
    (*b) = 0;
    solveQuadratic(&ray_copy, &l1, &l2);
    // Check if the z component of the intersection point falls within the range
-   if (l1 > THR && fabs(l1 * ray_transformed.d.pz + ray_transformed.p0.pz) <= 1)
+   if (l1 > THR && fabs(l1 * ray_transformed.d.z + ray_transformed.p0.z) <= 1)
    {
       *lambda = l1;
       rayPosition(&ray_transformed, *lambda, p);
-      *a = atan2(p->px, p->py) / (2 * PI);
-      *b = (1 + p->pz) / 2;
-      n->px = 2 * p->px;
-      n->py = 2 * p->py;
-      n->pz = 0;
+      *a = atan2(p->x, p->y) / (2 * PI);
+      *b = (1 + p->z) / 2;
+      n->x = 2 * p->x;
+      n->y = 2 * p->y;
+      n->z = 0;
    }
 
    // Check if the z component of the intersection point falls within the range
-   if (l2 > THR && fabs(l2 * ray_transformed.d.pz + ray_transformed.p0.pz) <= 1 && (l2 < l1 || *lambda == -1))
+   if (l2 > THR && fabs(l2 * ray_transformed.d.z + ray_transformed.p0.z) <= 1 && (l2 < l1 || *lambda == -1))
    {
       *lambda = l2;
       rayPosition(&ray_transformed, *lambda, p);
-      n->px = p->px;
-      n->py = p->py;
-      n->pz = 0;
+      n->x = p->x;
+      n->y = p->y;
+      n->z = 0;
    }
 
-   struct point3D p1, cap_n, cap_p;
-   cap_n.px = 0;
-   cap_n.py = 0;
-   cap_n.pz = -1;
+   struct point p1, cap_n, cap_p;
+   cap_n.x = 0;
+   cap_n.y = 0;
+   cap_n.z = -1;
 
    double l;
    double d_dot_n;
    d_dot_n = dot(&(ray_transformed.d), &cap_n);
    if (d_dot_n != 0)
    {
-      p1.px = -ray_transformed.p0.px;
-      p1.py = -ray_transformed.p0.py;
-      p1.pz = -1 - ray_transformed.p0.pz;
+      p1.x = -ray_transformed.p0.x;
+      p1.y = -ray_transformed.p0.y;
+      p1.z = -1 - ray_transformed.p0.z;
 
       l = dot(&(p1), &cap_n) / d_dot_n;
 
@@ -1186,26 +1171,26 @@ void cylIntersect(struct object3D *cylinder, struct ray3D *r, double *lambda, st
       printf("l: %f, lambda: %f, x^2 + y^2: %f\n", l, *lambda, cap_p.px * cap_p.px + cap_p.py * cap_p.py);
 #endif
 
-      if (l > THR && cap_p.px * cap_p.px + cap_p.py * cap_p.py <= 1)
+      if (l > THR && cap_p.x * cap_p.x + cap_p.y * cap_p.y <= 1)
       {
          if ((*lambda != -1 && l < *lambda) || *lambda == -1)
          {
             *lambda = l;
-            memcpy(n, &cap_n, sizeof(struct point3D));
+            memcpy(n, &cap_n, sizeof(struct point));
          }
       }
    }
 
-   cap_n.px = 0;
-   cap_n.py = 0;
-   cap_n.pz = 1;
+   cap_n.x = 0;
+   cap_n.y = 0;
+   cap_n.z = 1;
 
    d_dot_n = dot(&(ray_transformed.d), &cap_n);
    if (d_dot_n != 0)
    {
-      p1.px = -ray_transformed.p0.px;
-      p1.py = -ray_transformed.p0.py;
-      p1.pz = 1 - ray_transformed.p0.pz;
+      p1.x = -ray_transformed.p0.x;
+      p1.y = -ray_transformed.p0.y;
+      p1.z = 1 - ray_transformed.p0.z;
 
       l = dot(&(p1), &cap_n) / d_dot_n;
       rayPosition(&ray_transformed, l, &cap_p);
@@ -1213,12 +1198,12 @@ void cylIntersect(struct object3D *cylinder, struct ray3D *r, double *lambda, st
       printf("l: %f, lambda: %f, x^2 + y^2: %f\n", l, *lambda, cap_p.px * cap_p.px + cap_p.py * cap_p.py);
 #endif
 
-      if (l > THR && cap_p.px * cap_p.px + cap_p.py * cap_p.py <= 1)
+      if (l > THR && cap_p.x * cap_p.x + cap_p.y * cap_p.y <= 1)
       {
          if ((*lambda != -1 && l < *lambda) || *lambda == -1)
          {
             *lambda = l;
-            memcpy(n, &cap_n, sizeof(struct point3D));
+            memcpy(n, &cap_n, sizeof(struct point));
          }
       }
    }
@@ -1243,20 +1228,20 @@ void planeCoordinates(struct object3D *plane, double a, double b, double *x, dou
    // 'a' controls displacement from the left side of the plane, 'b' controls displacement from the
    // bottom of the plane.
 
-   struct point3D p;
-   p.px = -2 * a + 1;
-   p.py = -2 * b + 1;
-   p.pz = 0;
-   p.pw = 1;
+   struct point p;
+   p.x = -2 * a + 1;
+   p.y = -2 * b + 1;
+   p.z = 0;
+   p.w = 1;
 
    matVecMult(plane->T, &p);
 
-   *x = p.px;
-   *y = p.py;
-   *z = p.pz;
+   *x = p.x;
+   *y = p.y;
+   *z = p.z;
 }
 
-void hemiSphereCoordinates(struct point3D *n, double *x, double *y, double *z)
+void hemiSphereCoordinates(struct point *n, double *x, double *y, double *z)
 {
    // Gives a random (x, y, z) coordinates of a point on a hemisphere for
    // the path tracing algorithm of diffuse surfaces
@@ -1264,24 +1249,24 @@ void hemiSphereCoordinates(struct point3D *n, double *x, double *y, double *z)
    double b = drand48() * 2 - 1;
    b = acos(b);
 
-   struct point3D p;
-   p.px = cos(a) * sin(b);
-   p.py = sin(a) * sin(b);
-   p.pz = cos(b);
-   p.pw = 1;
+   struct point p;
+   p.x = cos(a) * sin(b);
+   p.y = sin(a) * sin(b);
+   p.z = cos(b);
+   p.w = 1;
    while (dot(n, &p) < 0)
    {
       a = drand48() * 2 * PI;
       b = drand48() * 2 - 1;
       b = acos(b);
-      p.px = cos(a) * sin(b);
-      p.py = sin(a) * sin(b);
-      p.pz = cos(b);
-      p.pw = 1;
+      p.x = cos(a) * sin(b);
+      p.y = sin(a) * sin(b);
+      p.z = cos(b);
+      p.w = 1;
    }
-   *x = p.px;
-   *y = p.py;
-   *z = p.pz;
+   *x = p.x;
+   *y = p.y;
+   *z = p.z;
 }
 
 void sphereCoordinates(struct object3D *sphere, double a, double b, double *x, double *y, double *z)
@@ -1290,16 +1275,16 @@ void sphereCoordinates(struct object3D *sphere, double a, double b, double *x, d
    // 'a' in [0, 2*PI] corresponds to the spherical coordinate theta
    // 'b' in [-PI/2, PI/2] corresponds to the spherical coordinate phi
 
-   struct point3D p;
-   p.px = cos(a) * sin(b);
-   p.py = sin(a) * sin(b);
-   p.pz = cos(b);
-   p.pw = 1;
+   struct point p;
+   p.x = cos(a) * sin(b);
+   p.y = sin(a) * sin(b);
+   p.z = cos(b);
+   p.w = 1;
    matVecMult(sphere->T, &p);
 
-   *x = p.px;
-   *y = p.py;
-   *z = p.pz;
+   *x = p.x;
+   *y = p.y;
+   *z = p.z;
 }
 
 void cylCoordinates(struct object3D *cyl, double a, double b, double *x, double *y, double *z)
@@ -1308,15 +1293,15 @@ void cylCoordinates(struct object3D *cyl, double a, double b, double *x, double 
    // 'a' in [0, 2*PI] corresponds to angle theta around the cylinder
    // 'b' in [0, 1] corresponds to height from the bottom
 
-   struct point3D p;
-   p.px = sin(a);
-   p.py = cos(a);
-   p.pz = b * 2;
-   p.pw = 1;
+   struct point p;
+   p.x = sin(a);
+   p.y = cos(a);
+   p.z = b * 2;
+   p.w = 1;
    matVecMult(cyl->T, &p);
-   *x = p.px;
-   *y = p.py;
-   *z = p.pz;
+   *x = p.x;
+   *y = p.y;
+   *z = p.z;
 }
 
 void planeSample(struct object3D *plane, double *x, double *y, double *z)
@@ -1333,9 +1318,6 @@ void planeSample(struct object3D *plane, double *x, double *y, double *z)
 void sphereSample(struct object3D *sphere, double *x, double *y, double *z)
 {
    // Returns the 3D coordinates (x,y,z) of a randomly sampled point on the sphere
-   // Sampling should be uniform - note that this is tricky for a sphere, do some
-   // research and document in your report what method is used to do this, along
-   // with a reference to your source.
 
    double a = drand48() * 2 * PI;
    double b = drand48() * 2 - 1;
@@ -1356,7 +1338,7 @@ void cylSample(struct object3D *cyl, double *x, double *y, double *z)
 //////////////////////////////////
 // Importance sampling for BRDF
 //////////////////////////////////
-void cosWeightedSample(struct point3D *n, struct point3D *d)
+void cosWeightedSample(struct point *n, struct point *d)
 {
    // This function returns a randomly sampled direction over
    // a hemisphere whose pole is the normal direction n. The
@@ -1367,7 +1349,7 @@ void cosWeightedSample(struct point3D *n, struct point3D *d)
    double u1, r, theta, phi;
    double x, y, z, c;
    double v[4][4], R[4][4];
-   struct point3D nz, *cr;
+   struct point nz, *cr;
    char line[1024];
 
    // Random sample on hemisphere with cosine-weighted distribution
@@ -1386,16 +1368,16 @@ void cosWeightedSample(struct point3D *n, struct point3D *d)
    R[3][3] = 1.0;
 
    // Rotation based on cylindrical coordinate conversion
-   theta = atan2(n->py, n->px);
-   phi = acos(n->pz);
+   theta = atan2(n->y, n->x);
+   phi = acos(n->z);
    RotateYMat(R, phi);
    RotateZMat(R, theta);
 
    // Rotate d to align with normal
-   d->px = x;
-   d->py = y;
-   d->pz = z;
-   d->pw = 1.0;
+   d->x = x;
+   d->y = y;
+   d->z = z;
+   d->w = 1.0;
    matVecMult(R, d);
 
    return;
@@ -1834,7 +1816,7 @@ void printmatrix(double mat[4][4])
 /////////////////////////////////////////
 // Camera and view setup
 /////////////////////////////////////////
-struct view *setupView(struct point3D *e, struct point3D *g, struct point3D *up, double f, double wl, double wt, double wsize)
+struct view *setupView(struct point *e, struct point *g, struct point *up, double f, double wl, double wt, double wsize)
 {
    /*
    This function sets up the camera axes and viewing direction as discussed in the
@@ -1846,7 +1828,7 @@ struct view *setupView(struct point3D *e, struct point3D *g, struct point3D *up,
    f - focal length
  */
    struct view *c;
-   struct point3D *u, *v;
+   struct point *u, *v;
 
    u = v = NULL;
 
@@ -1859,33 +1841,33 @@ struct view *setupView(struct point3D *e, struct point3D *g, struct point3D *up,
    }
 
    // Set up camera center and axes
-   c->e.px = e->px; // Copy camera center location, note we must make sure
-   c->e.py = e->py; // the camera center provided to this function has pw=1
-   c->e.pz = e->pz;
-   c->e.pw = 1;
+   c->e.x = e->x; // Copy camera center location, note we must make sure
+   c->e.y = e->y; // the camera center provided to this function has pw=1
+   c->e.z = e->z;
+   c->e.w = 1;
 
    // Set up w vector (camera's Z axis). w=-g/||g||
-   c->w.px = -g->px;
-   c->w.py = -g->py;
-   c->w.pz = -g->pz;
-   c->w.pw = 1;
+   c->w.x = -g->x;
+   c->w.y = -g->y;
+   c->w.z = -g->z;
+   c->w.w = 1;
    normalize(&c->w);
 
    // Set up the horizontal direction, which must be perpenticular to w and up
    u = cross(&c->w, up);
    normalize(u);
-   c->u.px = u->px;
-   c->u.py = u->py;
-   c->u.pz = u->pz;
-   c->u.pw = 1;
+   c->u.x = u->x;
+   c->u.y = u->y;
+   c->u.z = u->z;
+   c->u.w = 1;
 
    // Set up the remaining direction, v=(u x w)  - Mind the signs
    v = cross(&c->u, &c->w);
    normalize(v);
-   c->v.px = v->px;
-   c->v.py = v->py;
-   c->v.pz = v->pz;
-   c->v.pw = 1;
+   c->v.x = v->x;
+   c->v.y = v->y;
+   c->v.z = v->z;
+   c->v.w = 1;
 
    // Copy focal length and window size parameters
    c->f = f;
@@ -1896,41 +1878,41 @@ struct view *setupView(struct point3D *e, struct point3D *g, struct point3D *up,
    // Set up coordinate conversion matrices
    // Camera2World matrix (M_cw in the notes)
    // Mind the indexing convention [row][col]
-   c->C2W[0][0] = c->u.px;
-   c->C2W[1][0] = c->u.py;
-   c->C2W[2][0] = c->u.pz;
+   c->C2W[0][0] = c->u.x;
+   c->C2W[1][0] = c->u.y;
+   c->C2W[2][0] = c->u.z;
    c->C2W[3][0] = 0;
 
-   c->C2W[0][1] = c->v.px;
-   c->C2W[1][1] = c->v.py;
-   c->C2W[2][1] = c->v.pz;
+   c->C2W[0][1] = c->v.x;
+   c->C2W[1][1] = c->v.y;
+   c->C2W[2][1] = c->v.z;
    c->C2W[3][1] = 0;
 
-   c->C2W[0][2] = c->w.px;
-   c->C2W[1][2] = c->w.py;
-   c->C2W[2][2] = c->w.pz;
+   c->C2W[0][2] = c->w.x;
+   c->C2W[1][2] = c->w.y;
+   c->C2W[2][2] = c->w.z;
    c->C2W[3][2] = 0;
 
-   c->C2W[0][3] = c->e.px;
-   c->C2W[1][3] = c->e.py;
-   c->C2W[2][3] = c->e.pz;
+   c->C2W[0][3] = c->e.x;
+   c->C2W[1][3] = c->e.y;
+   c->C2W[2][3] = c->e.z;
    c->C2W[3][3] = 1;
 
    // World2Camera matrix (M_wc in the notes)
    // Mind the indexing convention [row][col]
-   c->W2C[0][0] = c->u.px;
-   c->W2C[1][0] = c->v.px;
-   c->W2C[2][0] = c->w.px;
+   c->W2C[0][0] = c->u.x;
+   c->W2C[1][0] = c->v.x;
+   c->W2C[2][0] = c->w.x;
    c->W2C[3][0] = 0;
 
-   c->W2C[0][1] = c->u.py;
-   c->W2C[1][1] = c->v.py;
-   c->W2C[2][1] = c->w.py;
+   c->W2C[0][1] = c->u.y;
+   c->W2C[1][1] = c->v.y;
+   c->W2C[2][1] = c->w.y;
    c->W2C[3][1] = 0;
 
-   c->W2C[0][2] = c->u.pz;
-   c->W2C[1][2] = c->v.pz;
-   c->W2C[2][2] = c->w.pz;
+   c->W2C[0][2] = c->u.z;
+   c->W2C[1][2] = c->v.z;
+   c->W2C[2][2] = c->w.z;
    c->W2C[3][2] = 0;
 
    c->W2C[0][3] = -dot(&c->u, &c->e);
@@ -2489,15 +2471,15 @@ void biDirectionalSample(struct object3D *light, struct ray3D *cam_ray, struct c
    light_ray.rayPos = &rayPosition;
    double x, y, z;
    light->randomPoint(light, &x, &y, &z);
-   light_ray.p0.px = x;
-   light_ray.p0.py = y;
-   light_ray.p0.pz = z;
-   light_ray.p0.pw = 1;
+   light_ray.p0.x = x;
+   light_ray.p0.y = y;
+   light_ray.p0.z = z;
+   light_ray.p0.w = 1;
 
-   light_ray.d.px = drand48();
-   light_ray.d.py = drand48();
-   light_ray.d.pz = drand48();
-   light_ray.d.pw = 1;
+   light_ray.d.x = drand48();
+   light_ray.d.y = drand48();
+   light_ray.d.z = drand48();
+   light_ray.d.w = 1;
    normalize(&light_ray.d);
 
    light_ray.R = light->col.R;
@@ -2512,14 +2494,14 @@ void biDirectionalSample(struct object3D *light, struct ray3D *cam_ray, struct c
    PathTrace(&light_ray, 1, &col, NULL, NULL);
    struct ray3D Cam_to_Light;
    Cam_to_Light.p0 = cam_ray->p0;
-   Cam_to_Light.d.px = light_ray.p0.px - cam_ray->p0.px;
-   Cam_to_Light.d.py = light_ray.p0.py - cam_ray->p0.py;
-   Cam_to_Light.d.pz = light_ray.p0.pz - cam_ray->p0.pz;
-   Cam_to_Light.d.pw = 1;
+   Cam_to_Light.d.x = light_ray.p0.x - cam_ray->p0.x;
+   Cam_to_Light.d.y = light_ray.p0.y - cam_ray->p0.y;
+   Cam_to_Light.d.z = light_ray.p0.z - cam_ray->p0.z;
+   Cam_to_Light.d.w = 1;
    double lambda;
    struct object3D *obstruction = NULL;
-   struct point3D lightp;
-   struct point3D nls;
+   struct point lightp;
+   struct point nls;
    double La, Lb;
 
    findFirstHit(&Cam_to_Light, &lambda, NULL, &obstruction, &lightp, &nls, &La, &Lb);
@@ -2531,7 +2513,7 @@ void biDirectionalSample(struct object3D *light, struct ray3D *cam_ray, struct c
       return;
    }
 
-   double dxd = Cam_to_Light.d.px * Cam_to_Light.d.px + Cam_to_Light.d.py * Cam_to_Light.d.py + Cam_to_Light.d.pz * Cam_to_Light.d.pz;
+   double dxd = Cam_to_Light.d.x * Cam_to_Light.d.x + Cam_to_Light.d.y * Cam_to_Light.d.y + Cam_to_Light.d.pzz Cam_to_Light.d.pzz
    normalize(&Cam_to_Light.d);
    double nls_dot_l = fabs(dot(&nls, &Cam_to_Light.d));
    double w = MIN(1, (nls_dot_l) / (dxd));

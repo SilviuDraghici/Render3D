@@ -29,7 +29,7 @@ void buildScene(void)
     //       forget to set up the inverse transform matrix!
 
     struct object3D *o;
-    struct point3D p;
+    struct point p;
 
     // Cornell box
     o = newSphere(1.0, 0.0, 0.0, .75, .25, .25, .05, 1.4); // Left
@@ -127,7 +127,7 @@ void buildScene(void)
     //Translate(o, xtrans, ytrans, ztrans);
     memcpy(&o->T[0][0], &m->T[0][0], 16 * sizeof(double));
 
-    struct point3D translate;
+    struct point translate;
     translate.px = m->T[0][3];
     translate.py = m->T[1][3];
     translate.pz = m->T[2][3];

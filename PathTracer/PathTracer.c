@@ -46,7 +46,7 @@ int MAX_DEPTH;
 
 #include "buildScene.c" // Import scene definition
 
-void findFirstHit(struct ray3D *ray, double *lambda, struct object3D *Os, struct object3D **obj, struct point3D *p, struct point3D *n, double *a, double *b)
+void findFirstHit(struct ray3D *ray, double *lambda, struct object3D *Os, struct object3D **obj, struct point *p, struct point *n, double *a, double *b)
 {
    // Find the closest intersection between the ray and any objects in the scene.
    // Inputs:
@@ -68,7 +68,7 @@ void findFirstHit(struct ray3D *ray, double *lambda, struct object3D *Os, struct
    /////////////////////////////////////////////////////////////
    struct object3D *curr_obj = object_list;
    double curr_l, curr_a, curr_b;
-   struct point3D curr_p, curr_n;
+   struct point curr_p, curr_n;
    *lambda = INFINITY;
 
    while (curr_obj != NULL)
@@ -96,10 +96,10 @@ void findFirstHit(struct ray3D *ray, double *lambda, struct object3D *Os, struct
          else
          {
             //check if there sould be intersection with object's back face
-            struct point3D op = ray->p0;
-            ray->p0.px = curr_p.px + THR * ray->d.px;
-            ray->p0.py = curr_p.py + THR * ray->d.py;
-            ray->p0.pz = curr_p.pz + THR * ray->d.pz;
+            struct point op = ray->p0;
+            ray->p0.x = curr_p.x + THR * ray->d.x;
+            ray->p0.y = curr_p.y + THR * ray->d.y;
+            ray->p0.z = curr_p.z + THR * ray->d.z;
             curr_obj->intersect(curr_obj, ray, &curr_l, &curr_p, &curr_n, &curr_a, &curr_b);
             alphaMap(curr_obj->intersectMap, curr_a, curr_b, &intMapVal);
             if (THR < curr_l && curr_l < *lambda && intMapVal >= 0.5)
@@ -134,9 +134,9 @@ void PathTrace(struct ray3D *ray, int depth, struct color *col, struct object3D 
    double lambda;               // Lambda at intersection
    double a, b;                 // Texture coordinates
    struct object3D *obj = NULL; // Pointer to object at intersection
-   struct point3D p;            // Intersection point
-   struct point3D n;            // Normal at intersection
-   struct point3D d;
+   struct point p;            // Intersection point
+   struct point n;            // Normal at intersection
+   struct point d;
    double R = 0, G = 0, B = 0; // Handy in case you need to keep track of some RGB colour value
    double diffPct, reflPct, tranPct;
    double R_Shlick = 1;
@@ -191,11 +191,11 @@ void PathTrace(struct ray3D *ray, int depth, struct color *col, struct object3D 
       double n_delta_x = 0, n_delta_y = 0, n_delta_z = 0;
       obj->textureMap(obj->normalMap, a, b, &n_delta_x, &n_delta_y,
                       &n_delta_z);
-      n.px -= (2 * n_delta_x - 1);
-      n.py -= (2 * n_delta_y - 1);
-      n.pz -= (2 * n_delta_z - 1);
+      n.x -= (2 * n_delta_x - 1);
+      n.y -= (2 * n_delta_y - 1);
+      n.z -= (2 * n_delta_z - 1);
       normalize(&n);
-      n.pw = 1;
+      n.w = 1;
    }
 
    if (obj->alphaMap == NULL)
@@ -248,12 +248,12 @@ void PathTrace(struct ray3D *ray, int depth, struct color *col, struct object3D 
    if (obj->frontAndBack && dot(&ray->d, &n) > 0)
    {
       //printf("flip\n");
-      n.px *= -1;
-      n.py *= -1;
-      n.pz *= -1;
+      n.x *= -1;
+      n.y *= -1;
+      n.z *= -1;
    }
 
-   memcpy(&ray->p0, &p, sizeof(struct point3D));
+   memcpy(&ray->p0, &p, sizeof(struct point));
 
    // ******************** Importance sampling ************************
    dice = drand48();
@@ -277,10 +277,10 @@ void PathTrace(struct ray3D *ray, int depth, struct color *col, struct object3D 
       {
          // ray from intersection point to light source
          struct ray3D pToLight;
-         pToLight.p0.px = p.px;
-         pToLight.p0.py = p.py;
-         pToLight.p0.pz = p.pz;
-         pToLight.p0.pw = 1;
+         pToLight.p0.x = p.x;
+         pToLight.p0.y = p.y;
+         pToLight.p0.z = p.z;
+         pToLight.p0.w = 1;
 
          double prob = 0;
          dice = drand48();
@@ -296,15 +296,15 @@ void PathTrace(struct ray3D *ray, int depth, struct color *col, struct object3D 
 
          double x, y, z;
          light_list[curr_light]->randomPoint(light_list[curr_light], &x, &y, &z);
-         pToLight.d.px = x - p.px; //0 - p.px;
-         pToLight.d.py = y - p.py; //9.95 - p.py;
-         pToLight.d.pz = z - p.pz; //5 - p.pz;
-         pToLight.d.pw = 1;
+         pToLight.d.x = x - p.x; //0 - p.px;
+         pToLight.d.y = y - p.y; //9.95 - p.py;
+         pToLight.d.z = z - p.z; //5 - p.pz;
+         pToLight.d.w = 1;
 
          double light_lambda;
          struct object3D *obstruction = NULL;
-         struct point3D lightp;
-         struct point3D nls;
+         struct point lightp;
+         struct point nls;
          double La, Lb;
 
          findFirstHit(&pToLight, &light_lambda, obj, &obstruction, &lightp, &nls,
@@ -327,7 +327,7 @@ void PathTrace(struct ray3D *ray, int depth, struct color *col, struct object3D 
          if (obstruction == light_list[curr_light])
          {
             double A = pct * light_list[curr_light]->LSweight;
-            double dxd = pToLight.d.px * pToLight.d.px + pToLight.d.py * pToLight.d.py + pToLight.d.pz * pToLight.d.pz;
+            double dxd = pToLight.d.x * pToLight.d.x + pToLight.d.y * pToLight.d.y + pToLight.d.pzz pToLight.d.pzz
             normalize(&pToLight.d);
             double n_dot_l = fabs(dot(&n, &pToLight.d));
             double nls_dot_l = fabs(dot(&nls, &pToLight.d));
@@ -379,9 +379,9 @@ void PathTrace(struct ray3D *ray, int depth, struct color *col, struct object3D 
       struct ray3D ray_reflected;
       rayReflect(ray, &p, &n, &ray_reflected);
       //burnished reflection
-      ray->d.px = randn(ray_reflected.d.px, obj->refl_sig);
-      ray->d.py = randn(ray_reflected.d.py, obj->refl_sig);
-      ray->d.pz = randn(ray_reflected.d.pz, obj->refl_sig);
+      ray->d.x = randn(ray_reflected.d.x, obj->refl_sig);
+      ray->d.y = randn(ray_reflected.d.y, obj->refl_sig);
+      ray->d.z = randn(ray_reflected.d.z, obj->refl_sig);
       normalize(&ray->d);
    }
    else
@@ -397,9 +397,9 @@ void PathTrace(struct ray3D *ray, int depth, struct color *col, struct object3D 
       // moving from outside object to inside the object
       if (c > 0)
       {
-         n.px *= -1;
-         n.py *= -1;
-         n.pz *= -1;
+         n.x *= -1;
+         n.y *= -1;
+         n.z *= -1;
          n1 = r_index;
          theta = c;
       }
@@ -414,17 +414,17 @@ void PathTrace(struct ray3D *ray, int depth, struct color *col, struct object3D 
 
       struct ray3D refractRay;
       memcpy(&refractRay, ray, sizeof(struct ray3D));
-      refractRay.p0.px = p.px - n.px * THR;
-      refractRay.p0.py = p.py - n.py * THR;
-      refractRay.p0.pz = p.pz - n.pz * THR;
-      refractRay.p0.pw = 1;
+      refractRay.p0.x = p.x - n.x * THR;
+      refractRay.p0.y = p.y - n.y * THR;
+      refractRay.p0.z = p.z - n.z * THR;
+      refractRay.p0.w = 1;
       double s = 1 - (r * r) * (1 - (c * c));
       if (s > 0)
       {
-         refractRay.d.px = ray->d.px * r + (r * c - sqrt(s)) * n.px;
-         refractRay.d.py = ray->d.py * r + (r * c - sqrt(s)) * n.py;
-         refractRay.d.pz = ray->d.pz * r + (r * c - sqrt(s)) * n.pz;
-         refractRay.d.pw = 1;
+         refractRay.d.x = ray->d.x * r + (r * c - sqrt(s)) * n.x;
+         refractRay.d.y = ray->d.y * r + (r * c - sqrt(s)) * n.y;
+         refractRay.d.z = ray->d.z * r + (r * c - sqrt(s)) * n.z;
+         refractRay.d.w = 1;
          normalize(&refractRay.d);
          // Use Shlick's to figure out amount of reflected and refracted light
          double R0 = ((n1 - n2) / (n1 + n2)) * ((n1 - n2) / (n1 + n2));
@@ -479,11 +479,11 @@ int main(int argc, char *argv[])
    int sx;                 // Size of the  image
    int num_samples;        // Number of samples to use per pixel
    char output_name[1024]; // Name of the output file for the .ppm image file
-   struct point3D e;       // Camera view parameters 'e', 'g', and 'up'
-   struct point3D g;
-   struct point3D up;
+   struct point e;       // Camera view parameters 'e', 'g', and 'up'
+   struct point g;
+   struct point up;
    double du, dv;        // Increase along u and v directions for pixel coordinates
-   struct point3D pc, d; // Point structures to keep the coordinates of a pixel and
+   struct point pc, d; // Point structures to keep the coordinates of a pixel and
                          // the direction or a ray
    struct ray3D ray;     // Structure to keep the ray from e to a pixel
    struct color col; // Return colour for pixels
@@ -573,26 +573,26 @@ int main(int argc, char *argv[])
    // geometric transformations later on.
 
    // Camera center
-   e.px = 0;
-   e.py = 0;
-   e.pz = -15;
-   e.pw = 1;
+   e.x = 0;
+   e.y = 0;
+   e.z = -15;
+   e.w = 1;
 
    // To define the gaze vector, we choose a point 'pc' in the scene that
    // the camera is looking at, and do the vector subtraction pc-e.
    // Here we set up the camera to be looking at the origin.
-   g.px = 0 - e.px;
-   g.py = 0 - e.py;
-   g.pz = 0 - e.pz;
-   g.pw = 1;
+   g.x = 0 - e.x;
+   g.y = 0 - e.y;
+   g.z = 0 - e.z;
+   g.w = 1;
    // In this case, the camera is looking along the world Z axis, so
    // vector w should end up being [0, 0, -1]
 
    // Define the 'up' vector to be the Y axis
-   up.px = 0;
-   up.py = 1;
-   up.pz = 0;
-   up.pw = 1;
+   up.x = 0;
+   up.y = 1;
+   up.z = 0;
+   up.w = 1;
 
    // Set up view with given the above vectors, a 4x4 window,
    // and a focal length of -1 (why? where is the image plane?)
@@ -669,16 +669,16 @@ int main(int argc, char *argv[])
             col.G = 0;
             col.B = 0;
             // Random sample within the pixel's area
-            pc.px = (cam->wl + ((i + (drand48() - .5)) * du));
-            pc.py = (cam->wt + ((j + (drand48() - .5)) * dv));
-            pc.pz = cam->f;
-            pc.pw = 1;
+            pc.x = (cam->wl + ((i + (drand48() - .5)) * du));
+            pc.y = (cam->wt + ((j + (drand48() - .5)) * dv));
+            pc.z = cam->f;
+            pc.w = 1;
 
             // Convert image plane sample coordinates to world coordinates
             matVecMult(cam->C2W, &pc);
 
             // Now compute the ray direction
-            memcpy(&d, &pc, sizeof(struct point3D));
+            memcpy(&d, &pc, sizeof(struct point));
             subVectors(&cam->e, &d); // Direction is d=pc-e
             normalize(&d);
 

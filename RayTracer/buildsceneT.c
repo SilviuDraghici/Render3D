@@ -2,7 +2,7 @@
  struct object3D *o;
  struct pointLS *l;
  struct textureNode *t_list = NULL;
- struct point3D p, pl;
+ struct point p, pl;
  p.pw = 1, pl.pw = 1;
 
  double f = 1 ;

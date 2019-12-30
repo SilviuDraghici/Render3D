@@ -48,12 +48,12 @@ struct textureNode
 };
 
 /* The structure below defines a point in 3D homogeneous coordinates        */
-struct point3D
+struct point
 {
-   double px;
-   double py;
-   double pz;
-   double pw;
+   double x;
+   double y;
+   double z;
+   double w;
 };
 
 struct triangle
@@ -61,7 +61,7 @@ struct triangle
    int v1;
    int v2;
    int v3;
-   struct point3D n;
+   struct point n;
    struct triangle *next;
 };
 
@@ -69,9 +69,9 @@ struct triangle
    the point corresponds to the representation r(\lambda)=p+(\lambda)d */
 struct ray3D
 {
-   struct point3D p0; // Ray origin (at lambda=0)
-   struct point3D d;  // Ray direction
-   void (*rayPos)(struct ray3D *ray, double lambda, struct point3D *pos);
+   struct point p0; // Ray origin (at lambda=0)
+   struct point d;  // Ray direction
+   void (*rayPos)(struct ray3D *ray, double lambda, struct point *pos);
    // Function to return the
    // position along the ray
    // for a given lambda.
@@ -82,7 +82,7 @@ struct ray3D
                         // bounces through the scene
    double Ir, Ig, Ib;   // Accumulators of brightness for explicit
                         // light sampling
-   struct point3D srcN; // Source normal - needed for diffuse illumination
+   struct point srcN; // Source normal - needed for diffuse illumination
                         /* You may add data here to keep track of any values associated */
                         /* with this ray when implementing advanced raytracing features */
 
@@ -127,7 +127,7 @@ struct object3D
    // intersection point p, the normal at that point n, and the texture coordinates (a,b).
    // The texture coordinates are not used unless texImg!=NULL and a textureMap function
    // has been provided
-   void (*intersect)(struct object3D *obj, struct ray3D *ray, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b);
+   void (*intersect)(struct object3D *obj, struct ray3D *ray, double *lambda, struct point *p, struct point *n, double *a, double *b);
 
    // Texture mapping function. Takes normalized texture coordinates (a,b) and returns the
    // texture colour at that point using bi-linear interpolation
@@ -167,17 +167,17 @@ struct object3D
    // You can modify this data structure to add any data/methods you
    // require to implement advanced features.
    struct triangle *triangles;
-   struct point3D *vertices;
-   struct point3D *normals;
-   struct point3D *min;
-   struct point3D *max;
+   struct point *vertices;
+   struct point *normals;
+   struct point *min;
+   struct point *max;
 };
 
 /* The structure below defines a point light source */
 struct pointLS
 {
    struct color col; // Light source colour
-   struct point3D p0;    // Light source location
+   struct point p0;    // Light source location
    struct pointLS *next; // Pointer to next light in the scene
 };
 
@@ -187,10 +187,10 @@ struct pointLS
 */
 struct view
 {
-   struct point3D e; // Location of the camera center
-   struct point3D u; // u vector
-   struct point3D v; // v vector
-   struct point3D w; // w vector
+   struct point e; // Location of the camera center
+   struct point u; // u vector
+   struct point v; // v vector
+   struct point w; // w vector
    double f;         // Focal length
    double wl;        // Left edge in camera coordinates
    double wt;        // Top edge in camera coordinates
@@ -204,7 +204,7 @@ int main(int argc, char *argv[]); // Main raytracing function.
 
 // Raytracing
 void buildScene(void); // Scene set up. Defines objects and object transformations
-void findFirstHit(struct ray3D *ray, double *lambda, struct object3D *Os, struct object3D **obj, struct point3D *p, struct point3D *n, double *a, double *b);
+void findFirstHit(struct ray3D *ray, double *lambda, struct object3D *Os, struct object3D **obj, struct point *p, struct point *n, double *a, double *b);
 void PathTrace(struct ray3D *ray, int depth, struct color *col, struct object3D *Os, struct object3D *explicit_l);
 
 #endif

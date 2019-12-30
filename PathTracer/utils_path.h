@@ -42,17 +42,17 @@ inline void matMult(double A[4][4], double B[4][4])
    memcpy(B, C, 16 * sizeof(double));
 }
 
-inline void matVecMult(double A[4][4], struct point3D *pt)
+inline void matVecMult(double A[4][4], struct point *pt)
 {
    // Matrix vector multiplication pt=A*pt, notice that the result
    // is left in pt. This is useful for performing transformations
    // on points and rays
-   struct point3D pr;
+   struct point pr;
 
-   pr.px = (A[0][0] * pt->px) + (A[0][1] * pt->py) + (A[0][2] * pt->pz) + (A[0][3] * pt->pw);
-   pr.py = (A[1][0] * pt->px) + (A[1][1] * pt->py) + (A[1][2] * pt->pz) + (A[1][3] * pt->pw);
-   pr.pz = (A[2][0] * pt->px) + (A[2][1] * pt->py) + (A[2][2] * pt->pz) + (A[2][3] * pt->pw);
-   pr.pw = (A[3][0] * pt->px) + (A[3][1] * pt->py) + (A[3][2] * pt->pz) + (A[3][3] * pt->pw);
+   pr.x = (A[0][0] * pt->x) + (A[0][1] * pt->y) + (A[0][2] * pt->pz + (A[0][3] * pt->pww
+   pr.y = (A[1][0] * pt->x) + (A[1][1] * pt->y) + (A[1][2] * pt->pzz+ (A[1][3] * pt->pw)w
+   pr.z = (A[2][0] * pt->x) + (A[2][1] * pt->y) + (A[2][2] * pt->pz + (A[2][3] * pt->pw)w
+   pr.w = (A[3][0] * pt->x) + (A[3][1] * pt->y) + (A[3][2] * pt->pz + (A[3][3] * pt->pww
    memcpy(pt, &pr, 4 * sizeof(double));
 }
 
@@ -74,97 +74,97 @@ void Translate(struct object3D *o, double tx, double ty, double tz); // 3D trans
 void Scale(struct object3D *o, double sx, double sy, double sz);     // 3D non-uniform scaling
 void printmatrix(double mat[4][4]);
 void solveQuadratic(struct ray3D *ray, double *l1, double *l2);
-void rayReflect(struct ray3D *ray_orig, struct point3D *p, struct point3D *n, struct ray3D *ray_reflected);
+void rayReflect(struct ray3D *ray_orig, struct point *p, struct point *n, struct ray3D *ray_reflected);
 // Vector management
-inline void normalize(struct point3D *v)
+inline void normalize(struct point *v)
 {
    // Normalizes a vector to unit length.
    // Note that this assumes the w component of v is one, so make
    // sure you don't have homogeneous vectors with w != 1
    // floating around or things will go south.
    double l;
-   l = v->px * v->px;
-   l += (v->py * v->py);
-   l += (v->pz * v->pz);
+   l = v->x * v->x;
+   l += (v->y * v->y);
+   l += (v->z * v->z);
    l = 1.0 / sqrt(l);
-   v->px *= l;
-   v->py *= l;
-   v->pz *= l;
+   v->x *= l;
+   v->y *= l;
+   v->z *= l;
 }
 
-inline double dot(struct point3D *u, struct point3D *v)
+inline double dot(struct point *u, struct point *v)
 {
    // Computes the dot product of 3D vectors u and v.
    // The function assumes the w components of both vectors
    // are 1.
-   return ((u->px * v->px) + (u->py * v->py) + (u->pz * v->pz));
+   return ((u->x * v->x) + (u->y * v->y) + (u->pzz v->pzz;
 }
 
-inline struct point3D *cross(struct point3D *u, struct point3D *v)
+inline struct point *cross(struct point *u, struct point *v)
 {
    // Allocates and returns a vector with the cross product u x v.
    // The function assumes the w components of both vectors
    // are 1.
-   struct point3D *cp;
-   cp = (struct point3D *)calloc(1, sizeof(struct point3D));
+   struct point *cp;
+   cp = (struct point *)calloc(1, sizeof(struct point));
 
-   cp->px = (u->py * v->pz) - (v->py * u->pz);
-   cp->py = (v->px * u->pz) - (u->px * v->pz);
-   cp->pz = (u->px * v->py) - (v->px * u->py);
-   cp->pw = 1;
+   cp->x = (u->y * v->pz - (v->y * u->pzz
+   cp->y = (v->x * u->pz - (u->x * v->pz;
+   cp->z = (u->x * v->y) - (v->x * u->y);
+   cp->w = 1;
    return (cp);
 }
 
-inline void addVectors(struct point3D *a, struct point3D *b)
+inline void addVectors(struct point *a, struct point *b)
 {
    // Performs the vector addition b=a+b. Note the result
    // is left in b. This function assumes the w components
    // of both vectors are set to 1.
-   b->px = b->px + a->px;
-   b->py = b->py + a->py;
-   b->pz = b->pz + a->pz;
-   b->pw = 1; // Mind the homogeneous coordinate!
+   b->x = b->x + a->x;
+   b->y = b->y + a->y;
+   b->z = b->z + a->z;
+   b->w = 1; // Mind the homogeneous coordinate!
 }
 
-inline void subVectors(struct point3D *a, struct point3D *b)
+inline void subVectors(struct point *a, struct point *b)
 {
    // Performs the vector subtraction b=b-a. Note the result
    // is left in b. This function assumes the w components
    // of both vectors are set to 1.
-   b->px = b->px - a->px;
-   b->py = b->py - a->py;
-   b->pz = b->pz - a->pz;
-   b->pw = 1; // Mind the homogeneous coordinate!
+   b->x = b->x - a->x;
+   b->y = b->y - a->y;
+   b->z = b->z - a->z;
+   b->w = 1; // Mind the homogeneous coordinate!
 }
 
-inline double length(struct point3D *a)
+inline double length(struct point *a)
 {
    // Compute and return the length of a vector
-   return (sqrt((a->px * a->px) + (a->py * a->py) + (a->pz * a->pz)));
+   return (sqrt((a->x * a->x) + (a->y * a->y) + (a->pzz a->pzz);
 }
 
 // Functions to instantiate primitives
-struct point3D *newPoint(double px, double py, double pz);
+struct point *newPoint(double px, double py, double pz);
 
 // Ray management inlines
-inline void rayPosition(struct ray3D *ray, double lambda, struct point3D *pos)
+inline void rayPosition(struct ray3D *ray, double lambda, struct point *pos)
 {
    // Compute and return 3D position corresponding to a given lambda
    // for the ray.
-   pos->px = ray->p0.px + (lambda * ray->d.px);
-   pos->py = ray->p0.py + (lambda * ray->d.py);
-   pos->pz = ray->p0.pz + (lambda * ray->d.pz);
-   pos->pw = 1;
+   pos->x = ray->p0.x + (lambda * ray->d.x);
+   pos->y = ray->p0.y + (lambda * ray->d.y);
+   pos->z = ray->p0.z + (lambda * ray->d.z);
+   pos->w = 1;
 }
 
-inline void initRay(struct ray3D *ray, struct point3D *p0, struct point3D *d)
+inline void initRay(struct ray3D *ray, struct point *p0, struct point *d)
 {
    // Allocate a new ray structure and initialize it to the values
    // given by p0 and d. Note that this function DOES NOT normalize
    // d to be a unit vector.
 
-   memcpy(&ray->p0, p0, sizeof(struct point3D));
-   memcpy(&ray->d, d, sizeof(struct point3D));
+   memcpy(&ray->p0, p0, sizeof(struct point));
+   memcpy(&ray->d, d, sizeof(struct point));
    ray->rayPos = &rayPosition;
    ray->R = 1.0;
    ray->G = 1.0;
@@ -172,15 +172,15 @@ inline void initRay(struct ray3D *ray, struct point3D *p0, struct point3D *d)
    ray->Ir = 0;
    ray->Ig = 0;
    ray->Ib = 0;
-   ray->srcN.px = 0;
-   ray->srcN.py = 0;
-   ray->srcN.pz = 1;
-   ray->srcN.pw = 1;
+   ray->srcN.x = 0;
+   ray->srcN.y = 0;
+   ray->srcN.z = 1;
+   ray->srcN.w = 1;
 }
 
 // Ray and normal transformations to enable the use of canonical intersection tests with transformed objects
 void rayTransform(struct ray3D *ray_orig, struct ray3D *ray_transformed, struct object3D *obj);
-void normalTransform(struct point3D *n_orig, struct point3D *n_transformed, struct object3D *obj);
+void normalTransform(struct point *n_orig, struct point *n_transformed, struct object3D *obj);
 
 // Functions to create new objects, one for each type of object implemented.
 // You'll need to add code for these functions in utils.c
@@ -196,22 +196,22 @@ void cylCoordinates(struct object3D *plane, double a, double b, double *x, doubl
 void planeSample(struct object3D *plane, double *x, double *y, double *z);
 void sphereSample(struct object3D *plane, double *x, double *y, double *z);
 void cylSample(struct object3D *plane, double *x, double *y, double *z);
-void hemiSphereCoordinates(struct point3D *n, double *x, double *y, double *z);
+void hemiSphereCoordinates(struct point *n, double *x, double *y, double *z);
 
 // Importance Sampling for BRDF of diffuse surfaces
-void cosWeightedSample(struct point3D *n, struct point3D *d);
+void cosWeightedSample(struct point *n, struct point *d);
 
 // Functions to compute intersections for objects.
 // You'll need to add code for these in utils.c
-void planeIntersect(struct object3D *plane, struct ray3D *r, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b);
-void sphereIntersect(struct object3D *sphere, struct ray3D *r, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b);
-void cylIntersect(struct object3D *cylinder, struct ray3D *r, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b);
-void meshIntersect(struct object3D *mesh, struct ray3D *ray, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b);
-void triangleIntersect(struct triangle *triangle, struct object3D *mesh, struct ray3D *ray, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b);
+void planeIntersect(struct object3D *plane, struct ray3D *r, double *lambda, struct point *p, struct point *n, double *a, double *b);
+void sphereIntersect(struct object3D *sphere, struct ray3D *r, double *lambda, struct point *p, struct point *n, double *a, double *b);
+void cylIntersect(struct object3D *cylinder, struct ray3D *r, double *lambda, struct point *p, struct point *n, double *a, double *b);
+void meshIntersect(struct object3D *mesh, struct ray3D *ray, double *lambda, struct point *p, struct point *n, double *a, double *b);
+void triangleIntersect(struct triangle *triangle, struct object3D *mesh, struct ray3D *ray, double *lambda, struct point *p, struct point *n, double *a, double *b);
 void boundingBoxIntersect(struct object3D *mesh, struct ray3D *ray, double *lambda);
-void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struct point3D *p, struct point3D *n, double *a, double *b);
+void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struct point *p, struct point *n, double *a, double *b);
 
-void importMesh(char *filename, struct triangle **tg_list, struct point3D **v, struct point3D **n, struct point3D *max_pt, struct point3D *min_pt);
+void importMesh(char *filename, struct triangle **tg_list, struct point **v, struct point **n, struct point *max_pt, struct point *min_pt);
 
 // Functions to texture-map objects
 // You will need to add code for these if you implement texture mapping.
@@ -228,7 +228,7 @@ void addAreaLight(double sx, double sy, double nx, double ny, double nz,
 
 // Function to set up the camera and viewing coordinate frame.
 // You will have to add code to this function's body in utils.c
-struct view *setupView(struct point3D *e, struct point3D *g, struct point3D *up, double f, double wl, double wt, double wsize);
+struct view *setupView(struct point *e, struct point *g, struct point *up, double f, double wl, double wt, double wsize);
 
 // Image management output. Note that you will need to free() any images you
 // allocate with newImage() using deleteImage().

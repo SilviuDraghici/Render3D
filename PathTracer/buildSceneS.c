@@ -1,7 +1,7 @@
 void buildScene(void)
 {
  struct object3D *o;
- struct point3D p;
+ struct point p;
 
  struct textureNode *t_list = NULL;
 

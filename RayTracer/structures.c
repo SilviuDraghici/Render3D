@@ -22,11 +22,11 @@ void newTree(struct object3D **object_list, double hierarchyMat[4][4], struct co
    ScaleMat(cylTransforms, 0.5, yscale, 0.5);
 
    o = newCyl(.05, .95, 0, 0, stemR, stemG, stemB, 1, 1, 6);
-   memcpy(o->T, cylTransforms, 16 * sizeof(double));
+   memcpy(o->T.T, cylTransforms, 16 * sizeof(double));
 
-   matMult(hierarchyMat, o->T);
+   matMult(hierarchyMat, o->T.T);
 
-   invert(&o->T[0][0], &o->Tinv[0][0]);
+   invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
    insertObject(o, object_list);
    if (1 >= depth)
    {
@@ -62,11 +62,11 @@ void newBranch(struct object3D **object_list, double hierarchyMat[4][4], struct 
 
    struct object3D *o;
    o = newCyl(.05, .95, 0, 0, stemR, stemG, stemB, 1, 1, 6);
-   memcpy(o->T, cylTransforms, 16 * sizeof(double));
+   memcpy(o->T.T, cylTransforms, 16 * sizeof(double));
 
-   matMult(hierarchyMat, o->T);
+   matMult(hierarchyMat, o->T.T);
 
-   invert(&o->T[0][0], &o->Tinv[0][0]);
+   invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
    insertObject(o, object_list);
 
    if (curr_depth + 1 >= depth)
@@ -122,16 +122,16 @@ void newFlower(struct object3D **object_list, struct color *petalCol, double hie
    RotateX(o, -PI / 2);
    Scale(o, fscale * 0.1, fscale * stemscale, fscale * 0.1);
 
-   matMult(hierarchyMat, o->T);
-   invert(&o->T[0][0], &o->Tinv[0][0]);
+   matMult(hierarchyMat, o->T.T);
+   invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
    insertObject(o, object_list);
 
    //newSphere(ra,  rd, rs, rg,  r, g, b, alpha, r_index, shiny)
    o = newSphere(.05, .95, .95, .75, 1 - petalCol->R, 1 - petalCol->G, 1 - petalCol->B, 1, 1, 6);
    Scale(o, fscale * 0.3, fscale * 0.1, fscale * 0.3);
    Translate(o, 0, fscale * stemscale, 0);
-   matMult(hierarchyMat, o->T);
-   invert(&o->T[0][0], &o->Tinv[0][0]);
+   matMult(hierarchyMat, o->T.T);
+   invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
    insertObject(o, object_list);
 
    for (int i = 0; i < 5; i++)
@@ -142,8 +142,8 @@ void newFlower(struct object3D **object_list, struct color *petalCol, double hie
       RotateZ(o, 0.25);
       Translate(o, 0.1, fscale * stemscale - 0.04, 0);
       RotateY(o, i * 2 * PI / 5);
-      matMult(hierarchyMat, o->T);
-      invert(&o->T[0][0], &o->Tinv[0][0]);
+      matMult(hierarchyMat, o->T.T);
+      invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
       insertObject(o, object_list);
    }
 }

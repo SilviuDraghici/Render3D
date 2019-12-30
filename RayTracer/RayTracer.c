@@ -27,7 +27,7 @@ void buildScene(void)
 #include "buildscene.c" // <-- Import the scene definition!
 }
 
-void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct ray3D *ray, int depth, double a, double b, struct color *col)
+void rtShade(struct object3D *obj, struct point *p, struct point *n, struct ray3D *ray, int depth, double a, double b, struct color *col)
 {
    // This function implements the shading model as described in lecture. It takes
    // - A pointer to the first object intersected by the ray (to get the colour properties)
@@ -63,11 +63,8 @@ void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct 
    }
 
    //vector from intersection point to camera
-   struct point3D c;
-   c.px = -ray->d.px;
-   c.py = -ray->d.py;
-   c.pz = -ray->d.pz;
-   c.pw = 1;
+   struct point c;
+   c = -ray->d;
    normalize(&c);
 
    double ra = obj->alb.ra, rd = obj->alb.rd, rs = obj->alb.rs, rg = obj->alb.rg;
@@ -82,10 +79,8 @@ void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct 
    ambient = objcol * ra;
 
    struct color diffuse;
-   diffuse.R = 0, diffuse.G = 0, diffuse.B = 0;
 
    struct color specular;
-   specular.R = 0, specular.G = 0, specular.B = 0;
 
    struct color global;
 
@@ -96,22 +91,14 @@ void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct 
 
       //ray from intersection point to light source
       struct ray3D pToLight;
-      // pToLight.p0.px = p->px - n->px*THR;
-      // pToLight.p0.py = p->py - n->py*THR;
-      // pToLight.p0.pz = p->pz - n->pz*THR;
-      pToLight.p0.px = p->px;
-      pToLight.p0.py = p->py;
-      pToLight.p0.pz = p->pz;
-
-      pToLight.p0.pw = 1;
-      pToLight.d.px = light->p0.px - p->px;
-      pToLight.d.py = light->p0.py - p->py;
-      pToLight.d.pz = light->p0.pz - p->pz;
-      pToLight.d.pw = 1;
+      // pToLight.p0 = *p - n * THR;
+      pToLight.p0 = *p;
+      
+      pToLight.d = light->p0 - *p;
       double light_lambda;
       //we don't care about these details of the hit
       struct object3D *dummyobj = NULL;
-      struct point3D dummyp;
+      struct point dummyp;
       double dummya;
 #ifdef DEBUG
       if (0)
@@ -136,11 +123,8 @@ void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct 
       if (!(THR < light_lambda && light_lambda < 1))
       {
          //vector from intersection point to light
-         struct point3D s;
-         s.px = light->p0.px - p->px;
-         s.py = light->p0.py - p->py;
-         s.pz = light->p0.pz - p->pz;
-         s.pw = 1;
+         struct point s;
+         s = light->p0 - *p;
          normalize(&s);
 
          double n_dot_s = MAX(0, dot(n, &s));
@@ -163,9 +147,7 @@ void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct 
          //perfect light ray reflection
          struct ray3D light_reflection;
          normalize(&pToLight.d);
-         pToLight.d.px = -pToLight.d.px;
-         pToLight.d.py = -pToLight.d.py;
-         pToLight.d.pz = -pToLight.d.pz;
+         pToLight.d = -pToLight.d;
          rayReflect(&pToLight, p, n, &light_reflection);
          double c_dot_m = dot(&c, &(light_reflection.d));
 
@@ -232,7 +214,7 @@ void rtShade(struct object3D *obj, struct point3D *p, struct point3D *n, struct 
    return;
 }
 
-void findFirstHit(struct ray3D *ray, double *lambda, struct object3D *Os, struct object3D **obj, struct point3D *p, struct point3D *n, double *a, double *b)
+void findFirstHit(struct ray3D *ray, double *lambda, struct object3D *Os, struct object3D **obj, struct point *p, struct point *n, double *a, double *b)
 {
    // Find the closest intersection between the ray and any objects in the scene.
    // Inputs:
@@ -248,13 +230,9 @@ void findFirstHit(struct ray3D *ray, double *lambda, struct object3D *Os, struct
    //   *n      -  A pointer to a 3D point structure so you can return the normal at the intersection point
    //   *a, *b  -  Pointers toward double variables so you can return the texture coordinates a,b at the intersection point
 
-   /////////////////////////////////////////////////////////////
-   // TO DO: Implement this function. See the notes for
-   // reference of what to do in here
-   /////////////////////////////////////////////////////////////
    struct object3D *curr_obj = object_list;
    double curr_l, curr_a, curr_b;
-   struct point3D curr_p, curr_n;
+   struct point curr_p, curr_n;
    *lambda = INFINITY;
 
    while (curr_obj != NULL)
@@ -296,27 +274,19 @@ void rayTrace(struct ray3D *ray, int depth, struct color *col, struct object3D *
    double lambda;               // Lambda at intersection
    double a, b;                 // Texture coordinates
    struct object3D *obj = NULL; // Pointer to object at intersection
-   struct point3D p;            // Intersection point
-   struct point3D n;            // Normal at intersection
+   struct point p;            // Intersection point
+   struct point n;            // Normal at intersection
    struct color I;          // Colour returned by shading function
 
    if (depth > MAX_DEPTH) // Max recursion depth reached. Return invalid colour.
    {
-      col->R = -1;
-      col->G = -1;
-      col->B = -1;
+      *col = -1;
       return;
    }
-   ///////////////////////////////////////////////////////
-   // TO DO: Complete this function. Refer to the notes
-   // if you are unsure what to do here.
-   ///////////////////////////////////////////////////////
    findFirstHit(ray, &lambda, Os, &obj, &p, &n, &a, &b);
    if (lambda == -1 || obj == NULL)
    {
-      col->R = -1;
-      col->G = -1;
-      col->B = -1;
+      *col = -1;
       return;
    }
    rtShade(obj, &p, &n, ray, depth, a, b, col);
@@ -332,11 +302,11 @@ int main(int argc, char *argv[])
    int sx;                 // Size of the raytraced image
    int antialiasing;       // Flag to determine whether antialiaing is enabled or disabled
    char output_name[1024]; // Name of the output file for the raytraced .ppm image
-   struct point3D e;       // Camera view parameters 'e', 'g', and 'up'
-   struct point3D g;
-   struct point3D up;
+   struct point e;       // Camera view parameters 'e', 'g', and 'up'
+   struct point g;
+   struct point up;
    double du, dv;               // Increase along u and v directions for pixel coordinates
-   struct point3D pc, d;        // Point structures to keep the coordinates of a pixel and
+   struct point pc, d;        // Point structures to keep the coordinates of a pixel and
                                 // the direction or a ray
    struct ray3D ray;            // Structure to keep the ray from e to a pixel
    struct color col;        // Return colour for raytraced pixels
@@ -396,36 +366,36 @@ int main(int argc, char *argv[])
    // geometric transformations later on.
 
    // Camera center is at (0,0,-1)
-   e.px = 0;
-   e.py = 0;
+   e.x = 0;
+   e.y = 0;
 #ifdef CAMERA
    e.pz = -8;
 #endif
 #ifndef CAMERA
-   e.pz = -1;
+   e.z = -1;
 #endif
-   e.pw = 1;
+   e.w = 1;
 
    // To define the gaze vector, we choose a point 'pc' in the scene that
    // the camera is looking at, and do the vector subtraction pc-e.
    // Here we set up the camera to be looking at the origin.
-   g.px = 0 - e.px;
+   g.x = 0 - e.x;
 #ifdef CAMERA
-   g.py = -3 - e.py;
+   g.y = -3 - e.y;
 #endif
 #ifndef CAMERA
-   g.py = -0 - e.py;
+   g.y = 0 - e.y;
 #endif
-   g.pz = 0 - e.pz;
-   g.pw = 1;
+   g.z = 0 - e.z;
+   g.w = 1;
    // In this case, the camera is looking along the world Z axis, so
    // vector w should end up being [0, 0, -1]
 
    // Define the 'up' vector to be the Y axis
-   up.px = 0;
-   up.py = 1;
-   up.pz = 0;
-   up.pw = 1;
+   up.x = 0;
+   up.y = 1;
+   up.z = 0;
+   up.w = 1;
 
    // Set up view with given the above vectors, a 4x4 window,
    // and a focal length of -1 (why? where is the image plane?)
@@ -452,15 +422,6 @@ int main(int argc, char *argv[])
    background.B = 0;
 
    // Do the raytracing
-   //////////////////////////////////////////////////////
-   // TO DO: You will need code here to do the raytracing
-   //        for each pixel in the image. Refer to the
-   //        lecture notes, in particular, to the
-   //        raytracing pseudocode, for details on what
-   //        to do here. Make sure you undersand the
-   //        overall procedure of raytracing for a single
-   //        pixel.
-   //////////////////////////////////////////////////////
    du = cam->wsize / (sx - 1);  // du and dv. In the notes in terms of wl and wr, wt and wb,
    dv = -cam->wsize / (sx - 1); // here we use wl, wt, and wsize. du=dv since the image is
                                 // and dv is negative since y increases downward in pixel
@@ -486,35 +447,23 @@ int main(int argc, char *argv[])
       for (i = 0; i < sx; i++)
 #endif
       {
-///////////////////////////////////////////////////////////////////
-// TO DO - complete the code that should be in this loop to do the
-//         raytracing!
-///////////////////////////////////////////////////////////////////
 #ifdef DEBUG
          printf("------------------------------------\n");
          printf("pixel: (%d %d)\n", i, j);
 #endif
-         pc.px = cam->wl + i * du;
-         pc.py = cam->wt + j * dv;
-         pc.pz = cam->f;
-         pc.pw = 1;
+         pc.x = cam->wl + i * du;
+         pc.y = cam->wt + j * dv;
+         pc.z = cam->f;
+         pc.w = 1;
 
          matVecMult(cam->C2W, &pc);
 
-         ray.d.px = pc.px - cam->e.px;
-         ray.d.py = pc.py - cam->e.py;
-         ray.d.pz = pc.pz - cam->e.pz;
-         ray.d.pw = 1;
+         ray.d = pc - cam->e;
          normalize(&ray.d);
 
-         ray.p0.px = pc.px;
-         ray.p0.py = pc.py;
-         ray.p0.pz = pc.pz;
-         ray.p0.pw = 1;
+         ray.p0 = pc;
          depth = 1;
-         col.R = 0;
-         col.G = 0;
-         col.B = 0;
+         col = 0;
          rayTrace(&ray, depth, &col, NULL);
          if (col.R == -1)
          {

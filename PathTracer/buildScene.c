@@ -29,7 +29,7 @@ void buildScene(void)
    //       forget to set up the inverse transform matrix!
 
    struct object3D *o;
-   struct point3D p;
+   struct point p;
 
    // Cornell box
    o = newSphere(1.0, 0.0, 0.0, .75, .25, .25, .05, 1.4); // Left
