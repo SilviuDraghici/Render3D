@@ -22,65 +22,12 @@
 #define THR 0.0001
 // Functions to apply transformations to objects.
 // If you add any transformations to the list below, document them carefully
-inline void matMult(double A[4][4], double B[4][4])
-{
-   // Performs matrix multiplication B=A*B (notice the result is left
-   // in B). This is so that we can compose transformations by
-   // premultiplying a given transformation matrix by one of our
-   // simple transformation matrices (rotate, translate, scale, etc).
-   // Note the indexing convention is [row][col]
-
-   double C[4][4];
-   int i, j, k;
-
-   memset(C, 0, 16 * sizeof(double));
-   for (i = 0; i < 4; i++)
-      for (j = 0; j < 4; j++)
-         C[i][j] = (A[i][0] * B[0][j]) + (A[i][1] * B[1][j]) + (A[i][2] * B[2][j]) + (A[i][3] * B[3][j]);
-
-   memcpy(B, C, 16 * sizeof(double));
-}
-
-inline void matVecMult(double A[4][4], struct point *pt)
-{
-   // Matrix vector multiplication pt=A*pt, notice that the result
-   // is left in pt. This is useful for performing transformations
-   // on points and rays
-   struct point pr;
-
-   pr.x = (A[0][0] * pt->x) + (A[0][1] * pt->y) + (A[0][2] * pt->z) + (A[0][3] * pt->w);
-   pr.y = (A[1][0] * pt->x) + (A[1][1] * pt->y) + (A[1][2] * pt->z) + (A[1][3] * pt->w);
-   pr.z = (A[2][0] * pt->x) + (A[2][1] * pt->y) + (A[2][2] * pt->z) + (A[2][3] * pt->w);
-   pr.w = (A[3][0] * pt->x) + (A[3][1] * pt->y) + (A[3][2] * pt->z) + (A[3][3] * pt->w);
-   memcpy(pt, &pr, 4 * sizeof(double));
-}
 
 // Matrix manipulation - Mind the fact that these functions will change the matrix T - for hierarchical objects you will
 // need to be careful to make local copies for manipulation where needed.
 void invert(double *T, double *Tinv);
-void RotateXMat(double T[4][4], double theta);                      // X-axis rotation by theta radians
-void RotateYMat(double T[4][4], double theta);                      // Y-axis rotation by theta radians
-void RotateZMat(double T[4][4], double theta);                      // Z-axis rotation by theta radians
-void TranslateMat(double T[4][4], double tx, double ty, double tz); // 3D translation
-void ScaleMat(double T[4][4], double sx, double sy, double sz);     // 3D non-uniform scaling
 
-// Functions for geometric manipulation of *INDIVIDUAL* objects - be careful with composite objects: You will have
-// to apply any transforms to each of the components.
-void RotateX(struct object3D *o, double theta);                      // X-axis rotation by theta radians
-void RotateY(struct object3D *o, double theta);                      // Y-axis rotation by theta radians
-void RotateZ(struct object3D *o, double theta);                      // Z-axis rotation by theta radians
-void Translate(struct object3D *o, double tx, double ty, double tz); // 3D translation
-void Scale(struct object3D *o, double sx, double sy, double sz);     // 3D non-uniform scaling
 void printmatrix(double mat[4][4]);
-
-
-//Functions for returning affine transforms
-struct transform Sc(double Xscale, double Yscale, double Zscale);
-struct transform Tr(double Xtranslate, double Ytranslate, double Ztranslate);
-struct transform RotX(double theta);
-struct transform RotY(double theta);
-struct transform RotZ(double theta);
-
 
 // Vector management
 inline void normalize(struct point *v)
@@ -122,28 +69,6 @@ inline struct point *cross(struct point *u, struct point *v)
    return (cp);
 }
 
-inline void addVectors(struct point *a, struct point *b)
-{
-   // Performs the vector addition b=a+b. Note the result
-   // is left in b. This function assumes the w components
-   // of both vectors are set to 1.
-   b->x = b->x + a->x;
-   b->y = b->y + a->y;
-   b->z = b->z + a->z;
-   b->w = 1; // Mind the homogeneous coordinate!
-}
-
-inline void subVectors(struct point *a, struct point *b)
-{
-   // Performs the vector subtraction b=b-a. Note the result
-   // is left in b. This function assumes the w components
-   // of both vectors are set to 1.
-   b->x = b->x - a->x;
-   b->y = b->y - a->y;
-   b->z = b->z - a->z;
-   b->w = 1; // Mind the homogeneous coordinate!
-}
-
 inline double length(struct point *a)
 {
    // Compute and return the length of a vector
@@ -159,10 +84,7 @@ inline void rayPosition(struct ray3D *ray, double lambda, struct point *pos)
 {
    // Compute and return 3D position corresponding to a given lambda
    // for the ray.
-   pos->x = ray->p0.x + (lambda * ray->d.x);
-   pos->y = ray->p0.y + (lambda * ray->d.y);
-   pos->z = ray->p0.z + (lambda * ray->d.z);
-   pos->w = 1;
+   *pos = ray->p0 + (ray->d * lambda);
 }
 
 struct point path(double lambda);
@@ -175,7 +97,6 @@ inline void initRay(struct ray3D *ray, struct point *p0, struct point *d)
 
    memcpy(&ray->p0, p0, sizeof(struct point));
    memcpy(&ray->d, d, sizeof(struct point));
-   ray->rayPos = &rayPosition;
 }
 
 // Ray and normal transformations to enable the use of canonical intersection tests with transformed objects
@@ -195,9 +116,9 @@ struct object3D *newBox(double ra, double rd, double rs, double rg, double r, do
 
 void importMesh(struct triangle **tg_list, struct point **v);
 
-void newTree(struct object3D **object_list, double hierarchyMat[4][4], struct color *col, double distFromC, double numBranches, double maxRotation, double depth);
-void newBranch(struct object3D **object_list, double hierarchyMat[4][4], struct color *col, double numBranches, double maxRotation, double curr_depth, double depth);
-void newFlower(struct object3D **object_list, struct color *petalCol, double hierarchyMat[4][4]);
+void newTree(struct object3D **object_list, struct transform hierarchy, struct color *col, double distFromC, double numBranches, double maxRotation, double depth);
+void newBranch(struct object3D **object_list, struct transform hierarchy, struct color *col, double numBranches, double maxRotation, double curr_depth, double depth);
+void newFlower(struct object3D **object_list, struct color *petalCol, struct transform hierarchy);
 
 // Functions to obtain surface coordinates on objects
 void planeCoordinates(struct object3D *plane, double a, double b, double *x, double *y, double *z);

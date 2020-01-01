@@ -11,7 +11,7 @@
 */
 
 #include "utils.h"
-
+#include "affineTransforms.h"
 // A useful 4x4 identity matrix which can be used at any point to
 // initialize or reset object transformations
 double eye4x4[4][4] = {{1.0, 0.0, 0.0, 0.0},
@@ -475,16 +475,6 @@ void meshIntersect(struct object3D *mesh, struct ray3D *ray, double *lambda, str
    }
 }
 
-void newTree(struct object3D **object_list, struct point *center, double maxDistFromC, double numLeaves, double depth) {
-   struct object3D *o;
-   o = newSphere(.05, .95, .35, .35, 1, .25, .25, 1, 1, 6);  // Initialize a sphere
-   Scale(o, 1.5, .75, .75);                                  // Apply a few transforms (Translate * Rotate * Scale)
-   RotateZ(o, PI / 4);
-   Translate(o, 2.0, 2.5, 1.5);
-   invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-   insertObject(o, object_list);
-}
-
 void planeIntersect(struct object3D *plane, struct ray3D *ray, double *lambda, struct point *p, struct point *n, double *a, double *b) {
    // Computes and returns the value of 'lambda' at the intersection
    // between the specified ray and the specified canonical plane.
@@ -622,7 +612,7 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
    plane = newPlane(box->alb.ra, box->alb.rd, box->alb.rs, box->alb.rg, box->col.R, box->col.G, box->col.B, box->alpha, box->r_index, box->shinyness);
    // get the intersection between 6 planes and see which one is closest
    // xy plane at z = 0.5
-   Translate(plane, 0, 0, 1);
+   plane->T *= Tr(0, 0, 1);
    invert(&plane->T.T[0][0], &plane->Tinv.T[0][0]);
    planeIntersect(plane, &ray_transformed, &l, &temp_pt, &temp_n, &temp_a, &temp_b);
    if (l != -1 && l > THR) {
@@ -632,7 +622,7 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
       normalTransform(&temp_n, n, box);
    }
    l = -1;
-   RotateX(plane, PI / 2);
+   plane->T *= RotX(PI / 2);
    invert(&plane->T.T[0][0], &plane->Tinv.T[0][0]);
    planeIntersect(plane, &ray_transformed, &l, &temp_pt, &temp_n, &temp_a, &temp_b);
 
@@ -644,7 +634,7 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
    }
    l = -1;
 
-   RotateX(plane, PI / 2);
+   plane->T *= RotX(PI / 2);
    invert(&plane->T.T[0][0], &plane->Tinv.T[0][0]);
    planeIntersect(plane, &ray_transformed, &l, &temp_pt, &temp_n, &temp_a, &temp_b);
    if (l != -1 && l > THR && (*lambda == -1 || l < *lambda)) {
@@ -655,7 +645,7 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
    }
    l = -1;
 
-   RotateX(plane, PI / 2);
+   plane->T *= RotX(PI / 2);
    invert(&plane->T.T[0][0], &plane->Tinv.T[0][0]);
    planeIntersect(plane, &ray_transformed, &l, &temp_pt, &temp_n, &temp_a, &temp_b);
    if (l != -1 && l > THR && (*lambda == -1 || l < *lambda)) {
@@ -666,7 +656,7 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
    }
    l = -1;
 
-   RotateZ(plane, PI / 2);
+   plane->T *= RotZ(PI / 2);
    invert(&plane->T.T[0][0], &plane->Tinv.T[0][0]);
    planeIntersect(plane, &ray_transformed, &l, &temp_pt, &temp_n, &temp_a, &temp_b);
    if (l != -1 && l > THR && (*lambda == -1 || l < *lambda)) {
@@ -677,7 +667,7 @@ void boxIntersect(struct object3D *box, struct ray3D *ray, double *lambda, struc
    }
    l = -1;
 
-   RotateZ(plane, PI);
+   plane->T *= RotZ(PI);
    invert(&plane->T.T[0][0], &plane->Tinv.T[0][0]);
    planeIntersect(plane, &ray_transformed, &l, &temp_pt, &temp_n, &temp_a, &temp_b);
    if (l != -1 && l > THR && (*lambda == -1 || l < *lambda)) {
@@ -1207,238 +1197,6 @@ void invert(double *T, double *Tinv) {
    free(V);
 }
 
-void RotateXMat(double T[4][4], double theta) {
-   // Multiply the current object transformation matrix T in object o
-   // by a matrix that rotates the object theta *RADIANS* around the
-   // X axis.
-
-   double R[4][4];
-   memset(&R[0][0], 0, 16 * sizeof(double));
-
-   R[0][0] = 1.0;
-   R[1][1] = cos(theta);
-   R[1][2] = -sin(theta);
-   R[2][1] = sin(theta);
-   R[2][2] = cos(theta);
-   R[3][3] = 1.0;
-
-   matMult(R, T);
-}
-
-void RotateX(struct object3D *o, double theta) {
-   // Multiply the current object transformation matrix T in object o
-   // by a matrix that rotates the object theta *RADIANS* around the
-   // X axis.
-
-   double R[4][4];
-   memset(&R[0][0], 0, 16 * sizeof(double));
-
-   R[0][0] = 1.0;
-   R[1][1] = cos(theta);
-   R[1][2] = -sin(theta);
-   R[2][1] = sin(theta);
-   R[2][2] = cos(theta);
-   R[3][3] = 1.0;
-
-   matMult(R, o->T.T);
-}
-
-void RotateYMat(double T[4][4], double theta) {
-   // Multiply the current object transformation matrix T in object o
-   // by a matrix that rotates the object theta *RADIANS* around the
-   // Y axis.
-
-   double R[4][4];
-   memset(&R[0][0], 0, 16 * sizeof(double));
-
-   R[0][0] = cos(theta);
-   R[0][2] = sin(theta);
-   R[1][1] = 1.0;
-   R[2][0] = -sin(theta);
-   R[2][2] = cos(theta);
-   R[3][3] = 1.0;
-
-   matMult(R, T);
-}
-
-void RotateY(struct object3D *o, double theta) {
-   // Multiply the current object transformation matrix T in object o
-   // by a matrix that rotates the object theta *RADIANS* around the
-   // Y axis.
-
-   double R[4][4];
-   memset(&R[0][0], 0, 16 * sizeof(double));
-
-   R[0][0] = cos(theta);
-   R[0][2] = sin(theta);
-   R[1][1] = 1.0;
-   R[2][0] = -sin(theta);
-   R[2][2] = cos(theta);
-   R[3][3] = 1.0;
-
-   matMult(R, o->T.T);
-}
-
-void RotateZMat(double T[4][4], double theta) {
-   // Multiply the current object transformation matrix T in object o
-   // by a matrix that rotates the object theta *RADIANS* around the
-   // Z axis.
-
-   double R[4][4];
-   memset(&R[0][0], 0, 16 * sizeof(double));
-
-   R[0][0] = cos(theta);
-   R[0][1] = -sin(theta);
-   R[1][0] = sin(theta);
-   R[1][1] = cos(theta);
-   R[2][2] = 1.0;
-   R[3][3] = 1.0;
-
-   matMult(R, T);
-}
-
-void RotateZ(struct object3D *o, double theta) {
-   // Multiply the current object transformation matrix T in object o
-   // by a matrix that rotates the object theta *RADIANS* around the
-   // Z axis.
-
-   double R[4][4];
-   memset(&R[0][0], 0, 16 * sizeof(double));
-
-   R[0][0] = cos(theta);
-   R[0][1] = -sin(theta);
-   R[1][0] = sin(theta);
-   R[1][1] = cos(theta);
-   R[2][2] = 1.0;
-   R[3][3] = 1.0;
-
-   matMult(R, o->T.T);
-}
-
-void TranslateMat(double T[4][4], double tx, double ty, double tz) {
-   // Multiply the current object transformation matrix T in object o
-   // by a matrix that translates the object by the specified amounts.
-
-   double tr[4][4];
-   memset(&tr[0][0], 0, 16 * sizeof(double));
-
-   tr[0][0] = 1.0;
-   tr[1][1] = 1.0;
-   tr[2][2] = 1.0;
-   tr[0][3] = tx;
-   tr[1][3] = ty;
-   tr[2][3] = tz;
-   tr[3][3] = 1.0;
-
-   matMult(tr, T);
-}
-
-void Translate(struct object3D *o, double tx, double ty, double tz) {
-   // Multiply the current object transformation matrix T in object o
-   // by a matrix that translates the object by the specified amounts.
-
-   double tr[4][4];
-   memset(&tr[0][0], 0, 16 * sizeof(double));
-
-   tr[0][0] = 1.0;
-   tr[1][1] = 1.0;
-   tr[2][2] = 1.0;
-   tr[0][3] = tx;
-   tr[1][3] = ty;
-   tr[2][3] = tz;
-   tr[3][3] = 1.0;
-
-   matMult(tr, o->T.T);
-}
-
-void ScaleMat(double T[4][4], double sx, double sy, double sz) {
-   // Multiply the current object transformation matrix T in object o
-   // by a matrix that scales the object as indicated.
-
-   double S[4][4];
-   memset(&S[0][0], 0, 16 * sizeof(double));
-
-   S[0][0] = sx;
-   S[1][1] = sy;
-   S[2][2] = sz;
-   S[3][3] = 1.0;
-
-   matMult(S, T);
-}
-
-void Scale(struct object3D *o, double sx, double sy, double sz) {
-   // Multiply the current object transformation matrix T in object o
-   // by a matrix that scales the object as indicated.
-
-   double S[4][4];
-   memset(&S[0][0], 0, 16 * sizeof(double));
-
-   S[0][0] = sx;
-   S[1][1] = sy;
-   S[2][2] = sz;
-   S[3][3] = 1.0;
-
-   matMult(S, o->T.T);
-}
-
-struct transform Sc(double Xscale, double Yscale, double Zscale) {
-   // Returns tranform for left multiplying
-   // to a transform or point to
-   // scale the object
-   struct transform scale;
-   scale.T[0][0] = Xscale;
-   scale.T[1][1] = Yscale;
-   scale.T[2][2] = Zscale;
-   return scale;
-}
-
-struct transform Tr(double Xtranslate, double Ytranslate, double Ztranslate) {
-   // Returns tranform for left multiplying
-   // to a transform or point to
-   // tranlate the object
-   struct transform translate;
-   translate.T[0][3] = Xtranslate;
-   translate.T[1][3] = Ytranslate;
-   translate.T[2][3] = Ztranslate;
-   return translate;
-}
-struct transform RotX(double theta) {
-   // Returns tranform for left multiplying
-   // to a transform or point to
-   // rotate theta *RADIANS* around the
-   // X axis.
-   struct transform rotateX;
-   rotateX.T[1][1] = cos(theta);
-   rotateX.T[1][2] = -sin(theta);
-   rotateX.T[2][1] = sin(theta);
-   rotateX.T[2][2] = cos(theta);
-   return rotateX;
-}
-struct transform RotY(double theta) {
-   // Returns tranform for left multiplying
-   // to a transform or point to
-   // rotate theta *RADIANS* around the
-   // Y axis.
-   struct transform rotateY;
-   rotateY.T[0][0] = cos(theta);
-   rotateY.T[0][2] = sin(theta);
-   rotateY.T[2][0] = -sin(theta);
-   rotateY.T[2][2] = cos(theta);
-   return rotateY;
-}
-struct transform RotZ(double theta) {
-   // Returns tranform for left multiplying
-   // to a transform or point to
-   // rotate theta *RADIANS* around the
-   // Z axis.
-   struct transform rotateZ;
-   rotateZ.T[0][0] = cos(theta);
-   rotateZ.T[0][1] = -sin(theta);
-   rotateZ.T[1][0] = sin(theta);
-   rotateZ.T[1][1] = cos(theta);
-   return rotateZ;
-}
-
 void printmatrix(double mat[4][4]) {
    fprintf(stderr, "Matrix contains:\n");
    fprintf(stderr, "%f %f %f %f\n", mat[0][0], mat[0][1], mat[0][2], mat[0][3]);
@@ -1510,47 +1268,47 @@ struct view *setupView(struct point *e, struct point *g, struct point *up, doubl
    // Set up coordinate conversion matrices
    // Camera2World matrix (M_cw in the notes)
    // Mind the indexing convention [row][col]
-   c->C2W[0][0] = c->u.x;
-   c->C2W[1][0] = c->u.y;
-   c->C2W[2][0] = c->u.z;
-   c->C2W[3][0] = 0;
+   c->C2W.T[0][0] = c->u.x;
+   c->C2W.T[1][0] = c->u.y;
+   c->C2W.T[2][0] = c->u.z;
+   c->C2W.T[3][0] = 0;
 
-   c->C2W[0][1] = c->v.x;
-   c->C2W[1][1] = c->v.y;
-   c->C2W[2][1] = c->v.z;
-   c->C2W[3][1] = 0;
+   c->C2W.T[0][1] = c->v.x;
+   c->C2W.T[1][1] = c->v.y;
+   c->C2W.T[2][1] = c->v.z;
+   c->C2W.T[3][1] = 0;
 
-   c->C2W[0][2] = c->w.x;
-   c->C2W[1][2] = c->w.y;
-   c->C2W[2][2] = c->w.z;
-   c->C2W[3][2] = 0;
+   c->C2W.T[0][2] = c->w.x;
+   c->C2W.T[1][2] = c->w.y;
+   c->C2W.T[2][2] = c->w.z;
+   c->C2W.T[3][2] = 0;
 
-   c->C2W[0][3] = c->e.x;
-   c->C2W[1][3] = c->e.y;
-   c->C2W[2][3] = c->e.z;
-   c->C2W[3][3] = 1;
+   c->C2W.T[0][3] = c->e.x;
+   c->C2W.T[1][3] = c->e.y;
+   c->C2W.T[2][3] = c->e.z;
+   c->C2W.T[3][3] = 1;
 
    // World2Camera matrix (M_wc in the notes)
    // Mind the indexing convention [row][col]
-   c->W2C[0][0] = c->u.x;
-   c->W2C[1][0] = c->v.x;
-   c->W2C[2][0] = c->w.x;
-   c->W2C[3][0] = 0;
+   c->W2C.T[0][0] = c->u.x;
+   c->W2C.T[1][0] = c->v.x;
+   c->W2C.T[2][0] = c->w.x;
+   c->W2C.T[3][0] = 0;
 
-   c->W2C[0][1] = c->u.y;
-   c->W2C[1][1] = c->v.y;
-   c->W2C[2][1] = c->w.y;
-   c->W2C[3][1] = 0;
+   c->W2C.T[0][1] = c->u.y;
+   c->W2C.T[1][1] = c->v.y;
+   c->W2C.T[2][1] = c->w.y;
+   c->W2C.T[3][1] = 0;
 
-   c->W2C[0][2] = c->u.z;
-   c->W2C[1][2] = c->v.z;
-   c->W2C[2][2] = c->w.z;
-   c->W2C[3][2] = 0;
+   c->W2C.T[0][2] = c->u.z;
+   c->W2C.T[1][2] = c->v.z;
+   c->W2C.T[2][2] = c->w.z;
+   c->W2C.T[3][2] = 0;
 
-   c->W2C[0][3] = -dot(&c->u, &c->e);
-   c->W2C[1][3] = -dot(&c->v, &c->e);
-   c->W2C[2][3] = -dot(&c->w, &c->e);
-   c->W2C[3][3] = 1;
+   c->W2C.T[0][3] = -dot(&c->u, &c->e);
+   c->W2C.T[1][3] = -dot(&c->v, &c->e);
+   c->W2C.T[2][3] = -dot(&c->w, &c->e);
+   c->W2C.T[3][3] = 1;
 
    free(u);
    free(v);
