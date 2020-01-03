@@ -4,6 +4,7 @@
 - implement texture mapping for meshes
 - add support for meshes with non-triangular polygons
 - implement acceleration using BVH or Octrees (or both)
+- implement bi-directional PathTracing
 - move buildscene date from code to markup sheet (or maybe json)
 - add camera info to buildscene
 - implement ray-marching for:

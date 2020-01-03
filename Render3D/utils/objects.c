@@ -1,0 +1,145 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "objects.h"
+
+#include "mappings.h"
+#include "ray.h"
+#include "utils.h"
+
+struct object3D *newPlane(double ra, double rd, double rs, double rg, double r, double g, double b, double alpha, double r_index, double shiny) {
+   // Intialize a new plane with the specified parameters:
+   // ra, rd, rs, rg - Albedos for the components of the Phong model
+   // r, g, b, - Colour for this plane
+   // alpha - Transparency, must be set to 1 unless you are doing refraction
+   // r_index - Refraction index if you are doing refraction.
+   // shiny - Exponent for the specular component of the Phong model
+   //
+   // The plane is defined by the following vertices (CCW)
+   // (1,1,0), (-1,1,0), (-1,-1,0), (1,-1,0)
+   // With normal vector (0,0,1) (i.e. parallel to the XY plane)
+
+   struct object3D *plane = (struct object3D *)calloc(1, sizeof(struct object3D));
+
+   if (!plane)
+      fprintf(stderr, "Unable to allocate new plane, out of memory!\n");
+   else {
+      plane->alb.ra = ra;
+      plane->alb.rd = rd;
+      plane->alb.rs = rs;
+      plane->alb.rg = rg;
+      plane->col.R = r;
+      plane->col.G = g;
+      plane->col.B = b;
+      plane->alpha = alpha;
+      plane->r_index = r_index;
+      plane->shinyness = shiny;
+      plane->intersect = &planeIntersect;
+      plane->surfaceCoords = &planeCoordinates;
+      plane->randomPoint = &planeSample;
+      plane->texImg = NULL;
+      plane->photonMap = NULL;
+      plane->normalMap = NULL;
+      plane->textureMap = &texMap;
+      plane->frontAndBack = 1;
+      plane->photonMapped = 0;
+      plane->normalMapped = 0;
+      plane->isCSG = 0;
+      plane->isLightSource = 0;
+      plane->next = NULL;
+   }
+   return (plane);
+}
+
+void planeIntersect(struct object3D *plane, struct ray3D *ray, double *lambda, struct point *p, struct point *n, double *a, double *b) {
+   // Computes and returns the value of 'lambda' at the intersection
+   // between the specified ray and the specified canonical plane.
+
+   struct ray3D ray_transformed;
+   rayTransform(ray, &ray_transformed, plane);
+   *lambda = -1;
+   struct point norm;
+   // normal of canonical plane
+   norm.x = 0;
+   norm.y = 0;
+   norm.z = 1;
+   struct point p1;
+
+   double l;
+   double d_dot_n = dot(&(ray_transformed.d), &norm);
+   if (d_dot_n != 0) {
+      p1.x = -ray_transformed.p0.x;
+      p1.y = -ray_transformed.p0.y;
+      p1.z = -ray_transformed.p0.z;
+
+      l = dot(&(p1), &norm) / d_dot_n;
+      // Check if the intersection point is inside the plane
+      rayPosition(&ray_transformed, l, p);
+      double x = p->x;
+      double y = p->y;
+      if (fabs(p->z) < THR && fabs(p->x) <= 1 + THR && fabs(p->y) <= 1 + THR) {
+         *lambda = l;
+         rayPosition(ray, l, p);
+         //printf("n: (%f, %f, %f)\n", n->px, n->py, n->pz);
+         normalTransform(&norm, n, plane);
+         //printf("nt: (%f, %f, %f)\n", n->px, n->py, n->pz);
+      }
+
+      *a = (x + 1) / 2;
+      *b = (-y + 1) / 2;
+   }
+}
+
+void planeCoordinates(struct object3D *plane, double a, double b, double *x, double *y, double *z) {
+   // Return in (x,y,z) the coordinates of a point on the plane given by the 2 parameters a,b in [0,1].
+   // 'a' controls displacement from the left side of the plane, 'b' controls displacement from the
+   // bottom of the plane.
+
+   /////////////////////////////////
+   // TO DO: Complete this function.
+   /////////////////////////////////
+}
+
+void planeSample(struct object3D *plane, double *x, double *y, double *z) {
+   // Returns the 3D coordinates (x,y,z) of a randomly sampled point on the plane
+   // Sapling should be uniform, meaning there should be an equal change of gedtting
+   // any spot on the plane
+
+   /////////////////////////////////
+   // TO DO: Complete this function.
+   /////////////////////////////////
+}
+
+void insertObject(struct object3D *o, struct object3D **list) {
+   if (o == NULL)
+      return;
+   // Inserts an object into the object list.
+   if (*(list) == NULL) {
+      *(list) = o;
+      (*(list))->next = NULL;
+   } else {
+      o->next = (*(list))->next;
+      (*(list))->next = o;
+   }
+}
+
+inline void normalTransform(struct point *n_orig, struct point *n_transformed, struct object3D *obj) {
+   // Computes the normal at an affinely transformed point given the original normal and the
+   // object's inverse transformation. From the notes:
+   // n_transformed=A^-T*n normalized.
+
+   memcpy(n_transformed, n_orig, sizeof(struct point));
+
+   //take the transpose of Tinv
+   struct transform inversetranspose;
+   for (int i = 0; i < 4; i++) {
+      for (int j = 0; j < 4; j++) {
+         inversetranspose.T[i][j] = obj->Tinv.T[j][i];
+      }
+   }
+
+   n_transformed->w = 0;
+   *n_transformed = inversetranspose * n_transformed;
+   n_transformed->w = 1;
+   normalize(n_transformed);
+}

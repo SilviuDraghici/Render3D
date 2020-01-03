@@ -4,6 +4,9 @@
 
 #include "affineTransforms.h"
 
+#include "svdDynamic.c"
+#include "svdDynamic.h"
+
 struct transform I() {
    struct transform i;
    return i;
@@ -76,6 +79,50 @@ struct transform RotZ(double theta) {
    rotateZ.T[1][0] = sin(theta);
    rotateZ.T[1][1] = cos(theta);
    return rotateZ;
+}
+
+double eye4x4[4][4] = {{1.0, 0.0, 0.0, 0.0},
+                       {0.0, 1.0, 0.0, 0.0},
+                       {0.0, 0.0, 1.0, 0.0},
+                       {0.0, 0.0, 0.0, 1.0}};
+
+void invert(double *T, double *Tinv) {
+   // Computes the inverse of transformation matrix T.
+   // the result is returned in Tinv.
+
+   double *U, *s, *V, *rv1;
+   int singFlag, i;
+
+   // Invert the affine transform
+   U = NULL;
+   s = NULL;
+   V = NULL;
+   rv1 = NULL;
+   singFlag = 0;
+
+   SVD(T, 4, 4, &U, &s, &V, &rv1);
+   if (U == NULL || s == NULL || V == NULL) {
+      fprintf(stderr, "Error: Matrix not invertible for this object, returning identity\n");
+      memcpy(Tinv, eye4x4, 16 * sizeof(double));
+      return;
+   }
+
+   // Check for singular matrices...
+   for (i = 0; i < 4; i++)
+      if (*(s + i) < 1e-9)
+         singFlag = 1;
+   if (singFlag) {
+      fprintf(stderr, "Error: Transformation matrix is singular, returning identity\n");
+      memcpy(Tinv, eye4x4, 16 * sizeof(double));
+      return;
+   }
+
+   // Compute and store inverse matrix
+   InvertMatrix(U, s, V, 4, Tinv);
+
+   free(U);
+   free(s);
+   free(V);
 }
 
 void printmatrix(struct transform matrix) {

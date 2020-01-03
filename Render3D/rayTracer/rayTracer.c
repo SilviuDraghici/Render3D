@@ -1,9 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "rayTracer.h"
 
-#include "utils/imageProcessor.h"
+#include "../utils/imageProcessor.h"
+#include "../utils/affinetransforms.h"
 
 void rayTrace(int argc, char *argv[]) {
    if (argc < 5) {

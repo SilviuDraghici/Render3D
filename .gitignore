@@ -1,3 +1,7 @@
+.vscod*
 RayTracer/Raytracer
 PathTracer/PathTracer
+Render3D
 out.ppm
+*.o
+*.h.gch
