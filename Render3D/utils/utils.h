@@ -7,6 +7,8 @@
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define THR 0.0001
 
+#define PI 3.14159265354
+
 /* The structure below defines a point in 3D homogeneous coordinates        */
 struct point {
    double x;
@@ -42,26 +44,26 @@ struct point {
    }
 };
 
-struct transform {
+struct matrix {
    // this struct defines a 4x4 matrix used for
    // 3d affine transforms in homogeneous coordinates
    double T[4][4];
-   transform() {
+   matrix() {
       memset(&T[0][0], 0, 16 * sizeof(double));
       T[0][0] = 1;
       T[1][1] = 1;
       T[2][2] = 1;
       T[3][3] = 1;
    }
-   transform operator*(const transform &b) const {
-      struct transform result;
+   matrix operator*(const matrix &b) const {
+      struct matrix result;
       for (int i = 0; i < 4; i++)
          for (int j = 0; j < 4; j++)
             result.T[i][j] = (T[i][0] * b.T[0][j]) + (T[i][1] * b.T[1][j]) + (T[i][2] * b.T[2][j]) + (T[i][3] * b.T[3][j]);
 
       return result;
    }
-   transform &operator*=(const transform &b) {
+   matrix &operator*=(const matrix &b) {
       *this = b * *this;
       return *this;
    }
@@ -82,6 +84,11 @@ struct transform {
 };
 
 double dot(struct point *u, struct point *v);
+struct point *cross(struct point *u, struct point *v);
+
 void normalize(struct point *v);
+
+
+void solveQuadratic(struct ray *ray, double *l1, double *l2);
 
 #endif

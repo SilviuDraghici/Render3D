@@ -11,7 +11,7 @@ int main(int argc, char *argv[]) {
    } else {
       int mode = atof(argv[1]);
       if (mode == 0) {
-         rayTrace(argc, argv);
+         rayTraceMain(argc, argv);
 
       } else if (mode == 1) {
          if (argc < 5) {

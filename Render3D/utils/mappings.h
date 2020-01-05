@@ -8,6 +8,8 @@ struct textureNode {
    struct textureNode *next;
 };
 
+extern struct textureNode *texture_list;
+
 void loadTexture(struct object3D *o, const char *filename, int type, struct textureNode **t_list);
 void texMap(struct image *img, double a, double b, double *R, double *G, double *B);
 void texMapN(struct image *img, double a, double b, double *R, double *G, double *B);

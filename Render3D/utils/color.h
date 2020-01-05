@@ -1,51 +1,65 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "utils.h"
+
 #ifndef COLOR_H
 #define COLOR_H
 /*
    The structure below defines an RGB colour, values are
    in [0,1]
 */
-struct color {
+struct color{
    double R;
    double G;
    double B;
-   color(double r = 0, double g = 0, double b = 0) {
+   color(double r = 0, double g = 0, double b = 0)
+   {
       R = r;
       G = g;
       B = b;
    }
-   color &operator=(const color &col) {
+   color &operator=(const color &col)
+   {
       R = col.R;
       G = col.G;
       B = col.B;
       return *this;
    }
-   color &operator+=(const color &col) {
+   color &operator+=(const color &col)
+   {
       R += col.R;
       G += col.G;
       B += col.B;
       return *this;
    }
-   color &operator=(const double val) {
+   color &operator=(const double val)
+   {
       R = val;
       G = val;
       B = val;
       return *this;
    }
-   color operator*(const double scalar) const {
+   color operator*(const double scalar) const
+   {
       return color(R * scalar, G * scalar, B * scalar);
    }
-   color operator*=(const double scalar) {
+   color operator*=(const double scalar)
+   {
       R *= scalar;
       G *= scalar;
       B *= scalar;
       return *this;
    }
 
-   color operator*(const color &a) const {
+   color operator*(const color &a) const
+   {
       return color{R * a.R, G * a.G, B * a.B};
    }
 
-   color operator+(const color &a) const {
+   color operator+(const color &a) const
+   {
       return color(R + a.R, G + a.G, B + a.B);
    }
 };
@@ -61,10 +75,12 @@ struct color {
    components in the Phong model add up. Take a moment and think how
    you want your object to look before you set these values.
 */
-struct albedosPhong {
-   double ra;  // Ambient light albedo
-   double rd;  // Diffuse component albedo
-   double rs;  // Specular component albedo
-   double rg;  // Global component albedo
+struct albedosPhong
+{
+   double ra; // Ambient light albedo
+   double rd; // Diffuse component albedo
+   double rs; // Specular component albedo
+   double rg; // Global component albedo
 };
+
 #endif

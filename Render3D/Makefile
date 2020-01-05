@@ -1,4 +1,4 @@
-UOBJ = Render3D.o rayTracer.o utils.o affineTransforms.o imageProcessor.o objects.o mappings.o ray.o  
+UOBJ = Render3D.o rayTracer.o utils.o affineTransforms.o imageProcessor.o objects.o mappings.o ray.o camera.o
 UTILS = utils/
 RAY = rayTracer/
 
@@ -36,7 +36,11 @@ ray.o: ${UTILS}ray.c ${UTILS}ray.h ${UTILS}affineTransforms.h ${UTILS}objects.h 
 	@echo Building Ray
 	g++ -O4 -g -lm -c $^
 
-rayTracer.o: ${RAY}rayTracer.c ${RAY}rayTracer.h ${UTILS}affineTransforms.h ${UTILS}imageProcessor.h
+camera.o: ${UTILS}camera.c ${UTILS}camera.h
+	@echo Building Camera
+	g++ -O4 -g -lm -c $^
+
+rayTracer.o: ${RAY}rayTracer.c ${RAY}rayTracer.h ${UTILS}buildscene.h ${UTILS}affineTransforms.h ${UTILS}imageProcessor.h ${UTILS}utils.h
 	@echo Building Ray Tracer !
 	g++ -O4 -g -lm -c $^
 

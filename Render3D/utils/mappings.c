@@ -3,6 +3,8 @@
 #include "objects.h"
 #include "imageProcessor.h"
 
+struct textureNode *texture_list;
+
 void loadTexture(struct object3D *o, const char *filename, int type, struct textureNode **t_list) {
    // Load a texture or normal map image from file and assign it to the
    // specified object.

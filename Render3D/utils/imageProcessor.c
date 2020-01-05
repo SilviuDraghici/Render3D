@@ -223,3 +223,12 @@ void imageOutput(struct image *im, const char *filename) {
       }
    fprintf(stderr, "imageOutput(): Specified image is empty. Nothing output\n");
 }
+
+void deleteImage(struct image *im) {
+   // De-allocates memory reserved for the image stored in 'im'
+   if (im != NULL) {
+      if (im->rgbdata != NULL)
+         free(im->rgbdata);
+      free(im);
+   }
+}

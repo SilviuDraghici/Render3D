@@ -5,15 +5,15 @@
 #define AFFINETRANSFORMS_H
 
 //Functions for returning affine transforms
-struct transform I();
-struct transform Sc(double Xscale, double Yscale, double Zscale);
-struct transform Sc(double uniform_scale);
-struct transform Tr(double Xtranslate, double Ytranslate, double Ztranslate);
-struct transform RotX(double theta);
-struct transform RotY(double theta);
-struct transform RotZ(double theta);
+struct matrix I();
+struct matrix Sc(double Xscale, double Yscale, double Zscale);
+struct matrix Sc(double uniform_scale);
+struct matrix Tr(double Xtranslate, double Ytranslate, double Ztranslate);
+struct matrix RotX(double theta);
+struct matrix RotY(double theta);
+struct matrix RotZ(double theta);
 
 void invert(double *T, double *Tinv);
 
-void printmatrix(struct transform matrix);
+void printmatrix(struct matrix matrix);
 #endif
