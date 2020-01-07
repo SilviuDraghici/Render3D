@@ -3,7 +3,7 @@
 #include "affineTransforms.h"
 #include "objects.h"
 
-void rayTransform(struct ray *ray_orig, struct ray *ray_transformed, struct object3D *obj) {
+void rayTransform(struct ray *ray_orig, struct ray *ray_transformed, struct object *obj) {
    // Transforms a ray using the inverse transform for the specified object. This is so that we can
    // use the intersection test for the canonical object. Note that this has to be done carefully!
 
@@ -33,9 +33,6 @@ void rayReflect(struct ray *ray_orig, struct point *p, struct point *n, struct r
 
    //r=d−2(d⋅n)n
    double ddotn = dot(&(ray_orig->d), n);
-   ray_reflected->d.x = ray_orig->d.x - 2 * ddotn * n->x;
-   ray_reflected->d.y = ray_orig->d.y - 2 * ddotn * n->y;
-   ray_reflected->d.z = ray_orig->d.z - 2 * ddotn * n->z;
-   ray_reflected->d.w = 1;
-   normalize(&ray_reflected->d);
+   ray_reflected->d = ray_orig->d - *n * 2 * ddotn;
+   //normalize(&ray_reflected->d);
 }

@@ -12,7 +12,7 @@ struct ray {
    /* with this ray when implementing advanced raytracing features */
 };
 
-void rayTransform(struct ray *ray_orig, struct ray *ray_transformed, struct object3D *obj);
+void rayTransform(struct ray *ray_orig, struct ray *ray_transformed, struct object *obj);
 void rayPosition(struct ray *ray, double lambda, struct point *pos);
 void rayReflect(struct ray *ray_orig, struct point *p, struct point *n, struct ray *ray_reflected);
 #endif

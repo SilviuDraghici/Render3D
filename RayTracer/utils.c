@@ -86,8 +86,6 @@ inline void normalTransform(struct point *n_orig, struct point *n_transformed, s
    // object's inverse transformation. From the notes:
    // n_transformed=A^-T*n normalized.
 
-   memcpy(n_transformed, n_orig, sizeof(struct point));
-
    //take the transpose of Tinv
    struct transform inversetranspose;
    for (int i = 0; i < 4; i++) {
@@ -96,8 +94,7 @@ inline void normalTransform(struct point *n_orig, struct point *n_transformed, s
       }
    }
 
-   n_transformed->w = 0;
-   *n_transformed = inversetranspose * n_transformed;
+   *n_transformed = inversetranspose * n_orig;
    n_transformed->w = 1;
    normalize(n_transformed);
 }

@@ -1,6 +1,8 @@
 #ifndef MAPPING_H
 #define MAPPING_H
 
+#include "color.h"
+
 struct textureNode {
    char name[1024];
    int type;
@@ -10,8 +12,11 @@ struct textureNode {
 
 extern struct textureNode *texture_list;
 
-void loadTexture(struct object3D *o, const char *filename, int type, struct textureNode **t_list);
-void texMap(struct image *img, double a, double b, double *R, double *G, double *B);
-void texMapN(struct image *img, double a, double b, double *R, double *G, double *B);
+void loadTexture(struct object *o, const char *filename, int type, struct textureNode **t_list);
+
+
+void textureMap(struct object *obj, double a, double b, struct color *col);
+void normalMap(struct object *obj, double a, double b, struct point *n);
+
 void alphaMap(struct image *img, double a, double b, double *R, double *G, double *B);
 #endif

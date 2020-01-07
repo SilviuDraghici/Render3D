@@ -1,4 +1,4 @@
-struct object3D *o;
+struct object *o;
 struct pointLS *l;
 struct point p;
 

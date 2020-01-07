@@ -23,7 +23,7 @@ double iter_val = -1;
 int num_frames = 24 * 5;  //120 <- 5 frames
 
 void buildScene(void) {
-#include "buildscenef.c"  // <-- Import the scene definition!
+#include "buildscene.c"  // <-- Import the scene definition!
 }
 
 void rtShade(struct object3D *obj, struct point *p, struct point *n, struct ray3D *ray, int depth, double a, double b, struct color *col) {
