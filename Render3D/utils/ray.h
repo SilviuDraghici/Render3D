@@ -15,4 +15,5 @@ struct ray {
 void rayTransform(struct ray *ray_orig, struct ray *ray_transformed, struct object *obj);
 void rayPosition(struct ray *ray, double lambda, struct point *pos);
 void rayReflect(struct ray *ray_orig, struct point *p, struct point *n, struct ray *ray_reflected);
+void rayRefract(struct ray *ray_orig, struct object *obj, struct point *p, struct point *n, struct ray *ray_refracted);
 #endif

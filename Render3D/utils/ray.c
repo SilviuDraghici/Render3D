@@ -36,3 +36,55 @@ void rayReflect(struct ray *ray_orig, struct point *p, struct point *n, struct r
    ray_reflected->d = ray_orig->d - *n * 2 * ddotn;
    //normalize(&ray_reflected->d);
 }
+
+void rayRefract(struct ray *ray_orig, struct object *obj, struct point *p, struct point *n, struct ray *ray_refracted) {
+
+   double r_index = obj->r_index;
+   double r, n1 = 1, n2 = 1, theta = -1;
+   double c = dot(n, &(ray_orig->d));
+   double R_Shlick, dice;
+   // moving from outside object to inside the object
+   if (c > 0)
+   {
+      *n *= -1;
+      n1 = r_index;
+   }
+   else
+   {
+      n2 = r_index;
+      c *= -1;
+   }
+   theta = c;
+   r = n1 / n2;
+   //theta = c;
+
+   memcpy(ray_refracted, ray_orig, sizeof(struct ray));
+   ray_refracted->p0 = *p - *n * THR;
+   double s = 1 - (r * r) * (1 - (c * c));
+   if (s > 0)
+   {
+      ray_refracted->d = ray_orig->d * r + *n * (r * c - sqrt(s));
+
+      normalize(&ray_refracted->d);
+      
+      /*
+      // Use Shlick's to figure out amount of reflected and refracted light
+      double R0 = ((n1 - n2) / (n1 + n2)) * ((n1 - n2) / (n1 + n2));
+      // R(theta)=R0+((1-R0)*(1-cos(theta))^5)
+      R_Shlick = MIN(1, R0 + (1 - R0) * pow(1 - theta, 5));
+      dice = drand48();
+      // randomly choose if refract or reflect on each iteration
+      if (dice < (1 - R_Shlick))
+      {
+         dice = drand48();
+
+         max_col = MAX(MAX(refractRay.R, refractRay.G), MAX(refractRay.R, refractRay.B));
+
+         if (sqrt(dice) < max_col)
+         {
+            return PathTrace(&refractRay, depth + 1, col, obj, explt);
+         }
+      }
+      */
+   }
+}

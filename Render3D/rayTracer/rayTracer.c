@@ -12,11 +12,12 @@
 #include "../utils/mappings.h"
 #include "../utils/ray.h"
 #include "../utils/utils.h"
+#include "../utils/objects.h"
 
-int MAX_DEPTH;
+static int MAX_DEPTH;
 
 void rayTraceMain(int argc, char *argv[]) {
-   if (argc < 5) {
+   if (argc < 6) {
       fprintf(stderr, "RayTracer: Can not parse input parameters\n");
       fprintf(stderr, "USAGE: Render3D 0 size rec_depth antialias output_name\n");
       fprintf(stderr, "   size = Image size (both along x and y)\n");
@@ -88,7 +89,7 @@ void rayTraceMain(int argc, char *argv[]) {
       }  // end for i
    }     // end for j
 
-   fprintf(stderr, "Done!\n");
+   fprintf(stderr, "Ray Tracing Done!\n");
 
    // Output rendered image
    imageOutput(outImage, output_name);
@@ -176,6 +177,7 @@ void rtShade(struct object *obj, struct point *p, struct point *n, struct ray *r
 
    struct color tmp_col;  // Accumulator for colour components
    struct color objcol;   // Colour for the object in R G and B
+   double alpha;
 
    // This will hold the colour as we process all the components of
    // the Phong illumination model
@@ -188,19 +190,24 @@ void rtShade(struct object *obj, struct point *p, struct point *n, struct ray *r
    // check for normal map
    normalMap(obj, a, b, n);
 
+   // check for alpha map
+   alphaMap(obj, a, b, &alpha);
+
    //vector from intersection point to camera
    struct point c;
    c = -ray->d;
    normalize(&c);
 
-   double ra = obj->alb.ra, rd = obj->alb.rd, rs = obj->alb.rs, rg = obj->alb.rg;
+   double ra = obj->rt.ambient, rd = obj->rt.diffuse, rs = obj->rt.specular, rg = obj->rt.global;
 
    struct color ambient;
-   ambient = objcol * ra;
+   ambient = objcol * ra * alpha;
 
    struct color diffuse;
 
    struct color specular;
+
+   struct color refract = 0;
 
    struct color global;
 
@@ -231,7 +238,7 @@ void rtShade(struct object *obj, struct point *p, struct point *n, struct ray *r
          if (obj->frontAndBack) {
             n_dot_s = MAX(0, abs(dot(n, &s)));
          }
-         diffuse += objcol * rd * light->col * n_dot_s;
+         diffuse += objcol * rd * light->col * n_dot_s * alpha;
 
          //perfect light ray reflection
          struct ray light_reflection;
@@ -240,25 +247,62 @@ void rtShade(struct object *obj, struct point *p, struct point *n, struct ray *r
          rayReflect(&pToLight, p, n, &light_reflection);
          double c_dot_m = dot(&c, &(light_reflection.d));
 
-         specular += light->col * rs * pow(MAX(0, c_dot_m), obj->shinyness);
+         specular += light->col * rs * pow(MAX(0, c_dot_m), obj->rt.shinyness) * alpha;
 
       }
 
       light = light->next;
    }
+
+   if (alpha < 1) {
+      // dvec = r * bvec + (r*c − srt(1 - r*r*(1-c*c))) * nvec
+      struct point norm = *n;
+      struct ray refractRay;
+      rayRefract(ray, obj, p, &norm, &refractRay);
+      rayTrace(&refractRay, depth + 1, &refract, obj);
+      // printf("refract r: %f  g: %f  b: %f\n", refract.R, refract.G,
+      // refract.B);
+      refract = refract * (1 - alpha) * obj->col;
+   }
+
+
    //perfect camera ray reflection
    struct ray cam_reflection;
    rayReflect(ray, p, n, &cam_reflection);
-   //printf("r(%f, %f, %f), n(%f, %f, %f), ref(%f, %f, %f)\n",ray->d.px,ray->d.py,ray->d.pz, n->px,n->py,n->pz,cam_reflection.d.px,cam_reflection.d.py,cam_reflection.d.pz);
-   rayTrace(&cam_reflection, depth + 1, &global, obj);
+
+   if(obj->refl_sig > 0){
+      rt_brandished_trace(&cam_reflection, obj, &global, depth);
+   } else{
+      rayTrace(&cam_reflection, depth + 1, &global, obj);
+   }
    if (global.R == -1) {
       global = 0;
    } else {
       global *= rg;
    }
 
-   col->R = MIN(1, ambient.R + diffuse.R + specular.R + global.R);
-   col->G = MIN(1, ambient.G + diffuse.G + specular.G + global.G);
-   col->B = MIN(1, ambient.B + diffuse.B + specular.B + global.B);
+   col->R = MIN(1, ambient.R + diffuse.R + specular.R + refract.R + global.R);
+   col->G = MIN(1, ambient.G + diffuse.G + specular.G + refract.G + global.G);
+   col->B = MIN(1, ambient.B + diffuse.B + specular.B + refract.B + global.B);
    return;
+}
+
+void rt_brandished_trace(struct ray *ray, struct object *obj, struct color *col, int depth){
+   struct ray brandished_ray;
+   memcpy(&brandished_ray, ray, sizeof(struct ray));
+   struct color brandished_color = 0;
+
+   double num_samples = 10;
+   for(int i = 0; i < num_samples; i ++){
+      brandished_ray.d.x = rand_normal_dist(ray->d.x, obj->refl_sig);
+      brandished_ray.d.y = rand_normal_dist(ray->d.y, obj->refl_sig);
+      brandished_ray.d.z = rand_normal_dist(ray->d.z, obj->refl_sig);
+      normalize(&brandished_ray.d);
+      rayTrace(&brandished_ray, depth + 1, &brandished_color, obj);
+      if (brandished_color.R == -1) {
+         brandished_color = 0;
+      }
+      *col += brandished_color;
+   }
+   *col /= num_samples;
 }

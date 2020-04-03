@@ -34,6 +34,13 @@ struct color{
       B += col.B;
       return *this;
    }
+   color &operator/=(double div)
+   {
+      R /= div;
+      G /= div;
+      B /= div;
+      return *this;
+   }
    color &operator=(const double val)
    {
       R = val;
@@ -75,12 +82,5 @@ struct color{
    components in the Phong model add up. Take a moment and think how
    you want your object to look before you set these values.
 */
-struct albedosPhong
-{
-   double ra; // Ambient light albedo
-   double rd; // Diffuse component albedo
-   double rs; // Specular component albedo
-   double rg; // Global component albedo
-};
 
 #endif

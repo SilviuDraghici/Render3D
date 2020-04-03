@@ -10,7 +10,7 @@
 struct object *object_list;
 struct pointLS *light_list;
 
-struct object *newPlane(double ra, double rd, double rs, double rg, double r, double g, double b, double alpha, double r_index, double shiny) {
+struct object *newPlane(double r, double g, double b) {
     // Intialize a new plane with the specified parameters:
     // ra, rd, rs, rg - Albedos for the components of the Phong model
     // r, g, b, - Colour for this plane
@@ -27,16 +27,13 @@ struct object *newPlane(double ra, double rd, double rs, double rg, double r, do
     if (!plane)
         fprintf(stderr, "Unable to allocate new plane, out of memory!\n");
     else {
-        plane->alb.ra = ra;
-        plane->alb.rd = rd;
-        plane->alb.rs = rs;
-        plane->alb.rg = rg;
         plane->col.R = r;
         plane->col.G = g;
         plane->col.B = b;
-        plane->alpha = alpha;
-        plane->r_index = r_index;
-        plane->shinyness = shiny;
+        plane->rt.alpha = 1;
+        plane->rt.shinyness = 2;
+        plane->r_index = 1;
+        plane->refl_sig = 0;
         plane->intersect = &planeIntersect;
         plane->surfaceCoords = &planeCoordinates;
         plane->randomPoint = &planeSample;
@@ -44,10 +41,8 @@ struct object *newPlane(double ra, double rd, double rs, double rg, double r, do
         plane->photonMap = NULL;
         plane->normalMap = NULL;
         plane->frontAndBack = 1;
-        plane->photonMapped = 0;
-        plane->normalMapped = 0;
-        plane->isCSG = 0;
         plane->isLightSource = 0;
+        plane->T = I();
         plane->next = NULL;
     }
     return (plane);
@@ -112,7 +107,7 @@ void planeSample(struct object *plane, double *x, double *y, double *z) {
     /////////////////////////////////
 }
 
-struct object *newSphere(double ra, double rd, double rs, double rg, double r, double g, double b, double alpha, double r_index, double shiny) {
+struct object *newSphere(double r, double g, double b) {
     // Intialize a new sphere with the specified parameters:
     // ra, rd, rs, rg - Albedos for the components of the Phong model
     // r, g, b, - Colour for this plane
@@ -128,16 +123,13 @@ struct object *newSphere(double ra, double rd, double rs, double rg, double r, d
     if (!sphere)
         fprintf(stderr, "Unable to allocate new sphere, out of memory!\n");
     else {
-        sphere->alb.ra = ra;
-        sphere->alb.rd = rd;
-        sphere->alb.rs = rs;
-        sphere->alb.rg = rg;
         sphere->col.R = r;
         sphere->col.G = g;
         sphere->col.B = b;
-        sphere->alpha = alpha;
-        sphere->r_index = r_index;
-        sphere->shinyness = shiny;
+        sphere->rt.alpha = 1;
+        sphere->rt.shinyness = 2;
+        sphere->r_index = 1;
+        sphere->refl_sig = 0;
         sphere->intersect = &sphereIntersect;
         sphere->surfaceCoords = &sphereCoordinates;
         sphere->randomPoint = &sphereSample;
@@ -145,10 +137,8 @@ struct object *newSphere(double ra, double rd, double rs, double rg, double r, d
         sphere->photonMap = NULL;
         sphere->normalMap = NULL;
         sphere->frontAndBack = 0;
-        sphere->photonMapped = 0;
-        sphere->normalMapped = 0;
-        sphere->isCSG = 0;
         sphere->isLightSource = 0;
+        sphere->T = I();
         sphere->next = NULL;
     }
     return (sphere);
@@ -225,6 +215,47 @@ void sphereSample(struct object *plane, double *x, double *y, double *z) {
     /////////////////////////////////
     // TO DO: Complete this function.
     /////////////////////////////////
+}
+
+void set_rayTrace_properties(struct object *o, double ambient, double diffuse, double specular, double global, double alpha, double shiny){
+    o->rt.ambient = ambient;
+    o->rt.diffuse = diffuse;
+    o->rt.specular = specular;
+    o->rt.global = global;
+    o->rt.alpha = alpha;
+    o->rt.shinyness = shiny;
+
+    // create a similar set of params incase the object is drawn in pathtrace mode
+    o->pt.diffuse = alpha * (ambient + diffuse);
+    o->pt.reflect = alpha * (1 - diffuse);
+    o->pt.refract = 1 - alpha;
+
+    // ensure sum to 1
+    double sum = o->pt.diffuse + o->pt.reflect + o->pt.refract;
+     o->pt.diffuse /= sum;
+     o->pt.reflect /= sum;
+     o->pt.refract /= sum;
+}
+
+void set_pathTrace_properties(struct object *o, double diffuse, double reflect, double refract){
+    o->pt.diffuse = diffuse;
+    o->pt.reflect = reflect;
+    o->pt.refract = refract;
+    
+    // ensure sum to 1
+    double sum = o->pt.diffuse + o->pt.reflect + o->pt.refract;
+     o->pt.diffuse /= sum;
+     o->pt.reflect /= sum;
+     o->pt.refract /= sum;
+
+    // create a similar set of parameters for ray tracing
+    o->rt.ambient = 0.1 * diffuse;
+    o->rt.diffuse = 0.9 * diffuse;
+    o->rt.specular = reflect;
+    o->rt.global = reflect;
+    o->rt.alpha = 1 - refract;
+    o->rt.shinyness = reflect * 10;
+
 }
 
 void insertObject(struct object *o, struct object **list) {

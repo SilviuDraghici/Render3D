@@ -4,6 +4,16 @@
 
 #include <math.h>
 
+struct matrix I() {
+   struct matrix i;
+   memset(&i.T[0][0], 0, 16 * sizeof(double));
+   i.T[0][0] = 1;
+   i.T[1][1] = 1;
+   i.T[2][2] = 1;
+   i.T[3][3] = 1;
+   return i;
+}
+
 double dot(struct point *u, struct point *v) {
    // Computes the dot product of 3D vectors u and v.
    // The function assumes the w components of both vectors
@@ -59,4 +69,32 @@ void solveQuadratic(struct ray *ray, double *l1, double *l2) {
       *l1 = -B / A - sqrt(D) / A;
       *l2 = -B / A + sqrt(D) / A;
    }
+}
+
+double rand_normal_dist(double mu, double sigma) {
+   // https://en.wikipedia.org/wiki/Marsaglia_polar_method
+   double U1, U2, W, mult;
+   static double X1, X2;
+   static int call = 0;
+
+   if (call == 1)
+   {
+      call = !call;
+      return (mu + sigma * X2);
+   }
+
+   do
+   {
+      U1 = -1 + drand48() * 2;
+      U2 = -1 + drand48() * 2;
+      W = pow(U1, 2) + pow(U2, 2);
+   } while (W >= 1 || W == 0);
+
+   mult = sqrt((-2 * log(W)) / W);
+   X1 = U1 * mult;
+   X2 = U2 * mult;
+
+   call = !call;
+
+   return (mu + sigma * X1);
 }

@@ -119,11 +119,42 @@ void normalMap(struct object *obj, double a, double b, struct point *n) {
     }
 }
 
-void alphaMap(struct image *img, double a, double b, double *alpha) {
+void alphaMap(struct object *obj, double a, double b, double *alpha) {
     // Just like texture map but returns the alpha value at a,b,
     // notice that alpha maps are single layer grayscale images, hence
     // the separate function.
+    
+    if (obj->alphaMap == NULL) {
+        *alpha = obj->rt.alpha;
+    } else {
+        struct image *img = obj->alphaMap;
+        double xc1,xc2;
 
-    *(alpha) = 1;  // Returns 1 which means fully opaque. Replace
-    return;        // with your code if implementing alpha maps.
+        a = MIN(1, MAX(0, a));
+        b = MIN(1, MAX(0, b));
+        a = a*(img->sx - 1);
+        b = b*(img->sy - 1);
+
+        int x1 = (int)floor(a);
+        int y1 = (int)floor(b);
+        int x2 = MIN(img->sx -1, (int)ceil(a));
+        int y2 = MIN(img->sy -1, (int)ceil(b));
+
+        double *rgbIm=(double *)img->rgbdata;
+        double ax1, ax2, ay1, ay2;
+        ax1 = (x2 - a)/(x2 - x1);
+        ax2 = (a - x1)/(x2 - x1);
+        xc1 = ax1*((double)rgbIm[(y1*img->sx + x1)])  + ax2*((double)rgbIm[(y1*img->sx + x2)]);
+        xc2 = ax1*((double)rgbIm[(y2*img->sx + x1)])  + ax2*((double)rgbIm[(y2*img->sx + x2)]);
+
+
+        //printf("a: %f b: %f\n", a, b);
+        //printf("x: %d y: %d\n", x, y);
+        ay1 = (y2 - b)/(y2 - y1);
+        ay2 = (b - y1)/(y2 - y1);
+        //printf("r: %f g: %f b: %f\n", *R, *G, *B);
+        //here
+
+        *(alpha)= ay1*xc1 + ay2*xc2;
+    }
 }

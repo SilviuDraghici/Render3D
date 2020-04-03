@@ -1,14 +1,15 @@
-- migrate code to c++ for operator overloading
-- merge Raytracer and Pathtracer
+- migrate code to c++ for operator overloading - done
+- break source up into smaller files - done
+- merge Raytracer and Pathtracer 
 - rewrite Paco's code
 - implement texture mapping for meshes
 - add support for meshes with non-triangular polygons
 - implement acceleration using BVH or Octrees (or both)
 - implement bi-directional PathTracing
-- move buildscene date from code to markup sheet (or maybe json)
+- move buildscene data from code to markup sheet (or maybe json)
 - add camera info to buildscene
 - implement ray-marching for:
   - volumetrics
   - sub-surface scattering
 - move animation capabilities from script into program
-- use opengl to make program interactive
+- use vulcan or whatever to make program interactive

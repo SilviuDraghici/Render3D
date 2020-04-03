@@ -7,11 +7,6 @@
 #include "svdDynamic.c"
 #include "svdDynamic.h"
 
-struct matrix I() {
-   struct matrix i;
-   return i;
-}
-
 struct matrix Sc(double Xscale, double Yscale, double Zscale) {
    // Returns tranform for left multiplying
    // to a transform or point to

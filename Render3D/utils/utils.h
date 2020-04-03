@@ -28,6 +28,13 @@ struct point {
       return *this;
    }
 
+   point &operator*=(double mult) {
+      x *= mult;
+      y *= mult;
+      z *= mult;
+      return *this;
+   }
+
    point operator+(const point &a) const {
       return point(x + a.x, y + a.y, z + a.z);
    }
@@ -55,6 +62,7 @@ struct matrix {
       T[2][2] = 1;
       T[3][3] = 1;
    }
+
    matrix operator*(const matrix &b) const {
       struct matrix result;
       for (int i = 0; i < 4; i++)
@@ -83,12 +91,14 @@ struct matrix {
    }
 };
 
+struct matrix I();
+
 double dot(struct point *u, struct point *v);
 struct point *cross(struct point *u, struct point *v);
 
 void normalize(struct point *v);
 
-
 void solveQuadratic(struct ray *ray, double *l1, double *l2);
 
+double rand_normal_dist(double mu, double sigma);
 #endif
