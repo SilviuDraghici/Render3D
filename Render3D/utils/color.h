@@ -34,6 +34,13 @@ struct color{
       B += col.B;
       return *this;
    }
+   color &operator*=(const color &col)
+   {
+      R *= col.R;
+      G *= col.G;
+      B *= col.B;
+      return *this;
+   }
    color &operator/=(double div)
    {
       R /= div;

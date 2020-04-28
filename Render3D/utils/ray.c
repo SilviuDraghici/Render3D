@@ -88,3 +88,37 @@ void rayRefract(struct ray *ray_orig, struct object *obj, struct point *p, struc
       */
    }
 }
+
+void findFirstHit(struct ray *ray, double *lambda, struct object *Os, struct object **obj, struct point *p, struct point *n, double *a, double *b) {
+   // Find the closest intersection between the ray and any objects in the scene.
+   // Inputs:
+   //   *ray    -  A pointer to the ray being traced
+   //   *Os     -  'Object source' is a pointer toward the object from which the ray originates. It is used for reflected or refracted rays
+   //              so that you can check for and ignore self-intersections as needed. It is NULL for rays originating at the center of
+   //              projection
+   // Outputs:
+   //   *lambda -  A pointer toward a double variable 'lambda' used to return the lambda at the intersection point
+   //   **obj   -  A pointer toward an (object3D *) variable so you can return a pointer to the object that has the closest intersection with
+   //              this ray (this is required so you can do the shading)
+   //   *p      -  A pointer to a 3D point structure so you can store the coordinates of the intersection point
+   //   *n      -  A pointer to a 3D point structure so you can return the normal at the intersection point
+   //   *a, *b  -  Pointers toward double variables so you can return the texture coordinates a,b at the intersection point
+
+   struct object *curr_obj = object_list;
+   double curr_l, curr_a, curr_b;
+   struct point curr_p, curr_n;
+   *lambda = INFINITY;
+
+   while (curr_obj != NULL) {
+      curr_obj->intersect(curr_obj, ray, &curr_l, &curr_p, &curr_n, &curr_a, &curr_b);
+      if (THR < curr_l && curr_l < *lambda) {
+         *lambda = curr_l;
+         *obj = curr_obj;
+         *p = curr_p;
+         *n = curr_n;
+         *a = curr_a;
+         *b = curr_b;
+      }
+      curr_obj = curr_obj->next;
+   }
+}

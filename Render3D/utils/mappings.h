@@ -17,5 +17,5 @@ void loadTexture(struct object *o, const char *filename, int type, struct textur
 void textureMap(struct object *obj, double a, double b, struct color *col);
 void normalMap(struct object *obj, double a, double b, struct point *n);
 
-void alphaMap(struct object *obj, double a, double b, double *alpha);
+void alphaMap(struct object *obj, double a, double b, double *set_alpha, double obj_alpha);
 #endif

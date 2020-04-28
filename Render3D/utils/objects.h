@@ -24,6 +24,8 @@ struct PT_properties{
     double reflect; // Purely reflecting component proportion
     double refract; // Refracting component proportion
                    // NOTE: diffuse+reflect+refract=1.0
+
+    double LSweight;   // If this is an area light source, keeps track of its weight (volume)
 };
 
 

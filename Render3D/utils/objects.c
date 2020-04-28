@@ -32,6 +32,7 @@ struct object *newPlane(double r, double g, double b) {
         plane->col.B = b;
         plane->rt.alpha = 1;
         plane->rt.shinyness = 2;
+        plane->pt.LSweight = 1;
         plane->r_index = 1;
         plane->refl_sig = 0;
         plane->intersect = &planeIntersect;
@@ -92,9 +93,18 @@ void planeCoordinates(struct object *plane, double a, double b, double *x, doubl
     // 'a' controls displacement from the left side of the plane, 'b' controls displacement from the
     // bottom of the plane.
 
-    /////////////////////////////////
-    // TO DO: Complete this function.
-    /////////////////////////////////
+    struct point p;
+    p.x = -2 * a + 1;
+    p.y = -2 * b + 1;
+    p.z = 0;
+    p.w = 1;
+
+    p = plane->T * p;
+    //matVecMult(plane->T, &p);
+
+    *x = p.x;
+    *y = p.y;
+    *z = p.z;
 }
 
 void planeSample(struct object *plane, double *x, double *y, double *z) {
@@ -102,9 +112,9 @@ void planeSample(struct object *plane, double *x, double *y, double *z) {
     // Sapling should be uniform, meaning there should be an equal change of gedtting
     // any spot on the plane
 
-    /////////////////////////////////
-    // TO DO: Complete this function.
-    /////////////////////////////////
+    double a = drand48();
+    double b = drand48();
+    planeCoordinates(plane, a, b, x, y, z);
 }
 
 struct object *newSphere(double r, double g, double b) {
@@ -128,6 +138,7 @@ struct object *newSphere(double r, double g, double b) {
         sphere->col.B = b;
         sphere->rt.alpha = 1;
         sphere->rt.shinyness = 2;
+        sphere->pt.LSweight = 1;
         sphere->r_index = 1;
         sphere->refl_sig = 0;
         sphere->intersect = &sphereIntersect;

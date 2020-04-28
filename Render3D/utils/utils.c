@@ -71,6 +71,28 @@ void solveQuadratic(struct ray *ray, double *l1, double *l2) {
    }
 }
 
+void hemiSphereCoordinates(struct point *n, struct point *d) {
+   // returns a random vector from the hemisphere around n
+   double a = drand48() * 2 * PI;
+   double b = drand48() * 2 - 1;
+   b = acos(b);
+
+
+   d->x = cos(a) * sin(b);
+   d->y = sin(a) * sin(b);
+   d->z = cos(b);
+   d->w = 1;
+   while (dot(n, d) < 0)
+   {
+      a = drand48() * 2 * PI;
+      b = drand48() * 2 - 1;
+      b = acos(b);
+      d->x = cos(a) * sin(b);
+      d->y = sin(a) * sin(b);
+      d->z = cos(b);
+   }
+}
+
 double rand_normal_dist(double mu, double sigma) {
    // https://en.wikipedia.org/wiki/Marsaglia_polar_method
    double U1, U2, W, mult;

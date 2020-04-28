@@ -100,5 +100,7 @@ void normalize(struct point *v);
 
 void solveQuadratic(struct ray *ray, double *l1, double *l2);
 
+void hemiSphereCoordinates(struct point *n, struct point *d);
+
 double rand_normal_dist(double mu, double sigma);
 #endif

@@ -119,13 +119,13 @@ void normalMap(struct object *obj, double a, double b, struct point *n) {
     }
 }
 
-void alphaMap(struct object *obj, double a, double b, double *alpha) {
+void alphaMap(struct object *obj, double a, double b, double *set_alpha, double obj_alpha) {
     // Just like texture map but returns the alpha value at a,b,
     // notice that alpha maps are single layer grayscale images, hence
     // the separate function.
     
     if (obj->alphaMap == NULL) {
-        *alpha = obj->rt.alpha;
+        *set_alpha = obj_alpha;
     } else {
         struct image *img = obj->alphaMap;
         double xc1,xc2;
@@ -155,6 +155,6 @@ void alphaMap(struct object *obj, double a, double b, double *alpha) {
         //printf("r: %f g: %f b: %f\n", *R, *G, *B);
         //here
 
-        *(alpha)= ay1*xc1 + ay2*xc2;
+        *set_alpha = ay1*xc1 + ay2*xc2;
     }
 }

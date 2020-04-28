@@ -17,7 +17,8 @@ extern char output_name[1024];  // Name of the output file for the raytraced .pp
 
 struct image *readPPMimage(const char *filename);
 struct image *readPGMimage(const char *filename);
-struct image *newImage(int size_x, int size_y);
+struct image *newImage(int size_x, int size_y, int pixel_size);
 void imageOutput(struct image *im, const char *filename);
+void dataOutput(double *im, int sx, char *name);
 void deleteImage(struct image *im);
 #endif

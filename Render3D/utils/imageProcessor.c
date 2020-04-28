@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "imageProcessor.h"
 
@@ -174,7 +175,7 @@ struct image *readPGMimage(const char *filename) {
    return (NULL);
 }
 
-struct image *newImage(int size_x, int size_y) {
+struct image *newImage(int size_x, int size_y, int pixel_size) {
    // Allocates and returns a new image with all zeros. Assumes 24 bit per pixel,
    // unsigned char array.
    struct image *im;
@@ -184,7 +185,7 @@ struct image *newImage(int size_x, int size_y) {
       im->rgbdata = NULL;
       im->sx = size_x;
       im->sy = size_y;
-      im->rgbdata = (void *)calloc(size_x * size_y * 3, sizeof(unsigned char));
+      im->rgbdata = (void *)calloc(size_x * size_y * 3, pixel_size);
       if (im->rgbdata != NULL)
          return (im);
    }
@@ -231,4 +232,117 @@ void deleteImage(struct image *im) {
          free(im->rgbdata);
       free(im);
    }
+}
+
+void dataOutput(double *im, int sx, char *name) {
+   FILE *f;
+   double *imT;
+   double HDRhist[1000];
+   int i, j;
+   double mx, mi, biw, pct;
+   unsigned char *bits24;
+   int name_len = strlen(name);
+   char pfmname[1024];
+
+   imT = (double *)calloc(sx * sx * 3, sizeof(double));
+   memcpy(imT, im, sx * sx * 3 * sizeof(double));
+   strcpy(&pfmname[0], name);
+   if(pfmname[(name_len -1) - 3] == '.'){
+      pfmname[(name_len -1) - 2] = 'p';
+      pfmname[(name_len -1) - 1] = 'f';
+      pfmname[(name_len -1) - 0] = 'm';
+   }else{
+      strcat(&pfmname[0], ".pfm");
+   }
+   // Output the floating point data so we can post-process externally
+   f = fopen(pfmname, "w");
+   fprintf(f, "PF\n");
+   fprintf(f, "%d %d\n", sx, sx);
+   fprintf(f, "%1.1f\n", -1.0);
+   fwrite(imT, sx * sx * 3 * sizeof(double), 1, f);
+   fclose(f);
+
+   // Post processing HDR map - find reasonable cutoffs for normalization
+   for (j = 0; j < 1000; j++)
+      HDRhist[j] = 0;
+
+   mi = 10e6;
+   mx = -10e6;
+   for (i = 0; i < sx * sx * 3; i++)
+   {
+      if (*(imT + i) < mi)
+         mi = *(imT + i);
+      if (*(imT + i) > mx)
+         mx = *(imT + i);
+   }
+
+   for (i = 0; i < sx * sx * 3; i++)
+   {
+      *(imT + i) = *(imT + i) - mi;
+      *(imT + i) = *(imT + i) / (mx - mi);
+   }
+   fprintf(stderr, "Image stats: Minimum=%f, maximum=%f\n", mi, mx);
+   biw = 1.000001 / 1000.0;
+   // Histogram
+   for (i = 0; i < sx * sx * 3; i++)
+   {
+      for (j = 0; j < 1000; j++)
+         if (*(imT + i) >= (biw * j) && *(imT + i) < (biw * (j + 1)))
+         {
+            HDRhist[j]++;
+            break;
+         }
+   }
+
+   pct = .005 * (sx * sx * 3);
+   mx = 0;
+   for (j = 5; j < 990; j++)
+   {
+      mx += HDRhist[j];
+      if (HDRhist[j + 5] - HDRhist[j - 5] > pct)
+         break;
+      if (mx > pct)
+         break;
+   }
+   mi = (biw * (.90 * j));
+
+   for (j = 990; j > 5; j--)
+   {
+      if (HDRhist[j - 5] - HDRhist[j + 5] > pct)
+         break;
+   }
+   mx = (biw * (j + (.25 * (999 - j))));
+
+   fprintf(stderr, "Limit values chosen at min=%f, max=%f... normalizing image\n", mi, mx);
+
+   for (i = 0; i < sx * sx * 3; i++)
+   {
+      *(imT + i) = *(imT + i) - mi;
+      *(imT + i) = *(imT + i) / (mx - mi);
+      if (*(imT + i) < 0.0)
+         *(imT + i) = 0.0;
+      if (*(imT + i) > 1.0)
+         *(imT + i) = 1.0;
+      *(imT + i) = pow(*(imT + i), .75);
+   }
+
+   bits24 = (unsigned char *)calloc(sx * sx * 3, sizeof(unsigned char));
+   for (int i = 0; i < sx * sx * 3; i++)
+      *(bits24 + i) = (unsigned char)(255.0 * (*(imT + i)));
+   f = fopen(name, "wb+");
+   if (f == NULL)
+   {
+      fprintf(stderr, "Unable to open file %s for output! No image written\n", name);
+      return;
+   }
+   fprintf(f, "P6\n");
+   fprintf(f, "# Output from PathTracer.c\n");
+   fprintf(f, "%d %d\n", sx, sx);
+   fprintf(f, "255\n");
+   fwrite(bits24, sx * sx * 3 * sizeof(unsigned char), 1, f);
+   fclose(f);
+   return;
+
+   free(bits24);
+   free(imT);
 }

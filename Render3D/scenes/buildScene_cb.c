@@ -64,7 +64,7 @@
  set_pathTrace_properties(o, 1.0, 0.0, 0.0);
  o->r_index = 1.4;
  strcpy(o->label, "Top Wall");
- o->T *= RotX(PI/2);
+ o->T *= RotX(-PI/2);
  o->T *= Sc(25);
  o->T *= Tr(0,10,5);
  invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
@@ -87,7 +87,7 @@
  o=newSphere(.99,.99,.99);
  strcpy(o->label, "Reflect Sphere");
  set_pathTrace_properties(o, 0.0, 1.0, 0.0);
- o->refl_sig = .05;
+ o->refl_sig = 0;//.05;
  o->r_index = 2.47;
  strcpy(o->label, "Right Sphere");
 
@@ -102,29 +102,17 @@
  o->refl_sig = 0.0;
  o->r_index = 1.54;
  strcpy(o->label, "Top Light");
- o->T *= Sc(.5,2.5,1);
+ o->T *= Sc(0.5, 2.5, 1);
  o->T *= RotX(PI/2);
  o->T *= Tr(0,9.995,5);
  invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
  o->isLightSource=1;
+ o->pt.LSweight *= 0.5 * 2.5 * 1; // <- scale weight by scale
  insertObject(o,&object_list);
 
  p.x = 0;
-    p.y = 9.99;
+    p.y = 9.9;
     p.z = 5;
     p.w = 1;
     l = newPLS(&p, .95, .95, .95);
     insertPLS(l, &light_list);
-
- // Planar light source at bottom
- o=newPlane(1.0,1.0,1.0);
- set_pathTrace_properties(o, 1.0, 0.0, 0.0);
- o->refl_sig = 0.0;
- o->r_index = 1.54;
- strcpy(o->label, "bottom light");
- o->T *= Sc(.5,2.5,1);
- o->T *= RotX(-PI/2);
- o->T *= Tr(0,-9.995,5);
- invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
- o->isLightSource=1;
- //insertObject(o,&object_list);
