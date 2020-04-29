@@ -1,6 +1,7 @@
 - migrate code to c++ for operator overloading - done
 - break source up into smaller files - done
-- merge Raytracer and Pathtracer 
+- merge Raytracer and Pathtracer - done
+- turn object struct into an Object class
 - rewrite Paco's code
 - implement texture mapping for meshes
 - add support for meshes with non-triangular polygons

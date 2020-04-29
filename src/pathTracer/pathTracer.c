@@ -438,9 +438,7 @@ void normalizeLightWeights(struct object *object_list){
    {
       if (obj->isLightSource)
       {
-         printf("initial weight: %f\n", obj->pt.LSweight);
          obj->pt.LSweight /= total_weight;
-         printf("adjusted weight: %f\n", obj->pt.LSweight);
       }
       obj = obj->next;
    }
