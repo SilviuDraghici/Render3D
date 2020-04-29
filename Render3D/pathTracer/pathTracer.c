@@ -332,7 +332,7 @@ void PathTrace(struct ray *ray, int depth, struct color *col, struct object *Os,
             double w = MIN(1, (A * n_dot_l * nls_dot_l) / (dxd));
 
             struct color light_col;
-            // set object color
+            // set light color
             textureMap(light_listt[curr_light], La, Lb, &light_col);
             
             ray->pt.expl_col += ray->pt.ray_col * light_col * w;
@@ -383,7 +383,7 @@ void PathTrace(struct ray *ray, int depth, struct color *col, struct object *Os,
       double s = 1 - (r * r) * (1 - (c * c));
       if (s > 0)
       {
-         refractRay.d = ray->d * r + n.x * (r * c - sqrt(s)) ;
+         refractRay.d = ray->d * r + n * (r * c - sqrt(s)) ;
          normalize(&refractRay.d);
          // Use Shlick's to figure out amount of reflected and refracted light
          double R0 = ((n1 - n2) / (n1 + n2)) * ((n1 - n2) / (n1 + n2));

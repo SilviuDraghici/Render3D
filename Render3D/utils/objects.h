@@ -86,8 +86,8 @@ void planeSample(struct object *plane, double *x, double *y, double *z);
 
 struct object *newSphere(double r, double g, double b);
 void sphereIntersect(struct object *sphere, struct ray *ray, double *lambda, struct point *p, struct point *n, double *a, double *b);
-void sphereCoordinates(struct object *plane, double a, double b, double *x, double *y, double *z);
-void sphereSample(struct object *plane, double *x, double *y, double *z);
+void sphereCoordinates(struct object *sphere, double a, double b, double *x, double *y, double *z);
+void sphereSample(struct object *sphere, double *x, double *y, double *z);
 
 struct object *newCyl(double r, double g, double b);
 

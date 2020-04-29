@@ -159,9 +159,6 @@ void sphereIntersect(struct object *sphere, struct ray *ray, double *lambda, str
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical sphere.
 
-    /////////////////////////////////
-    // TO DO: Complete this function.
-    /////////////////////////////////
     struct ray ray_transformed;
     double l1 = -1, l2 = -1;
     rayTransform(ray, &ray_transformed, sphere);
@@ -208,24 +205,34 @@ void sphereIntersect(struct object *sphere, struct ray *ray, double *lambda, str
     *b = 0.5 - (asin(y)) / (PI);
 }
 
-void sphereCoordinates(struct object *plane, double a, double b, double *x, double *y, double *z) {
+void sphereCoordinates(struct object *sphere, double a, double b, double *x, double *y, double *z) {
     // Return in (x,y,z) the coordinates of a point on the plane given by the 2 parameters a,b in [0,1].
     // 'a' controls displacement from the left side of the plane, 'b' controls displacement from the
     // bottom of the plane.
 
-    /////////////////////////////////
-    // TO DO: Complete this function.
-    /////////////////////////////////
+  struct point p;
+  p.x = cos(a) * sin(b);
+  p.y = sin(a) * sin(b);
+  p.z = cos(b);
+  p.w = 1;
+  
+  //matVecMult(sphere->T, &p);
+  p = sphere->T * p;
+
+  *x = p.x;
+  *y = p.y;
+  *z = p.z;
 }
 
-void sphereSample(struct object *plane, double *x, double *y, double *z) {
+void sphereSample(struct object *sphere, double *x, double *y, double *z) {
     // Returns the 3D coordinates (x,y,z) of a randomly sampled point on the plane
     // Sapling should be uniform, meaning there should be an equal change of gedtting
     // any spot on the plane
 
-    /////////////////////////////////
-    // TO DO: Complete this function.
-    /////////////////////////////////
+    double a = drand48() * 2 * PI;
+  double b = drand48() * 2 - 1;
+  b = acos(b);
+  sphereCoordinates(sphere, a, b, x, y, z);
 }
 
 void set_rayTrace_properties(struct object *o, double ambient, double diffuse, double specular, double global, double alpha, double shiny){

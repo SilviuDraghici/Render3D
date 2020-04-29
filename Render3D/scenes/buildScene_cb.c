@@ -87,7 +87,7 @@
  o=newSphere(.99,.99,.99);
  strcpy(o->label, "Reflect Sphere");
  set_pathTrace_properties(o, 0.0, 1.0, 0.0);
- o->refl_sig = 0;//.05;
+ o->refl_sig = 0.05;
  o->r_index = 2.47;
  strcpy(o->label, "Right Sphere");
 
