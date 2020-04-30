@@ -4,10 +4,10 @@
 #include "color.h"
 
 struct textureNode {
-   char name[1024];
-   int type;
-   struct image *im;
-   struct textureNode *next;
+    char name[1024];
+    int type;
+    struct image *im;
+    struct textureNode *next;
 };
 
 extern struct textureNode *texture_list;

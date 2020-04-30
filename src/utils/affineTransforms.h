@@ -1,4 +1,5 @@
 #include <math.h>
+
 #include "utils.h"
 
 #ifndef AFFINETRANSFORMS_H

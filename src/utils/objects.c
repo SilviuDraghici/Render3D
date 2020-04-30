@@ -1,7 +1,7 @@
+#include "objects.h"
+
 #include <stdio.h>
 #include <stdlib.h>
-
-#include "objects.h"
 
 #include "mappings.h"
 #include "ray.h"
@@ -210,18 +210,18 @@ void sphereCoordinates(struct object *sphere, double a, double b, double *x, dou
     // 'a' controls displacement from the left side of the plane, 'b' controls displacement from the
     // bottom of the plane.
 
-  struct point p;
-  p.x = cos(a) * sin(b);
-  p.y = sin(a) * sin(b);
-  p.z = cos(b);
-  p.w = 1;
-  
-  //matVecMult(sphere->T, &p);
-  p = sphere->T * p;
+    struct point p;
+    p.x = cos(a) * sin(b);
+    p.y = sin(a) * sin(b);
+    p.z = cos(b);
+    p.w = 1;
 
-  *x = p.x;
-  *y = p.y;
-  *z = p.z;
+    //matVecMult(sphere->T, &p);
+    p = sphere->T * p;
+
+    *x = p.x;
+    *y = p.y;
+    *z = p.z;
 }
 
 void sphereSample(struct object *sphere, double *x, double *y, double *z) {
@@ -230,12 +230,12 @@ void sphereSample(struct object *sphere, double *x, double *y, double *z) {
     // any spot on the plane
 
     double a = drand48() * 2 * PI;
-  double b = drand48() * 2 - 1;
-  b = acos(b);
-  sphereCoordinates(sphere, a, b, x, y, z);
+    double b = drand48() * 2 - 1;
+    b = acos(b);
+    sphereCoordinates(sphere, a, b, x, y, z);
 }
 
-void set_rayTrace_properties(struct object *o, double ambient, double diffuse, double specular, double global, double alpha, double shiny){
+void set_rayTrace_properties(struct object *o, double ambient, double diffuse, double specular, double global, double alpha, double shiny) {
     o->rt.ambient = ambient;
     o->rt.diffuse = diffuse;
     o->rt.specular = specular;
@@ -250,21 +250,21 @@ void set_rayTrace_properties(struct object *o, double ambient, double diffuse, d
 
     // ensure sum to 1
     double sum = o->pt.diffuse + o->pt.reflect + o->pt.refract;
-     o->pt.diffuse /= sum;
-     o->pt.reflect /= sum;
-     o->pt.refract /= sum;
+    o->pt.diffuse /= sum;
+    o->pt.reflect /= sum;
+    o->pt.refract /= sum;
 }
 
-void set_pathTrace_properties(struct object *o, double diffuse, double reflect, double refract){
+void set_pathTrace_properties(struct object *o, double diffuse, double reflect, double refract) {
     o->pt.diffuse = diffuse;
     o->pt.reflect = reflect;
     o->pt.refract = refract;
-    
+
     // ensure sum to 1
     double sum = o->pt.diffuse + o->pt.reflect + o->pt.refract;
-     o->pt.diffuse /= sum;
-     o->pt.reflect /= sum;
-     o->pt.refract /= sum;
+    o->pt.diffuse /= sum;
+    o->pt.reflect /= sum;
+    o->pt.refract /= sum;
 
     // create a similar set of parameters for ray tracing
     o->rt.ambient = 0.1 * diffuse;
@@ -273,7 +273,6 @@ void set_pathTrace_properties(struct object *o, double diffuse, double reflect, 
     o->rt.global = reflect;
     o->rt.alpha = 1 - refract;
     o->rt.shinyness = reflect * 10;
-
 }
 
 void insertObject(struct object *o, struct object **list) {

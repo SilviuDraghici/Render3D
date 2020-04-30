@@ -7,9 +7,9 @@
 /* 3-layer images (your raytraced scene, texture and normal maps) as well   */
 /* as 1-layer images (alpha maps)					      */
 struct image {
-   void *rgbdata;
-   int sx;
-   int sy;
+    void *rgbdata;
+    int sx;
+    int sy;
 };
 
 extern struct image *outImage;

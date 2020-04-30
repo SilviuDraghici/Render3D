@@ -1,4 +1,5 @@
 #include "mappings.h"
+
 #include "imageProcessor.h"
 #include "objects.h"
 #include "utils.h"
@@ -123,38 +124,37 @@ void alphaMap(struct object *obj, double a, double b, double *set_alpha, double 
     // Just like texture map but returns the alpha value at a,b,
     // notice that alpha maps are single layer grayscale images, hence
     // the separate function.
-    
+
     if (obj->alphaMap == NULL) {
         *set_alpha = obj_alpha;
     } else {
         struct image *img = obj->alphaMap;
-        double xc1,xc2;
+        double xc1, xc2;
 
         a = MIN(1, MAX(0, a));
         b = MIN(1, MAX(0, b));
-        a = a*(img->sx - 1);
-        b = b*(img->sy - 1);
+        a = a * (img->sx - 1);
+        b = b * (img->sy - 1);
 
         int x1 = (int)floor(a);
         int y1 = (int)floor(b);
-        int x2 = MIN(img->sx -1, (int)ceil(a));
-        int y2 = MIN(img->sy -1, (int)ceil(b));
+        int x2 = MIN(img->sx - 1, (int)ceil(a));
+        int y2 = MIN(img->sy - 1, (int)ceil(b));
 
-        double *rgbIm=(double *)img->rgbdata;
+        double *rgbIm = (double *)img->rgbdata;
         double ax1, ax2, ay1, ay2;
-        ax1 = (x2 - a)/(x2 - x1);
-        ax2 = (a - x1)/(x2 - x1);
-        xc1 = ax1*((double)rgbIm[(y1*img->sx + x1)])  + ax2*((double)rgbIm[(y1*img->sx + x2)]);
-        xc2 = ax1*((double)rgbIm[(y2*img->sx + x1)])  + ax2*((double)rgbIm[(y2*img->sx + x2)]);
-
+        ax1 = (x2 - a) / (x2 - x1);
+        ax2 = (a - x1) / (x2 - x1);
+        xc1 = ax1 * ((double)rgbIm[(y1 * img->sx + x1)]) + ax2 * ((double)rgbIm[(y1 * img->sx + x2)]);
+        xc2 = ax1 * ((double)rgbIm[(y2 * img->sx + x1)]) + ax2 * ((double)rgbIm[(y2 * img->sx + x2)]);
 
         //printf("a: %f b: %f\n", a, b);
         //printf("x: %d y: %d\n", x, y);
-        ay1 = (y2 - b)/(y2 - y1);
-        ay2 = (b - y1)/(y2 - y1);
+        ay1 = (y2 - b) / (y2 - y1);
+        ay2 = (b - y1) / (y2 - y1);
         //printf("r: %f g: %f b: %f\n", *R, *G, *B);
         //here
 
-        *set_alpha = ay1*xc1 + ay2*xc2;
+        *set_alpha = ay1 * xc1 + ay2 * xc2;
     }
 }
