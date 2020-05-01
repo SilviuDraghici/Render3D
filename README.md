@@ -18,14 +18,21 @@ TODO
 - Re-implement meshes
 - refactor with more c++ features
 - Use Vulkan to render on the gpu
+- develop system for passing in scenes
 
 Sample Renders
 ---
 
 1024x1024 Path traced Cornell Box. 50,000 samples.
-[![PT](https://github.com/SilviuDraghici/Render3D/tree/master/output/Cornell_Box_50k.png)](This looks no better than at 20,000 samples. ¯\\_( ツ )_/¯ )
+![PT] 
 
 1024x1024 Ray traced Cornell Box. 
-[![PT](https://github.com/SilviuDraghici/Render3D/tree/master/output/Cornell_Box_rt.png)](This looks no better than at 20,000 samples. ¯\\_( ツ )_/¯ )
+![RT]
 
 
+
+<!--- Images ---> 
+
+[PT]: https://github.com/SilviuDraghici/Render3D/raw/master/output/Cornell_Box_50k.png "This looks no better than at 20,000 samples. ¯\\_( ツ )_/¯ "
+
+[RT]: https://github.com/SilviuDraghici/Render3D/raw/master/output/Cornell_Box_rt.png "This is a little less feature-full"
