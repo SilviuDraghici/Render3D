@@ -3,7 +3,7 @@
 #include "affineTransforms.h"
 #include "objects.h"
 
-void rayTransform(struct ray *ray_orig, struct ray *ray_transformed, struct object *obj) {
+void rayTransform(struct ray *ray_orig, struct ray *ray_transformed, Object *obj) {
     // Transforms a ray using the inverse transform for the specified object. This is so that we can
     // use the intersection test for the canonical object. Note that this has to be done carefully!
 
@@ -37,7 +37,7 @@ void rayReflect(struct ray *ray_orig, struct point *p, struct point *n, struct r
     //normalize(&ray_reflected->d);
 }
 
-void rayRefract(struct ray *ray_orig, struct object *obj, struct point *p, struct point *n, struct ray *ray_refracted, double *s, double *R_Shlick) {
+void rayRefract(struct ray *ray_orig, Object *obj, struct point *p, struct point *n, struct ray *ray_refracted, double *s, double *R_Shlick) {
     double r_index = obj->r_index;
     double r, n1 = 1, n2 = 1, theta = -1;
     double c = dot(n, &(ray_orig->d));
@@ -64,7 +64,7 @@ void rayRefract(struct ray *ray_orig, struct object *obj, struct point *p, struc
     ray_refracted->d = ray_orig->d * r + *n * (r * c - sqrt(*s));
 }
 
-void findFirstHit(struct ray *ray, double *lambda, struct object *Os, struct object **obj, struct point *p, struct point *n, double *a, double *b) {
+void findFirstHit(struct ray *ray, double *lambda, Object *Os, Object **obj, struct point *p, struct point *n, double *a, double *b) {
     // Find the closest intersection between the ray and any objects in the scene.
     // Inputs:
     //   *ray    -  A pointer to the ray being traced
@@ -79,13 +79,13 @@ void findFirstHit(struct ray *ray, double *lambda, struct object *Os, struct obj
     //   *n      -  A pointer to a 3D point structure so you can return the normal at the intersection point
     //   *a, *b  -  Pointers toward double variables so you can return the texture coordinates a,b at the intersection point
 
-    struct object *curr_obj = object_list;
+    Object *curr_obj = object_list;
     double curr_l, curr_a, curr_b;
     struct point curr_p, curr_n;
     *lambda = INFINITY;
 
     while (curr_obj != NULL) {
-        curr_obj->intersect(curr_obj, ray, &curr_l, &curr_p, &curr_n, &curr_a, &curr_b);
+        curr_obj->intersect(ray, &curr_l, &curr_p, &curr_n, &curr_a, &curr_b);
         if (THR < curr_l && curr_l < *lambda) {
             *lambda = curr_l;
             *obj = curr_obj;

@@ -15,7 +15,7 @@
 #include "../utils/ray.h"
 #include "../utils/utils.h"
 
-int samples_per_update = 25;
+int samples_per_update = 100;
 
 static int MAX_DEPTH;
 unsigned long int NUM_RAYS;
@@ -23,12 +23,65 @@ unsigned long int NUM_RAYS;
 double total_weight;
 
 //array of light sources
-struct object **light_listt;
+Object **light_listt;
 int num_lights;
 int curr_light;
 
+inline void explicit_light_sample(struct ray *ray, Object *obj, struct point *p, struct point *n, Object **explt) {
+    if (ray->pt.isLightRay == 0) {
+        // ray from intersection point to light source
+        struct ray pToLight;
+        pToLight.p0 = *p;
+
+        double prob = 0;
+        double dice = drand48();
+        for (int i = 0; i < num_lights; i++) {
+            prob += light_listt[i]->pt.LSweight;
+            if (dice < prob) {
+                curr_light = i;
+                break;
+            }
+        }
+
+        double x, y, z;
+        light_listt[curr_light]->randomPoint(&x, &y, &z);
+        pToLight.d.x = x - p->x;  //0 - p.px;
+        pToLight.d.y = y - p->y;  //9.95 - p.py;
+        pToLight.d.z = z - p->z;  //5 - p.pz;
+        pToLight.d.w = 1;
+
+        double light_lambda;
+        Object *obstruction = NULL;
+        struct point lightp;
+        struct point nls;
+        double La, Lb;
+
+        findFirstHit(&pToLight, &light_lambda, obj, &obstruction, &lightp, &nls,
+                     &La, &Lb);
+
+        //printf("source: %s, obstruction: %s\n", obj->label, obstruction->label);
+        *explt = light_listt[curr_light];
+        if (obstruction == light_listt[curr_light]) {
+            //printf("total weight: %f\n", total_weight);
+            double A = total_weight * light_listt[curr_light]->pt.LSweight;
+            double dxd = pToLight.d.x * pToLight.d.x + pToLight.d.y * pToLight.d.y + pToLight.d.z * pToLight.d.z;
+            normalize(&pToLight.d);
+            double n_dot_l = fabs(dot(n, &pToLight.d));
+            double nls_dot_l = fabs(dot(&nls, &pToLight.d));
+            double w = MIN(1, (A * n_dot_l * nls_dot_l) / (dxd));
+
+            struct color light_col;
+            // set light color
+            textureMap(light_listt[curr_light], La, Lb, &light_col);
+
+            ray->pt.expl_col += ray->pt.ray_col * light_col * w;
+        }
+    }
+    // end of explicit light sampling
+}
+
 void pathTraceMain(int argc, char *argv[]) {
-    struct color col;  // Return colour for pixels
+    struct color col;  // Return color for pixels
 
     if (argc < 6) {
         fprintf(stderr, "PathTracer: Can not parse input parameters\n");
@@ -86,7 +139,7 @@ void pathTraceMain(int argc, char *argv[]) {
 
     //count number of lights
     num_lights = 0;
-    struct object *curr_obj = object_list;
+    Object *curr_obj = object_list;
     while (curr_obj != NULL) {
         if (curr_obj->isLightSource) {
             num_lights++;
@@ -95,7 +148,7 @@ void pathTraceMain(int argc, char *argv[]) {
     }
 
     //create array of light pointers
-    light_listt = (struct object **)malloc(num_lights * sizeof(struct object *));
+    light_listt = (Object **)malloc(num_lights * sizeof(Object *));
     num_lights = 0;
     curr_obj = object_list;
     while (curr_obj != NULL) {
@@ -182,7 +235,7 @@ void pathTraceMain(int argc, char *argv[]) {
     fprintf(stderr, "Rays per second: %.0f\n", (double)NUM_RAYS / (double)difftime(t2, t1));
 }
 
-void PathTrace(struct ray *ray, int depth, struct color *col, struct object *Os, struct object *explicit_l) {
+void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os, Object *explicit_l) {
     // Trace one light path through the scene.
     //
     // Parameters:
@@ -196,7 +249,7 @@ void PathTrace(struct ray *ray, int depth, struct color *col, struct object *Os,
     NUM_RAYS++;
     double lambda;              // Lambda at intersection
     double a, b;                // Texture coordinates
-    struct object *obj = NULL;  // Pointer to object at intersection
+    Object *obj = NULL;  // Pointer to object at intersection
     struct point p;             // Intersection point
     struct point n;             // Normal at intersection
     struct point d;
@@ -206,7 +259,7 @@ void PathTrace(struct ray *ray, int depth, struct color *col, struct object *Os,
     double dice;  // Handy to keep a random value
     double max_col;
 
-    struct object *explt = explicit_l;
+    Object *explt = explicit_l;
 
     if (depth > MAX_DEPTH)  // Max recursion depth reached. Return black (no light coming into pixel from this path).
     {
@@ -272,63 +325,9 @@ void PathTrace(struct ray *ray, int depth, struct color *col, struct object *Os,
         // ******************** Importance sampling ************************
         cosWeightedSample(&n, &d);
         ray->d = d;
-        // ******************** Random sampling ************************
-        //hemiSphereCoordinates(&n, &d);
 
-        //double d_dot_n = dot(&d, &n);
-        //ray->d = d * d_dot_n;
-
-        // explicit light sampling
-        if (ray->pt.isLightRay == 0) {
-            // ray from intersection point to light source
-            struct ray pToLight;
-            pToLight.p0 = p;
-
-            double prob = 0;
-            dice = drand48();
-            for (int i = 0; i < num_lights; i++) {
-                prob += light_listt[i]->pt.LSweight;
-                if (dice < prob) {
-                    curr_light = i;
-                    break;
-                }
-            }
-
-            double x, y, z;
-            light_listt[curr_light]->randomPoint(light_listt[curr_light], &x, &y, &z);
-            pToLight.d.x = x - p.x;  //0 - p.px;
-            pToLight.d.y = y - p.y;  //9.95 - p.py;
-            pToLight.d.z = z - p.z;  //5 - p.pz;
-            pToLight.d.w = 1;
-
-            double light_lambda;
-            struct object *obstruction = NULL;
-            struct point lightp;
-            struct point nls;
-            double La, Lb;
-
-            findFirstHit(&pToLight, &light_lambda, obj, &obstruction, &lightp, &nls,
-                         &La, &Lb);
-
-            //printf("source: %s, obstruction: %s\n", obj->label, obstruction->label);
-            explt = light_listt[curr_light];
-            if (obstruction == light_listt[curr_light]) {
-                //printf("total weight: %f\n", total_weight);
-                double A = total_weight * light_listt[curr_light]->pt.LSweight;
-                double dxd = pToLight.d.x * pToLight.d.x + pToLight.d.y * pToLight.d.y + pToLight.d.z * pToLight.d.z;
-                normalize(&pToLight.d);
-                double n_dot_l = fabs(dot(&n, &pToLight.d));
-                double nls_dot_l = fabs(dot(&nls, &pToLight.d));
-                double w = MIN(1, (A * n_dot_l * nls_dot_l) / (dxd));
-
-                struct color light_col;
-                // set light color
-                textureMap(light_listt[curr_light], La, Lb, &light_col);
-
-                ray->pt.expl_col += ray->pt.ray_col * light_col * w;
-            }
-        }
-        // end of explicit light sampling
+        explicit_light_sample(ray, obj, &p, &n, &explt);
+        
     } else if (dice <= diffuse + reflect) {  //reflective
         explt = NULL;
         struct ray ray_reflected;
@@ -362,9 +361,9 @@ void PathTrace(struct ray *ray, int depth, struct color *col, struct object *Os,
     }
 }
 
-void normalizeLightWeights(struct object *object_list) {
+void normalizeLightWeights(Object *object_list) {
     // Update light source weights - will give you weights for each light source that add up to 1
-    struct object *obj = object_list;
+    Object *obj = object_list;
     total_weight = 0;
     while (obj != NULL) {
         if (obj->isLightSource)

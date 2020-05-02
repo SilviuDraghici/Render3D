@@ -1,5 +1,6 @@
 #include "color.h"
 #include "utils.h"
+#include "objects.h"
 
 #ifndef RAY_H
 #define RAY_H
@@ -24,10 +25,10 @@ struct ray {
     struct ray_pathTrace_elements pt;
 };
 
-void rayTransform(struct ray *ray_orig, struct ray *ray_transformed, struct object *obj);
+void rayTransform(struct ray *ray_orig, struct ray *ray_transformed, Object *obj);
 void rayPosition(struct ray *ray, double lambda, struct point *pos);
 void rayReflect(struct ray *ray_orig, struct point *p, struct point *n, struct ray *ray_reflected);
-void rayRefract(struct ray *ray_orig, struct object *obj, struct point *p, struct point *n, struct ray *ray_refracted, double *s, double *R_Shlick);
-void findFirstHit(struct ray *ray, double *lambda, struct object *Os, struct object **obj, struct point *p, struct point *n, double *a, double *b);
+void rayRefract(struct ray *ray_orig, Object *obj, struct point *p, struct point *n, struct ray *ray_refracted, double *s, double *R_Shlick);
+void findFirstHit(struct ray *ray, double *lambda, Object *Os, Object **obj, struct point *p, struct point *n, double *a, double *b);
 
 #endif

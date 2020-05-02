@@ -1,5 +1,5 @@
 
- struct object *o;
+ Object *o;
  struct point p;
  struct pointLS *l;
 
@@ -14,8 +14,8 @@
    cam_focal = -3;
 
  // Left
- o=newPlane(.75,.25,.25);
- set_pathTrace_properties(o, 1.0, 0.0, 0.0);
+ o = new Plane(.75,.25,.25);
+ o->set_pathTrace_properties(1.0, 0.0, 0.0);
  o->r_index = 1.4;
  strcpy(o->label, "Left Wall");
  //loadTexture(o, nfile, 2, &t_list);
@@ -26,8 +26,8 @@
  insertObject(o,&object_list);
 
  // Right
- o=newPlane(.25,.25,.75);
- set_pathTrace_properties(o, 1.0, 0.0, 0.0);
+ o = new Plane(.25,.25,.75);
+ o->set_pathTrace_properties(1.0, 0.0, 0.0);
  o->r_index = 1.4;
  strcpy(o->label, "Right Wall");
  o->T *= RotY(PI / 2);
@@ -37,8 +37,8 @@
  insertObject(o,&object_list);
 
  // Back
- o=newPlane(.75,.75,.75);
- set_pathTrace_properties(o, 1.0, 0.0, 0.0);
+ o = new Plane(.75,.75,.75);
+ o->set_pathTrace_properties(1.0, 0.0, 0.0);
  o->r_index = 1.4;
  strcpy(o->label, "Back Wall");
  //loadTexture(o, file, 1, &t_list);
@@ -49,8 +49,8 @@
  insertObject(o,&object_list);
 
  // Bottom
- o=newPlane(.75,.75,.75);
- set_pathTrace_properties(o, 1.0, 0.0, 0.0);
+ o = new Plane(.75,.75,.75);
+ o->set_pathTrace_properties(1.0, 0.0, 0.0);
  o->r_index = 1.4;
  strcpy(o->label, "Bottom Wall");
  o->T *= RotX(PI/2);
@@ -60,8 +60,8 @@
  insertObject(o,&object_list);
 
  // Top
- o=newPlane(.75,.75,.75);
- set_pathTrace_properties(o, 1.0, 0.0, 0.0);
+ o = new Plane(.75,.75,.75);
+ o->set_pathTrace_properties(1.0, 0.0, 0.0);
  o->r_index = 1.4;
  strcpy(o->label, "Top Wall");
  o->T *= RotX(-PI/2);
@@ -72,9 +72,9 @@
 
  // Two spheres scene
  // Refract
- o=newSphere(.99,.99,.99);
+ o = new Sphere(.99,.99,.99);
  strcpy(o->label, "Refract Shpere");
- set_pathTrace_properties(o, 0.0, 0.0, 1.0);
+ o->set_pathTrace_properties(0.0, 0.0, 1.0);
  o->r_index = 1.54;
 
  o->T *= RotY(PI);
@@ -84,9 +84,9 @@
  insertObject(o,&object_list);
 
  // Reflect
- o=newSphere(.99,.99,.99);
+ o = new Sphere(.99,.99,.99);
  strcpy(o->label, "Reflect Sphere");
- set_pathTrace_properties(o, 0.0, 1.0, 0.0);
+ o->set_pathTrace_properties(0.0, 1.0, 0.0);
  o->refl_sig = 0.05;
  o->r_index = 2.47;
  strcpy(o->label, "Right Sphere");
@@ -97,8 +97,8 @@
  insertObject(o,&object_list);
 
  // Planar light source at top
- o=newPlane(1.0,1.0,1.0);
- set_pathTrace_properties(o, 1.0, 0.0, 0.0);
+ o = new Plane(1.0,1.0,1.0);
+ o->set_pathTrace_properties(1.0, 0.0, 0.0);
  o->refl_sig = 0.0;
  o->r_index = 1.54;
  strcpy(o->label, "Top Light");

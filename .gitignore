@@ -6,3 +6,4 @@ out.ppm
 *.pfm
 *.o
 *.h.gch
+*.txt

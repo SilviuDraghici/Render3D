@@ -7,54 +7,78 @@
 #include "ray.h"
 #include "utils.h"
 
-struct object *object_list;
+Object *object_list;
 struct pointLS *light_list;
 
-struct object *newPlane(double r, double g, double b) {
-    // Intialize a new plane with the specified parameters:
-    // ra, rd, rs, rg - Albedos for the components of the Phong model
-    // r, g, b, - Colour for this plane
-    // alpha - Transparency, must be set to 1 unless you are doing refraction
-    // r_index - Refraction index if you are doing refraction.
-    // shiny - Exponent for the specular component of the Phong model
-    //
-    // The plane is defined by the following vertices (CCW)
-    // (1,1,0), (-1,1,0), (-1,-1,0), (1,-1,0)
-    // With normal vector (0,0,1) (i.e. parallel to the XY plane)
-
-    struct object *plane = (struct object *)calloc(1, sizeof(struct object));
-
-    if (!plane)
-        fprintf(stderr, "Unable to allocate new plane, out of memory!\n");
-    else {
-        plane->col.R = r;
-        plane->col.G = g;
-        plane->col.B = b;
-        plane->rt.alpha = 1;
-        plane->rt.shinyness = 2;
-        plane->pt.LSweight = 1;
-        plane->r_index = 1;
-        plane->refl_sig = 0;
-        plane->intersect = &planeIntersect;
-        plane->surfaceCoords = &planeCoordinates;
-        plane->randomPoint = &planeSample;
-        plane->texImg = NULL;
-        plane->photonMap = NULL;
-        plane->normalMap = NULL;
-        plane->frontAndBack = 1;
-        plane->isLightSource = 0;
-        plane->T = I();
-        plane->next = NULL;
-    }
-    return (plane);
+Object::Object(double r = 1, double g = 1, double b = 1) {
+    col.R = r;
+    col.G = g;
+    col.B = b;
+    rt.alpha = 1;
+    rt.shinyness = 2;
+    pt.LSweight = 1;
+    r_index = 1;
+    refl_sig = 0;
+    texImg = NULL;
+    photonMap = NULL;
+    normalMap = NULL;
+    alphaMap = NULL;
+    frontAndBack = 0;
+    isLightSource = 0;
+    T = I();
+    next = NULL;
 }
 
-void planeIntersect(struct object *plane, struct ray *ray, double *lambda, struct point *p, struct point *n, double *a, double *b) {
+void Object::set_rayTrace_properties(double ambient, double diffuse, double specular, double global, double alpha, double shiny) {
+    rt.ambient = ambient;
+    rt.diffuse = diffuse;
+    rt.specular = specular;
+    rt.global = global;
+    rt.alpha = alpha;
+    rt.shinyness = shiny;
+
+    // create a similar set of params incase the object is drawn in pathtrace mode
+    pt.diffuse = alpha * (ambient + diffuse);
+    pt.reflect = alpha * (1 - diffuse);
+    pt.refract = 1 - alpha;
+
+    // ensure sum to 1
+    double sum = pt.diffuse + pt.reflect + pt.refract;
+    pt.diffuse /= sum;
+    pt.reflect /= sum;
+    pt.refract /= sum;
+}
+
+void Object::set_pathTrace_properties(double diffuse, double reflect, double refract) {
+    pt.diffuse = diffuse;
+    pt.reflect = reflect;
+    pt.refract = refract;
+
+    // ensure sum to 1
+    double sum = pt.diffuse + pt.reflect + pt.refract;
+    pt.diffuse /= sum;
+    pt.reflect /= sum;
+    pt.refract /= sum;
+
+    // create a similar set of parameters for ray tracing
+    rt.ambient = 0.1 * diffuse;
+    rt.diffuse = 0.9 * diffuse;
+    rt.specular = reflect;
+    rt.global = reflect;
+    rt.alpha = 1 - refract;
+    rt.shinyness = reflect * 10;
+}
+
+Plane::Plane(double r = 1, double g = 1, double b = 1) : Object(r, g, b){
+    frontAndBack = 1;
+}
+
+void Plane::intersect(struct ray *ray, double *lambda, struct point *p, struct point *n, double *a, double *b) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical plane.
 
     struct ray ray_transformed;
-    rayTransform(ray, &ray_transformed, plane);
+    rayTransform(ray, &ray_transformed, this);
     *lambda = -1;
     struct point norm;
     // normal of canonical plane
@@ -79,7 +103,7 @@ void planeIntersect(struct object *plane, struct ray *ray, double *lambda, struc
             *lambda = l;
             rayPosition(ray, l, p);
             //printf("n: (%f, %f, %f)\n", n->px, n->py, n->pz);
-            normalTransform(&norm, n, plane);
+            normalTransform(&norm, n, this);
             //printf("nt: (%f, %f, %f)\n", n->px, n->py, n->pz);
         }
 
@@ -88,7 +112,7 @@ void planeIntersect(struct object *plane, struct ray *ray, double *lambda, struc
     }
 }
 
-void planeCoordinates(struct object *plane, double a, double b, double *x, double *y, double *z) {
+void Plane::surfaceCoordinates(double a, double b, double *x, double *y, double *z){ 
     // Return in (x,y,z) the coordinates of a point on the plane given by the 2 parameters a,b in [0,1].
     // 'a' controls displacement from the left side of the plane, 'b' controls displacement from the
     // bottom of the plane.
@@ -99,7 +123,7 @@ void planeCoordinates(struct object *plane, double a, double b, double *x, doubl
     p.z = 0;
     p.w = 1;
 
-    p = plane->T * p;
+    p = T * p;
     //matVecMult(plane->T, &p);
 
     *x = p.x;
@@ -107,61 +131,23 @@ void planeCoordinates(struct object *plane, double a, double b, double *x, doubl
     *z = p.z;
 }
 
-void planeSample(struct object *plane, double *x, double *y, double *z) {
+void Plane::randomPoint(double *x, double *y, double *z){
     // Returns the 3D coordinates (x,y,z) of a randomly sampled point on the plane
     // Sapling should be uniform, meaning there should be an equal change of gedtting
     // any spot on the plane
 
     double a = drand48();
     double b = drand48();
-    planeCoordinates(plane, a, b, x, y, z);
+    surfaceCoordinates(a, b, x, y, z);
 }
 
-struct object *newSphere(double r, double g, double b) {
-    // Intialize a new sphere with the specified parameters:
-    // ra, rd, rs, rg - Albedos for the components of the Phong model
-    // r, g, b, - Colour for this plane
-    // alpha - Transparency, must be set to 1 unless you are doing refraction
-    // r_index - Refraction index if you are doing refraction.
-    // shiny -Exponent for the specular component of the Phong model
-    //
-    // This is assumed to represent a unit sphere centered at the origin.
-    //
-
-    struct object *sphere = (struct object *)calloc(1, sizeof(struct object));
-
-    if (!sphere)
-        fprintf(stderr, "Unable to allocate new sphere, out of memory!\n");
-    else {
-        sphere->col.R = r;
-        sphere->col.G = g;
-        sphere->col.B = b;
-        sphere->rt.alpha = 1;
-        sphere->rt.shinyness = 2;
-        sphere->pt.LSweight = 1;
-        sphere->r_index = 1;
-        sphere->refl_sig = 0;
-        sphere->intersect = &sphereIntersect;
-        sphere->surfaceCoords = &sphereCoordinates;
-        sphere->randomPoint = &sphereSample;
-        sphere->texImg = NULL;
-        sphere->photonMap = NULL;
-        sphere->normalMap = NULL;
-        sphere->frontAndBack = 0;
-        sphere->isLightSource = 0;
-        sphere->T = I();
-        sphere->next = NULL;
-    }
-    return (sphere);
-}
-
-void sphereIntersect(struct object *sphere, struct ray *ray, double *lambda, struct point *p, struct point *n, double *a, double *b) {
+void Sphere::intersect(struct ray *ray, double *lambda, struct point *p, struct point *n, double *a, double *b) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical sphere.
 
     struct ray ray_transformed;
     double l1 = -1, l2 = -1;
-    rayTransform(ray, &ray_transformed, sphere);
+    rayTransform(ray, &ray_transformed, this);
     solveQuadratic(&ray_transformed, &l1, &l2);
 
     *lambda = -1;
@@ -172,17 +158,6 @@ void sphereIntersect(struct object *sphere, struct ray *ray, double *lambda, str
             *lambda = MIN(l1, l2);
         }
     }
-#ifdef DEBUG
-    if (0) {
-        printf("l1: %f, l2: %f\n", l1, l2);
-
-        printf("sphere tray d: %f %f %f\n", ray_transformed.d.px, ray_transformed.d.py, ray_transformed.d.pz);
-        printf("sphere tray p0: %f %f %f\n", ray_transformed.p0.px, ray_transformed.p0.py, ray_transformed.p0.pz);
-
-        printf("sphere ray d: %f %f %f\n", ray->d.px, ray->d.py, ray->d.pz);
-        printf("sphere ray p0: %f %f %f\n", ray->p0.px, ray->p0.py, ray->p0.pz);
-    }
-#endif  // DEBUG
 
     double x, y, z;
     if (*lambda != -1) {
@@ -197,15 +172,15 @@ void sphereIntersect(struct object *sphere, struct ray *ray, double *lambda, str
 
         normalize(n);
 
-        normalTransform(n, n, sphere);
+        normalTransform(n, n, this);
 
         rayPosition(ray, *lambda, p);
+        *a = 0.5 + (atan2(z, x)) / (2 * PI);
+        *b = 0.5 - (asin(y)) / (PI);
     }
-    *a = 0.5 + (atan2(z, x)) / (2 * PI);
-    *b = 0.5 - (asin(y)) / (PI);
 }
 
-void sphereCoordinates(struct object *sphere, double a, double b, double *x, double *y, double *z) {
+void Sphere::surfaceCoordinates(double a, double b, double *x, double *y, double *z){
     // Return in (x,y,z) the coordinates of a point on the plane given by the 2 parameters a,b in [0,1].
     // 'a' controls displacement from the left side of the plane, 'b' controls displacement from the
     // bottom of the plane.
@@ -217,14 +192,14 @@ void sphereCoordinates(struct object *sphere, double a, double b, double *x, dou
     p.w = 1;
 
     //matVecMult(sphere->T, &p);
-    p = sphere->T * p;
+    p = T * p;
 
     *x = p.x;
     *y = p.y;
     *z = p.z;
 }
 
-void sphereSample(struct object *sphere, double *x, double *y, double *z) {
+void Sphere::randomPoint(double *x, double *y, double *z){
     // Returns the 3D coordinates (x,y,z) of a randomly sampled point on the plane
     // Sapling should be uniform, meaning there should be an equal change of gedtting
     // any spot on the plane
@@ -232,50 +207,10 @@ void sphereSample(struct object *sphere, double *x, double *y, double *z) {
     double a = drand48() * 2 * PI;
     double b = drand48() * 2 - 1;
     b = acos(b);
-    sphereCoordinates(sphere, a, b, x, y, z);
+    surfaceCoordinates(a, b, x, y, z);
 }
 
-void set_rayTrace_properties(struct object *o, double ambient, double diffuse, double specular, double global, double alpha, double shiny) {
-    o->rt.ambient = ambient;
-    o->rt.diffuse = diffuse;
-    o->rt.specular = specular;
-    o->rt.global = global;
-    o->rt.alpha = alpha;
-    o->rt.shinyness = shiny;
-
-    // create a similar set of params incase the object is drawn in pathtrace mode
-    o->pt.diffuse = alpha * (ambient + diffuse);
-    o->pt.reflect = alpha * (1 - diffuse);
-    o->pt.refract = 1 - alpha;
-
-    // ensure sum to 1
-    double sum = o->pt.diffuse + o->pt.reflect + o->pt.refract;
-    o->pt.diffuse /= sum;
-    o->pt.reflect /= sum;
-    o->pt.refract /= sum;
-}
-
-void set_pathTrace_properties(struct object *o, double diffuse, double reflect, double refract) {
-    o->pt.diffuse = diffuse;
-    o->pt.reflect = reflect;
-    o->pt.refract = refract;
-
-    // ensure sum to 1
-    double sum = o->pt.diffuse + o->pt.reflect + o->pt.refract;
-    o->pt.diffuse /= sum;
-    o->pt.reflect /= sum;
-    o->pt.refract /= sum;
-
-    // create a similar set of parameters for ray tracing
-    o->rt.ambient = 0.1 * diffuse;
-    o->rt.diffuse = 0.9 * diffuse;
-    o->rt.specular = reflect;
-    o->rt.global = reflect;
-    o->rt.alpha = 1 - refract;
-    o->rt.shinyness = reflect * 10;
-}
-
-void insertObject(struct object *o, struct object **list) {
+void insertObject(Object *o, Object **list) {
     if (o == NULL)
         return;
     // Inserts an object into the object list.
@@ -288,7 +223,7 @@ void insertObject(struct object *o, struct object **list) {
     }
 }
 
-inline void normalTransform(struct point *n, struct point *n_transformed, struct object *obj) {
+inline void normalTransform(struct point *n, struct point *n_transformed, Object *obj) {
     // Computes the normal at an affinely transformed point given the original normal and the
     // object's inverse transformation. From the notes:
     // n_transformed=A^-T*n normalized.

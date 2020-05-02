@@ -74,6 +74,8 @@ void rayTraceMain(int argc, char *argv[]) {
     color col;
     color background = 0;
 
+    fprintf(stderr, "Rendering...\n");
+
     for (int j = 0; j < sx; j++) {  // For each of the pixels in the image
         for (int i = 0; i < sx; i++) {
             getRayFromPixel(&ray, cam, i, j);
@@ -95,7 +97,7 @@ void rayTraceMain(int argc, char *argv[]) {
     imageOutput(outImage, output_name);
 }
 
-void rayTrace(struct ray *ray, int depth, struct color *col, struct object *Os) {
+void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
     // Trace one ray through the scene.
     //
     // Parameters:
@@ -109,7 +111,7 @@ void rayTrace(struct ray *ray, int depth, struct color *col, struct object *Os) 
 
     double lambda;              // Lambda at intersection
     double a, b;                // Texture coordinates
-    struct object *obj = NULL;  // Pointer to object at intersection
+    Object *obj = NULL;  // Pointer to object at intersection
     struct point p;             // Intersection point
     struct point n;             // Normal at intersection
     struct color I;             // Colour returned by shading function
@@ -127,7 +129,7 @@ void rayTrace(struct ray *ray, int depth, struct color *col, struct object *Os) 
     rtShade(obj, &p, &n, ray, depth, a, b, col);
 }
 
-void rtShade(struct object *obj, struct point *p, struct point *n, struct ray *ray, int depth, double a, double b, struct color *col) {
+void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray, int depth, double a, double b, struct color *col) {
     // This function implements the shading model as described in lecture. It takes
     // - A pointer to the first object intersected by the ray (to get the colour properties)
     // - The coordinates of the intersection point (in world coordinates)
@@ -188,7 +190,7 @@ void rtShade(struct object *obj, struct point *p, struct point *n, struct ray *r
         pToLight.d = light->p0 - *p;
         double light_lambda;
         //we don't care about these details of the hit
-        struct object *dummyobj = NULL;
+        Object *dummyobj = NULL;
         struct point dummyp;
         double dummya;
 
@@ -225,10 +227,16 @@ void rtShade(struct object *obj, struct point *p, struct point *n, struct ray *r
         struct ray refractRay;
         double s, R_Shlick;
         rayRefract(ray, obj, p, &norm, &refractRay, &s, &R_Shlick);
-        rayTrace(&refractRay, depth + 1, &refract, obj);
-        // printf("refract r: %f  g: %f  b: %f\n", refract.R, refract.G,
-        // refract.B);
-        refract = refract * (1 - alpha) * obj->col;
+        if (s > 0) {
+            rayTrace(&refractRay, depth + 1, &refract, obj);
+            // printf("refract r: %f  g: %f  b: %f\n", refract.R, refract.G,
+            // refract.B);
+            refract = refract * (1 - alpha) * obj->col;
+        } else {
+            ambient += ambient * (1 - alpha);
+            diffuse += diffuse * (1 - alpha);
+            specular += specular * (1 - alpha);
+        }
     }
 
     //perfect camera ray reflection
@@ -252,7 +260,7 @@ void rtShade(struct object *obj, struct point *p, struct point *n, struct ray *r
     return;
 }
 
-void rt_brandished_trace(struct ray *ray, struct object *obj, struct color *col, int depth) {
+void rt_brandished_trace(struct ray *ray, Object *obj, struct color *col, int depth) {
     struct ray brandished_ray;
     memcpy(&brandished_ray, ray, sizeof(struct ray));
     struct color brandished_color = 0;

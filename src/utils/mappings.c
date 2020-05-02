@@ -25,7 +25,7 @@ inline void uvMap(struct image *img, double u, double v, struct color *col) {
     //printf("r: %f g: %f b: %f\n", *R, *G, *B);
 }
 
-void loadTexture(struct object *o, const char *filename, int type, struct textureNode **t_list) {
+void loadTexture(Object *o, const char *filename, int type, struct textureNode **t_list) {
     // Load a texture or normal map image from file and assign it to the
     // specified object.
     // type:   1  ->  Texture map  (RGB, .ppm)
@@ -84,7 +84,7 @@ void loadTexture(struct object *o, const char *filename, int type, struct textur
     }  // end if (o != NULL)
 }
 
-void textureMap(struct object *obj, double a, double b, struct color *col) {
+void textureMap(Object *obj, double a, double b, struct color *col) {
     /*
   Function to determine the colour of a textured object at
   the normalized texture coordinates (a,b).
@@ -107,7 +107,7 @@ void textureMap(struct object *obj, double a, double b, struct color *col) {
     return;
 }
 
-void normalMap(struct object *obj, double a, double b, struct point *n) {
+void normalMap(Object *obj, double a, double b, struct point *n) {
     if (obj->normalMap != NULL) {
         //printf("normal mapping \n");
         struct color delta;
@@ -120,7 +120,7 @@ void normalMap(struct object *obj, double a, double b, struct point *n) {
     }
 }
 
-void alphaMap(struct object *obj, double a, double b, double *set_alpha, double obj_alpha) {
+void alphaMap(Object *obj, double a, double b, double *set_alpha, double obj_alpha) {
     // Just like texture map but returns the alpha value at a,b,
     // notice that alpha maps are single layer grayscale images, hence
     // the separate function.

@@ -204,7 +204,7 @@ void imageOutput(struct image *im, const char *filename) {
     //
     // Assumes a 24 bit per pixel image stored as unsigned chars
     //
-
+    fprintf(stderr, "Saving Image\n");
     FILE *f;
 
     if (im != NULL)
@@ -334,7 +334,7 @@ void dataOutput(double *im, int sx, char *name) {
     fprintf(f, "255\n");
     fwrite(bits24, sx * sx * 3 * sizeof(unsigned char), 1, f);
     fclose(f);
-    return;
+    
 
     free(bits24);
     free(imT);
