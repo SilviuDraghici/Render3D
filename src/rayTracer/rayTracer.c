@@ -14,26 +14,31 @@
 #include "../utils/ray.h"
 #include "../utils/utils.h"
 
-static int MAX_DEPTH;
+static Scene *scene;
 
 void rayTraceMain(int argc, char *argv[]) {
-    if (argc < 6) {
+    if (argc < 5) {
         fprintf(stderr, "RayTracer: Can not parse input parameters\n");
-        fprintf(stderr, "USAGE: Render3D 0 size rec_depth antialias output_name\n");
+        fprintf(stderr, "USAGE: Render3D 0 size antialias output_name\n");
         fprintf(stderr, "   size = Image size (both along x and y)\n");
-        fprintf(stderr, "   rec_depth = Recursion depth\n");
         fprintf(stderr, "   antialias = A single digit, 0 disables antialiasing. Anything else enables antialiasing\n");
         fprintf(stderr, "   output_name = Name of the output file, e.g. MyRender.ppm\n");
         exit(0);
     }
 
-    int sx = atoi(argv[2]);
-    MAX_DEPTH = atoi(argv[3]);
-    strcpy(&output_name[0], argv[5]);
+    Scene sc;
+    scene = &sc;
+
+    scene->sx = atoi(argv[2]);
+    strcpy(&output_name[0], argv[4]);
+
+    if(6 <= argc){
+        sc.frame = atoi(argv[5]);
+    }
 
     unsigned char *rgbIm;
     // Allocate memory for the new image
-    outImage = newImage(sx, sx, sizeof(unsigned char));
+    outImage = newImage(scene->sx, scene->sx, sizeof(unsigned char));
     if (!outImage) {
         fprintf(stderr, "Unable to allocate memory for raytraced image\n");
         exit(0);
@@ -42,23 +47,23 @@ void rayTraceMain(int argc, char *argv[]) {
     }
 
     // Camera center is at (0,0,-1)
-    cam_pos = point(0, 0, -1);
+    scene->cam_pos = point(0, 0, -1);
 
     // To define the gaze vector, we choose a point 'pc' in the scene that
     // the camera is looking at, and do the vector subtraction pc-e.
     // Here we set up the camera to be looking at the origin.
 
-    cam_gaze_point = point(0, 0, 0);
-    cam_gaze = cam_gaze_point - cam_pos;
+    scene->cam_gaze_point = point(0, 0, 0);
+    scene->cam_gaze = scene->cam_gaze_point - scene->cam_pos;
 
-    cam_up = point(0, 1, 0);
+    scene->cam_up = point(0, 1, 0);
 
-    cam_focal = -1;
+    scene->cam_focal = -1;
 
-    buildScene();
+    buildScene(scene);
 
     struct view *cam;  // Camera and view for this scene
-    cam = setupView(&cam_pos, &cam_gaze, &cam_up, cam_focal, -2, 2, 4);
+    cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up), scene->cam_focal, -2, 2, 4);
 
     if (cam == NULL) {
         fprintf(stderr, "Unable to set up the view and camera parameters. Our of memory!\n");
@@ -67,7 +72,7 @@ void rayTraceMain(int argc, char *argv[]) {
         exit(0);
     }
 
-    setPixelStep(cam, sx, sx);
+    setPixelStep(scene, cam, scene->sx, scene->sx);
 
     struct ray ray;
     double depth;
@@ -76,9 +81,9 @@ void rayTraceMain(int argc, char *argv[]) {
 
     fprintf(stderr, "Rendering...\n");
 
-    for (int j = 0; j < sx; j++) {  // For each of the pixels in the image
-        for (int i = 0; i < sx; i++) {
-            getRayFromPixel(&ray, cam, i, j);
+    for (int j = 0; j < scene->sx; j++) {  // For each of the pixels in the image
+        for (int i = 0; i < scene->sx; i++) {
+            getRayFromPixel(scene, &ray, cam, i, j);
             depth = 1;
             col = 0;
             rayTrace(&ray, depth, &col, NULL);
@@ -91,10 +96,10 @@ void rayTraceMain(int argc, char *argv[]) {
         }  // end for i
     }      // end for j
 
-    fprintf(stderr, "Ray Tracing Done!\n");
-
     // Output rendered image
     imageOutput(outImage, output_name);
+
+    fprintf(stderr, "Ray Tracing Done!\n");
 }
 
 void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
@@ -116,12 +121,12 @@ void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
     struct point n;             // Normal at intersection
     struct color I;             // Colour returned by shading function
 
-    if (depth > MAX_DEPTH)  // Max recursion depth reached. Return invalid colour.
+    if (depth > scene->rt_max_depth)  // Max recursion depth reached. Return invalid colour.
     {
         *col = -1;
         return;
     }
-    findFirstHit(ray, &lambda, Os, &obj, &p, &n, &a, &b);
+    findFirstHit(scene, ray, &lambda, Os, &obj, &p, &n, &a, &b);
     if (lambda == -1 || obj == NULL) {
         *col = -1;
         return;
@@ -179,7 +184,7 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray, int
 
     struct color global;
 
-    struct pointLS *light = light_list;
+    struct pointLS *light = scene->rt_point_light_list;
 
     while (light != NULL) {
         //ray from intersection point to light source
@@ -194,7 +199,7 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray, int
         struct point dummyp;
         double dummya;
 
-        findFirstHit(&pToLight, &light_lambda, obj, &dummyobj, &dummyp, &dummyp, &dummya, &dummya);
+        findFirstHit(scene, &pToLight, &light_lambda, obj, &dummyobj, &dummyp, &dummyp, &dummya, &dummya);
 
         if (!(THR < light_lambda && light_lambda < 1)) {
             //vector from intersection point to light

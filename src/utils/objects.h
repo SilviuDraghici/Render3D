@@ -77,15 +77,20 @@ class Sphere : public Object{
     void randomPoint(double *x, double *y, double *z);
 };
 
+class Box : public Object{
+    public:
+    using Object::Object;
+    void intersect(struct ray *r, double *lambda, struct point *p, struct point *n, double *a, double *b);
+    void surfaceCoordinates(double a, double b, double *x, double *y, double *z);
+    void randomPoint(double *x, double *y, double *z);
+};
+
 /* The structure below defines a point light source */
 struct pointLS {
     struct color col;      // Light source colour
     struct point p0;       // Light source location
     struct pointLS *next;  // Pointer to next light in the scene
 };
-
-extern Object *object_list;
-extern struct pointLS *light_list;
 
 void insertObject(Object *o, Object **list);
 

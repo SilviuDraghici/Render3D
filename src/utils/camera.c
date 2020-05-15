@@ -7,14 +7,6 @@
 #include "ray.h"
 #include "utils.h"
 
-struct point cam_pos;
-struct point cam_up;
-struct point cam_gaze;
-struct point cam_gaze_point;
-double cam_focal;  // should be negative
-
-double du, dv;
-
 struct view *setupView(struct point *e, struct point *g, struct point *up, double f, double wl, double wt, double wsize) {
     /*
     This function sets up the camera axes and viewing direction as discussed in the
@@ -122,15 +114,15 @@ struct view *setupView(struct point *e, struct point *g, struct point *up, doubl
     return (c);
 }
 
-void setPixelStep(struct view *cam, double sx, double sy) {
-    du = cam->wsize / (sx - 1);  // du and dv. In the notes in terms of wl and wr, wt and wb,
-    dv = -cam->wsize / (sx - 1);
+void setPixelStep(Scene *scene, struct view *cam, double sx, double sy) {
+    scene->du = cam->wsize / (sx - 1);  // du and dv. In the notes in terms of wl and wr, wt and wb,
+    scene->dv = -cam->wsize / (sx - 1);
 }
 
-void getRayFromPixel(struct ray *ray, struct view *cam, double i, double j) {
+void getRayFromPixel(Scene *scene, struct ray *ray, struct view *cam, double i, double j) {
     struct point pc;
-    pc.x = cam->wl + i * du;
-    pc.y = cam->wt + j * dv;
+    pc.x = cam->wl + i * scene->du;
+    pc.y = cam->wt + j * scene->dv;
     pc.z = cam->f;
     pc.w = 1;
 

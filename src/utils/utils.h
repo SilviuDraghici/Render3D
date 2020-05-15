@@ -5,8 +5,8 @@
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
-#define THR 0.0001
 
+#define THR 0.0001
 #define PI 3.14159265354
 
 /* The structure below defines a point in 3D homogeneous coordinates        */

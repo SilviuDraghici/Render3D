@@ -7,6 +7,6 @@
 #include "objects.h"
 #include "utils.h"
 
-void buildScene(void) {
-#include "../scenes/buildscene_cb.c"
+void buildScene(Scene *scene) {
+#include "../scenes/buildscene_cbt.c"
 }

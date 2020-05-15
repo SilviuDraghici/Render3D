@@ -64,7 +64,7 @@ void rayRefract(struct ray *ray_orig, Object *obj, struct point *p, struct point
     ray_refracted->d = ray_orig->d * r + *n * (r * c - sqrt(*s));
 }
 
-void findFirstHit(struct ray *ray, double *lambda, Object *Os, Object **obj, struct point *p, struct point *n, double *a, double *b) {
+void findFirstHit(Scene *scene, struct ray *ray, double *lambda, Object *Os, Object **obj, struct point *p, struct point *n, double *a, double *b) {
     // Find the closest intersection between the ray and any objects in the scene.
     // Inputs:
     //   *ray    -  A pointer to the ray being traced
@@ -79,7 +79,7 @@ void findFirstHit(struct ray *ray, double *lambda, Object *Os, Object **obj, str
     //   *n      -  A pointer to a 3D point structure so you can return the normal at the intersection point
     //   *a, *b  -  Pointers toward double variables so you can return the texture coordinates a,b at the intersection point
 
-    Object *curr_obj = object_list;
+    Object *curr_obj = scene->object_list;
     double curr_l, curr_a, curr_b;
     struct point curr_p, curr_n;
     *lambda = INFINITY;

@@ -4,6 +4,8 @@ UTILS = utils/
 RAY = rayTracer/
 PTH = pathTracer/
 
+SCENES = $(wildcard scenes/buildScene*.c)
+
 Render3D: ${UOBJ}
 	@echo Building Render3D !!!
 	g++ ${CFLAGS} -o $@ ${UOBJ}
@@ -51,9 +53,9 @@ camera.o: ${UTILS}camera.c ${UTILS}camera.h
 	g++ ${CFLAGS} -c $^
 	@echo
 
-buildscene.o: ${UTILS}buildscene.c ${UTILS}buildscene.h ${UTILS}ray.h ${UTILS}affineTransforms.h ${UTILS}objects.h ${UTILS}utils.h   
+buildscene.o: ${UTILS}buildscene.c ${UTILS}buildscene.h ${UTILS}ray.h ${UTILS}affineTransforms.h ${UTILS}objects.h ${UTILS}utils.h ${SCENES}
 	@echo Building buildscene
-	g++ ${CFLAGS} -c $^
+	g++ ${CFLAGS} -c ${UTILS}buildscene.c ${UTILS}buildscene.h ${UTILS}ray.h ${UTILS}affineTransforms.h ${UTILS}objects.h ${UTILS}utils.h
 	@echo
 
 rayTracer.o: ${RAY}rayTracer.c ${RAY}rayTracer.h ${UTILS}buildscene.h ${UTILS}affineTransforms.h ${UTILS}imageProcessor.h ${UTILS}utils.h

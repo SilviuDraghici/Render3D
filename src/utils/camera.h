@@ -2,6 +2,7 @@
 #define CAMERA_H
 
 #include "utils.h"
+#include "buildscene.h"
 
 /*
    The structure below is used to hold camera parameters. You will need
@@ -28,6 +29,6 @@ extern double cam_focal;  // should be negative
 extern double du, dv;
 
 struct view *setupView(struct point *e, struct point *g, struct point *up, double f, double wl, double wt, double wsize);
-void setPixelStep(struct view *cam, double sx, double sy);
-void getRayFromPixel(struct ray *ray, struct view *cam, double i, double j);
+void setPixelStep(Scene *scene, struct view *cam, double sx, double sy);
+void getRayFromPixel(Scene *scene, struct ray *ray, struct view *cam, double i, double j);
 #endif

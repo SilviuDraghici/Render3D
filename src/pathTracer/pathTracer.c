@@ -15,9 +15,11 @@
 #include "../utils/ray.h"
 #include "../utils/utils.h"
 
+static Scene *scene;
+
+
 int samples_per_update = 100;
 
-static int MAX_DEPTH;
 unsigned long int NUM_RAYS;
 
 double total_weight;
@@ -56,7 +58,7 @@ inline void explicit_light_sample(struct ray *ray, Object *obj, struct point *p,
         struct point nls;
         double La, Lb;
 
-        findFirstHit(&pToLight, &light_lambda, obj, &obstruction, &lightp, &nls,
+        findFirstHit(scene, &pToLight, &light_lambda, obj, &obstruction, &lightp, &nls,
                      &La, &Lb);
 
         //printf("source: %s, obstruction: %s\n", obj->label, obstruction->label);
@@ -83,24 +85,29 @@ inline void explicit_light_sample(struct ray *ray, Object *obj, struct point *p,
 void pathTraceMain(int argc, char *argv[]) {
     struct color col;  // Return color for pixels
 
-    if (argc < 6) {
+    if (argc < 5) {
         fprintf(stderr, "PathTracer: Can not parse input parameters\n");
-        fprintf(stderr, "USAGE: Render3D 1 size rec_depth num_samples output_name\n");
+        fprintf(stderr, "USAGE: Render3D 1 size num_samples output_name\n");
         fprintf(stderr, "   size = Image size (both along x and y)\n");
-        fprintf(stderr, "   rec_depth = Recursion depth\n");
         fprintf(stderr, "   num_samples = Number of samples per pixel\n");
         fprintf(stderr, "   output_name = Name of the output file, e.g. MyRender.ppm\n");
         exit(0);
     }
 
-    int sx = atoi(argv[2]);
-    MAX_DEPTH = atoi(argv[3]);
-    int num_samples = atoi(argv[4]);
-    strcpy(&output_name[0], argv[5]);
+    Scene sc;
+    scene = &sc;
+    
+    scene->sx = atoi(argv[2]);
+    scene->pt_num_samples = atoi(argv[3]);
+    strcpy(&output_name[0], argv[4]);
+    
+    if(6 <= argc){
+        sc.frame = atoi(argv[5]);
+    }
 
     double *rgbIm;
     // Allocate memory for the new image
-    outImage = newImage(sx, sx, sizeof(double));
+    outImage = newImage(scene->sx, scene->sx, sizeof(double));
 
     if (!outImage) {
         fprintf(stderr, "Unable to allocate memory for pathtraced image\n");
@@ -112,34 +119,33 @@ void pathTraceMain(int argc, char *argv[]) {
     //array of weights per pixel used to scale image colors
     double *wght;  // Holds weights for each pixel - to provide log response
     double wt;
-    wght = (double *)calloc(sx * sx, sizeof(double));
+    wght = (double *)calloc(scene->sx * scene->sx, sizeof(double));
     if (!wght) {
         fprintf(stderr, "Unable to allocate memory for pathTracw]e weights\n");
         exit(0);
     }
-    for (int i = 0; i < sx * sx; i++) {
+    for (int i = 0; i < scene->sx * scene->sx; i++) {
         *(wght + i) = 1.0;
     }
 
     // Camera center is at (0,0,-1)
-    cam_pos = point(0, 0, -1);
+    scene->cam_pos = point(0, 0, -1);
 
     // To define the gaze vector, we choose a point 'pc' in the scene that
     // the camera is looking at, and do the vector subtraction pc-e.
     // Here we set up the camera to be looking at the origin.
 
-    cam_gaze_point = point(0, 0, 0);
-    cam_gaze = cam_gaze_point - cam_pos;
+    scene->cam_gaze_point = point(0, 0, 0);
+    scene->cam_gaze = scene->cam_gaze_point - scene->cam_pos;
 
-    cam_up = point(0, 1, 0);
+    scene->cam_up = point(0, 1, 0);
 
-    cam_focal = -1;
+    scene->cam_focal = -1;
 
-    buildScene();
-
+    buildScene(scene);
     //count number of lights
     num_lights = 0;
-    Object *curr_obj = object_list;
+    Object *curr_obj = scene->object_list;
     while (curr_obj != NULL) {
         if (curr_obj->isLightSource) {
             num_lights++;
@@ -150,7 +156,7 @@ void pathTraceMain(int argc, char *argv[]) {
     //create array of light pointers
     light_listt = (Object **)malloc(num_lights * sizeof(Object *));
     num_lights = 0;
-    curr_obj = object_list;
+    curr_obj = scene->object_list;
     while (curr_obj != NULL) {
         if (curr_obj->isLightSource) {
             light_listt[num_lights] = curr_obj;
@@ -161,7 +167,7 @@ void pathTraceMain(int argc, char *argv[]) {
     curr_light = 0;
 
     struct view *cam;  // Camera and view for this scene
-    cam = setupView(&cam_pos, &cam_gaze, &cam_up, cam_focal, -2, 2, 4);
+    cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up), scene->cam_focal, -2, 2, 4);
 
     if (cam == NULL) {
         fprintf(stderr, "Unable to set up the view and camera parameters. Our of memory!\n");
@@ -170,9 +176,9 @@ void pathTraceMain(int argc, char *argv[]) {
         exit(0);
     }
 
-    setPixelStep(cam, sx, sx);
+    setPixelStep(scene, cam, scene->sx, scene->sx);
 
-    normalizeLightWeights(object_list);
+    normalizeLightWeights(scene->object_list);
 
     NUM_RAYS = 0;
 
@@ -186,25 +192,25 @@ void pathTraceMain(int argc, char *argv[]) {
 
     t1 = time(NULL);
 
-    for (k = 1; k <= num_samples; k++) {
-        fprintf(stderr, "\r%d/%d", k, num_samples);
+    for (k = 1; k <= scene->pt_num_samples; k++) {
+        fprintf(stderr, "\r%d/%d", k, scene->pt_num_samples);
         //fflush(stderr);
 #pragma omp parallel for schedule(dynamic, 1) private(i, j, wt, ray, col, is, js)
-        for (j = 0; j < sx; j++) {  // For each of the pixels in the image
-            for (i = 0; i < sx; i++) {
+        for (j = 0; j < scene->sx; j++) {  // For each of the pixels in the image
+            for (i = 0; i < scene->sx; i++) {
                 col = 0;
 
                 // Random sample within the pixel's area
                 is = i + drand48() - 0.5;
                 js = j + drand48() - 0.5;
 
-                getRayFromPixel(&ray, cam, is, js);
+                getRayFromPixel(scene, &ray, cam, is, js);
 
                 ray.pt.ray_col = 1;
                 ray.pt.expl_col = 0;
                 ray.pt.isLightRay = 0;
 
-                wt = *(wght + i + (j * sx));
+                wt = *(wght + i + (j * scene->sx));
 
                 PathTrace(&ray, 1, &col, NULL, NULL);
                 rgbIm[3 * (j * outImage->sx + i) + 0] += col.R * pow(2, -log(wt));
@@ -214,12 +220,12 @@ void pathTraceMain(int argc, char *argv[]) {
                 wt += col.R;
                 wt += col.G;
                 wt += col.B;
-                *(wght + i + (j * sx)) = wt;
+                *(wght + i + (j * scene->sx)) = wt;
             }  // end for i
         }      // end for j
 
         if (k % samples_per_update == 0) {  // update output image
-            dataOutput(rgbIm, sx, output_name);
+            dataOutput(rgbIm, scene->sx, output_name);
         }
 
     }  // End for k
@@ -227,7 +233,7 @@ void pathTraceMain(int argc, char *argv[]) {
     t2 = time(NULL);
 
     // Output rendered image
-    dataOutput(rgbIm, sx, output_name);
+    dataOutput(rgbIm, scene->sx, output_name);
 
     fprintf(stderr, "\nPath Tracing Done!\n");
 
@@ -261,7 +267,7 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os, Object
 
     Object *explt = explicit_l;
 
-    if (depth > MAX_DEPTH)  // Max recursion depth reached. Return black (no light coming into pixel from this path).
+    if (depth > scene->pt_max_depth)  // Max recursion depth reached. Return black (no light coming into pixel from this path).
     {
         *col = ray->pt.expl_col;  // These are accumulators, initialized at 0. Whenever we find a source of light these
                                   // get incremented accordingly. At the end of the recursion, we return whatever light
@@ -269,7 +275,7 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os, Object
         return;
     }
 
-    findFirstHit(ray, &lambda, Os, &obj, &p, &n, &a, &b);
+    findFirstHit(scene, ray, &lambda, Os, &obj, &p, &n, &a, &b);
     if (obj == NULL || lambda < THR) {
         *col = ray->pt.expl_col;
         return;
