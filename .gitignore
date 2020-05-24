@@ -8,6 +8,6 @@ out.ppm
 *.h.gch
 *.txt
 
-anim*
+frames*
 *.avi
 *.gif

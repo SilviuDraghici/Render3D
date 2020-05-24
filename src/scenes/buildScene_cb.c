@@ -13,6 +13,31 @@ scene->cam_pos = point(0, 0, -15);
 //scene->cam_up = point(0, 1, 0);
 scene->cam_focal = -3;
 
+// Two spheres scene
+// Refract
+o = new Sphere(.99, .99, .99);
+strcpy(o->label, "Refract Shpere");
+o->set_pathTrace_properties(0.0, 0.0, 1.0);
+o->r_index = 1.54;
+o->T *= RotY(PI);
+o->T *= Sc(3.75);
+o->T *= Tr(-5, -4.0, 4.5);
+invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
+insertObject(o, &(scene->object_list));
+
+// Reflect
+o = new Sphere(.99, .99, .99);
+strcpy(o->label, "Reflect Sphere");
+o->set_pathTrace_properties(0.0, 1.0, 0.0);
+o->refl_sig = 0.05;
+o->r_index = 2.47;
+strcpy(o->label, "Right Sphere");
+o->T *= Sc(3.75);
+o->T *= Tr(4, -3.75, 6.5);
+invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
+insertObject(o, &(scene->object_list));
+
+
 // Left
 o = new Plane(.75, .25, .25);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
@@ -65,30 +90,6 @@ strcpy(o->label, "Top Wall");
 o->T *= RotX(-PI / 2);
 o->T *= Sc(25);
 o->T *= Tr(0, 10, 5);
-invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-insertObject(o, &(scene->object_list));
-
-// Two spheres scene
-// Refract
-o = new Sphere(.99, .99, .99);
-strcpy(o->label, "Refract Shpere");
-o->set_pathTrace_properties(0.0, 0.0, 1.0);
-o->r_index = 1.54;
-o->T *= RotY(PI);
-o->T *= Sc(3.75);
-o->T *= Tr(-5, -4.0, 4.5);
-invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-insertObject(o, &(scene->object_list));
-
-// Reflect
-o = new Sphere(.99, .99, .99);
-strcpy(o->label, "Reflect Sphere");
-o->set_pathTrace_properties(0.0, 1.0, 0.0);
-o->refl_sig = 0.05;
-o->r_index = 2.47;
-strcpy(o->label, "Right Sphere");
-o->T *= Sc(3.75);
-o->T *= Tr(4, -3.75, 6.5);
 invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
 insertObject(o, &(scene->object_list));
 

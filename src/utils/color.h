@@ -14,6 +14,10 @@ struct color {
     double R;
     double G;
     double B;
+    
+//inline vec3 operator*(float t, const vec3 &v1) {
+//    return vec3(t * v1.e[0], t * v1.e[1], t * v1.e[2]);
+//}
     color(double r = 0, double g = 0, double b = 0) {
         R = r;
         G = g;
@@ -67,7 +71,6 @@ struct color {
         return color(R + a.R, G + a.G, B + a.B);
     }
 };
-
 /*
    The structures below are used to define an object colour in terms of the
    components of the Phong illumination model. Note that we typically

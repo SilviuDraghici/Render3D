@@ -4,6 +4,10 @@
 
 #include "ray.h"
 
+std::ostream &operator<<(std::ostream &strm, const struct point &a) {
+    return strm << "(" << a.x << ", " << a.y << ", " << a.z << ", " << a.w << ")";
+}
+
 struct matrix I() {
     struct matrix i;
     memset(&i.T[0][0], 0, 16 * sizeof(double));
@@ -21,17 +25,16 @@ double dot(struct point *u, struct point *v) {
     return ((u->x * v->x) + (u->y * v->y) + (u->z * v->z));
 }
 
-struct point *cross(struct point *u, struct point *v) {
+struct point cross(struct point *u, struct point *v) {
     // Allocates and returns a vector with the cross product u x v.
     // The function assumes the w components of both vectors
     // are 1.
-    struct point *cp;
-    cp = (struct point *)calloc(1, sizeof(struct point));
+    struct point cp;
 
-    cp->x = (u->y * v->z) - (v->y * u->z);
-    cp->y = (v->x * u->z) - (u->x * v->z);
-    cp->z = (u->x * v->y) - (v->x * u->y);
-    cp->w = 1;
+    cp.x = (u->y * v->z) - (v->y * u->z);
+    cp.y = (v->x * u->z) - (u->x * v->z);
+    cp.z = (u->x * v->y) - (v->x * u->y);
+    cp.w = 1;
     return (cp);
 }
 

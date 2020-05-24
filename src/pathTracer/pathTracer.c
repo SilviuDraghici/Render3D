@@ -102,7 +102,7 @@ void pathTraceMain(int argc, char *argv[]) {
     strcpy(&output_name[0], argv[4]);
     
     if(6 <= argc){
-        sc.frame = atoi(argv[5]);
+        sc.frame = atoi(argv[5]) - 1;
     }
 
     double *rgbIm;

@@ -18,9 +18,8 @@ struct view *setupView(struct point *e, struct point *g, struct point *up, doubl
     f - focal length
     */
     struct view *c;
-    struct point *u, *v;
+    struct point u, v;
 
-    u = v = NULL;
 
     // Allocate space for the camera structure
     c = (struct view *)calloc(1, sizeof(struct view));
@@ -44,18 +43,18 @@ struct view *setupView(struct point *e, struct point *g, struct point *up, doubl
 
     // Set up the horizontal direction, which must be perpenticular to w and up
     u = cross(&c->w, up);
-    normalize(u);
-    c->u.x = u->x;
-    c->u.y = u->y;
-    c->u.z = u->z;
+    normalize(&u);
+    c->u.x = u.x;
+    c->u.y = u.y;
+    c->u.z = u.z;
     c->u.w = 1;
 
     // Set up the remaining direction, v=(u x w)  - Mind the signs
     v = cross(&c->u, &c->w);
-    normalize(v);
-    c->v.x = v->x;
-    c->v.y = v->y;
-    c->v.z = v->z;
+    normalize(&v);
+    c->v.x = v.x;
+    c->v.y = v.y;
+    c->v.z = v.z;
     c->v.w = 1;
 
     // Copy focal length and window size parameters
@@ -109,8 +108,6 @@ struct view *setupView(struct point *e, struct point *g, struct point *up, doubl
     c->W2C.T[2][3] = -dot(&c->w, &c->e);
     c->W2C.T[3][3] = 1;
 
-    free(u);
-    free(v);
     return (c);
 }
 
