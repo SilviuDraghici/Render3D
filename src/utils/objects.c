@@ -692,6 +692,119 @@ void Polygon::calculate_edge_vectors() {
     e[numPoints - 1] = p[0] - p[numPoints - 1];
 }
 
+void Mesh::setMesh(const char *filename) {
+    num_vertices = 18;
+    vertices = (point *)malloc(num_vertices * sizeof(point));
+    vertices[0] = point(4.5973, -4.8484, 0);
+    vertices[1] = point(0, -4.8484, 7.9628);
+    vertices[2] = point(-4.5973, -4.8484, 0);
+    vertices[3] = point(-4.5973, -4.8484, 0);
+    vertices[4] = point(0, -4.8484, 7.9628);
+    vertices[5] = point(0, 4.8484, 7.9628);
+    vertices[6] = point(-4.5973, 4.8484, 0);
+    vertices[7] = point(0, -4.8484, 7.9628);
+    vertices[8] = point(4.5973, -4.8484, 0);
+    vertices[9] = point(4.5973, 4.8484, 0);
+    vertices[10] = point(0, 4.8484, 7.9628);
+    vertices[11] = point(4.5973, -4.8484, 0);
+    vertices[12] = point(-4.5973, -4.8484, 0);
+    vertices[13] = point(-4.5973, 4.8484, 0);
+    vertices[14] = point(4.5973, 4.8484, 0);
+    vertices[15] = point(4.5973, 4.8484, 0);
+    vertices[16] = point(-4.5973, 4.8484, 0);
+    vertices[17] = point(0, 4.8484, 7.9628);
+
+    num_faces = 8;
+    faces = (TriangleFace *)malloc(num_faces * sizeof(TriangleFace));
+    faces[0] = TriangleFace(vertices[0], vertices[1], vertices[2]);
+    faces[1] = TriangleFace(vertices[3], vertices[4], vertices[5]);
+    faces[2] = TriangleFace(vertices[3], vertices[5], vertices[6]);
+    faces[3] = TriangleFace(vertices[7], vertices[8], vertices[9]);
+    faces[4] = TriangleFace(vertices[7], vertices[9], vertices[10]);
+    faces[5] = TriangleFace(vertices[11], vertices[12], vertices[13]);
+    faces[6] = TriangleFace(vertices[11], vertices[13], vertices[14]);
+    faces[7] = TriangleFace(vertices[15], vertices[16], vertices[17]);
+
+    free(vertices);
+}
+
+void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
+                     struct point *n, double *a, double *b) {
+    *lambda = INFINITY;
+
+    struct ray ray_transformed;
+    rayTransform(ray, &ray_transformed, this);
+    
+    for (int i = 0; i < num_faces; i++) {
+        faces[i].intersect(&ray_transformed, lambda, p, n, a, b);
+    }
+
+    if (*lambda < INFINITY) {
+        normalTransform(n, n, this);
+        rayPosition(ray, *lambda, p);
+    } else {
+        *lambda = -1;
+    }
+}
+
+TriangleFace::TriangleFace(point p1, point p2, point p3) {
+    this->p1 = p1;
+    this->p2 = p2;
+    this->p3 = p3;
+}
+
+TriangleFace::TriangleFace(double x1, double y1, double z1, double x2,
+                           double y2, double z2, double x3, double y3,
+                           double z3) {
+    p1.x = x1, p1.y = y1, p1.z = z1;
+    p2.x = x2, p2.y = y2, p2.z = z2;
+    p3.x = x3, p3.y = y3, p3.z = z3;
+}
+
+void TriangleFace::intersect(struct ray *ray, double *lambda, struct point *p,
+                             struct point *n, double *a, double *b) {
+    // Computes and returns the value of 'lambda' at the intersection
+    // between the specified ray and the specified triangle.
+
+    point e12 = p2 - p1;
+    point e23 = p3 - p2;
+
+    point normal = cross(&e12, &e23);
+    // std::cout << "normal: " << normal << std::endl;
+
+    // ray plane intersection calculation
+    point r = p1 - ray->p0;
+    double d_dot_n = dot(&ray->d, &normal);
+    double r_dot_n = dot(&r, &normal);
+    double t_lambda = r_dot_n / d_dot_n;
+
+    if (THR < t_lambda) {  // check that intersection with plane is positive
+        rayPosition(ray, t_lambda, p);
+        // e12 has already been calculated
+        point v1i = *p - p1;
+
+        point crossp = cross(&e12, &v1i);
+        if (dot(&crossp, &normal) >= 0) {  // check within first edge
+            // e23 has already been calculated
+            point v2i = *p - p2;
+            crossp = cross(&e23, &v2i);
+            if (dot(&crossp, &normal) >= 0) {  // check within second edge
+                point e31 = p1 - p3;
+                point v3i = *p - p3;
+                crossp = cross(&e31, &v3i);
+                if (dot(&crossp, &normal) >= 0) {  // check within third edge
+                    // intersection is within triangle
+                    if (t_lambda < *lambda) {
+                        *lambda = t_lambda;
+                        *n = normal;
+                        normalize(n);
+                    }
+                }
+            }
+        }
+    }
+}
+
 void insertObject(Object *o, Object **list) {
     if (o == NULL) return;
     // Inserts an object into the object list.

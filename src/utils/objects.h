@@ -29,7 +29,8 @@ class Object {
    public:
     char label[20];  // for debugging
 
-    struct RT_properties rt;  // Object's albedos for Phong model (for ray tracing)
+    struct RT_properties
+        rt;  // Object's albedos for Phong model (for ray tracing)
     struct PT_properties pt;  // Object's surface properties for Path tracing
 
     struct color col;    // Object's colour in RGB
@@ -99,10 +100,10 @@ class Triangle : public Object {
     Triangle(double r, double g, double b);
     void intersect(struct ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
-    
+
     void setPoints(double x1, double y1, double z1, double x2, double y2,
                    double z2, double x3, double y3, double z3);
-    
+
     void setPoints(point p1, point p2, point p3);
 
    private:
@@ -114,17 +115,42 @@ class Polygon : public Object {
     Polygon(double r, double g, double b);
     void intersect(struct ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
-    
+
     void setNumPoints(int num);
     void addPoint(point point);
     void addPoint(double x, double y, double z);
 
    private:
     int numPoints = 3;
-    int currPoint = 0; // current point used for adding points
-    point *p; // pointer to array of vertices
-    point *e; // pointer to array of edge vectors used for intersection test
+    int currPoint = 0;  // current point used for adding points
+    point *p;           // pointer to array of vertices
+    point *e;  // pointer to array of edge vectors used for intersection test
     void calculate_edge_vectors();
+};
+
+class TriangleFace {
+    point p1, p2, p3;
+
+   public:
+    TriangleFace(point p1, point p2, point p3);
+    TriangleFace(double x1, double y1, double z1, double x2, double y2,
+                 double z2, double x3, double y3, double z3);
+    void intersect(struct ray *r, double *lambda, struct point *p,
+                   struct point *n, double *a, double *b);
+};
+
+class Mesh : public Object {
+    //used for reading in Mesh
+    int num_vertices;
+    point *vertices;
+
+    int num_faces;
+    TriangleFace *faces = NULL;
+   public:
+    using Object::Object;
+    void setMesh(const char *filename);
+    void intersect(struct ray *r, double *lambda, struct point *p,
+                   struct point *n, double *a, double *b);
 };
 
 /* The structure below defines a point light source */
