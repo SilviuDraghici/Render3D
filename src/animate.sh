@@ -3,6 +3,7 @@ NAME=${1:-out}
 
 mkdir -p frames
 rm -rf frames/*
+#Recycle Bin
 for i in `seq -w 1 240`
 do
     echo "Frame $i"

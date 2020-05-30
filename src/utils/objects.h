@@ -1,3 +1,7 @@
+#include <string.h>
+
+#include <iostream>
+
 #include "affinetransforms.h"
 #include "color.h"
 #include "imageProcessor.h"
@@ -129,23 +133,43 @@ class Polygon : public Object {
 };
 
 class TriangleFace {
+   protected:
     point p1, p2, p3;
 
    public:
+    friend std::ostream &operator<<(std::ostream &strm, const TriangleFace &a);
+    TriangleFace();
     TriangleFace(point p1, point p2, point p3);
     TriangleFace(double x1, double y1, double z1, double x2, double y2,
                  double z2, double x3, double y3, double z3);
-    void intersect(struct ray *r, double *lambda, struct point *p,
-                   struct point *n, double *a, double *b);
+    void intersect(struct ray *r, double *lambda, point *bary_coords);
+    point normal(point *bary_coords);
+};
+
+class TriangleFace_N : public TriangleFace {
+    point n1, n2, n3;
+
+   public:
+    friend std::ostream &operator<<(std::ostream &strm,
+                                    const TriangleFace_N &a);
+    using TriangleFace::TriangleFace;
+    void setNormals(point n1, point n2, point n3);
+    point normal(point *bary_coords);
 };
 
 class Mesh : public Object {
-    //used for reading in Mesh
-    int num_vertices;
-    point *vertices;
+    // used for reading in Mesh
+    int num_vertices = 0;
+    point *vertices = NULL;
 
-    int num_faces;
-    TriangleFace *faces = NULL;
+    int num_normals;
+    point *normals = NULL;
+
+    int num_faces = 0;
+    TriangleFace_N *faces = NULL;
+
+    point bary_coords;
+
    public:
     using Object::Object;
     void setMesh(const char *filename);

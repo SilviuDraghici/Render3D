@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <fstream>
+#include <iostream>
+#include <string>
+
 #include "mappings.h"
 #include "ray.h"
 #include "utils.h"
@@ -693,39 +697,135 @@ void Polygon::calculate_edge_vectors() {
 }
 
 void Mesh::setMesh(const char *filename) {
-    num_vertices = 18;
-    vertices = (point *)malloc(num_vertices * sizeof(point));
-    vertices[0] = point(4.5973, -4.8484, 0);
-    vertices[1] = point(0, -4.8484, 7.9628);
-    vertices[2] = point(-4.5973, -4.8484, 0);
-    vertices[3] = point(-4.5973, -4.8484, 0);
-    vertices[4] = point(0, -4.8484, 7.9628);
-    vertices[5] = point(0, 4.8484, 7.9628);
-    vertices[6] = point(-4.5973, 4.8484, 0);
-    vertices[7] = point(0, -4.8484, 7.9628);
-    vertices[8] = point(4.5973, -4.8484, 0);
-    vertices[9] = point(4.5973, 4.8484, 0);
-    vertices[10] = point(0, 4.8484, 7.9628);
-    vertices[11] = point(4.5973, -4.8484, 0);
-    vertices[12] = point(-4.5973, -4.8484, 0);
-    vertices[13] = point(-4.5973, 4.8484, 0);
-    vertices[14] = point(4.5973, 4.8484, 0);
-    vertices[15] = point(4.5973, 4.8484, 0);
-    vertices[16] = point(-4.5973, 4.8484, 0);
-    vertices[17] = point(0, 4.8484, 7.9628);
+    frontAndBack = 0;
 
-    num_faces = 8;
-    faces = (TriangleFace *)malloc(num_faces * sizeof(TriangleFace));
-    faces[0] = TriangleFace(vertices[0], vertices[1], vertices[2]);
-    faces[1] = TriangleFace(vertices[3], vertices[4], vertices[5]);
-    faces[2] = TriangleFace(vertices[3], vertices[5], vertices[6]);
-    faces[3] = TriangleFace(vertices[7], vertices[8], vertices[9]);
-    faces[4] = TriangleFace(vertices[7], vertices[9], vertices[10]);
-    faces[5] = TriangleFace(vertices[11], vertices[12], vertices[13]);
-    faces[6] = TriangleFace(vertices[11], vertices[13], vertices[14]);
-    faces[7] = TriangleFace(vertices[15], vertices[16], vertices[17]);
+    std::string line;
+    std::ifstream mesh_obj(filename);
 
-    free(vertices);
+    std::streampos first_normal, first_face;
+
+    double x, y, z, scale;
+    double min_x, max_x, avg_x, min_y, max_y, avg_y, min_z, max_z, avg_z;
+    min_x = min_y = min_z = INFINITY;
+    max_x = max_y = max_z = -INFINITY;
+    avg_x = avg_y = avg_z = 0;
+
+    if (mesh_obj.is_open()) {
+        
+        // count the number of vertices
+        num_vertices = 0;
+        while (getline(mesh_obj, line) && line.rfind("v ", 0) == 0) {
+            num_vertices++;
+            sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
+            avg_x += x, avg_y += y, avg_z +=z;
+            if(x < min_x) {
+                min_x = x;
+            } if (max_x < x){
+                max_x = x;
+            }
+
+            if(y < min_y) {
+                min_y = y;
+            } if (max_y < y){
+                max_y = y;
+            }
+
+            if(z < min_z) {
+                min_z = z;
+            } if (max_z < z){
+                max_z = z;
+            }
+        }
+
+        //calculate average diatance from 0 so that mesh can be centered
+        avg_x /= num_vertices, avg_y /= num_vertices, avg_z /= num_vertices;
+        //calculate max dimension so mesh can be scaled down to 1x1x1 ish
+        scale = MAX(abs(max_x - min_x), MAX(abs(max_y - min_y),abs(max_z - min_z)));
+        //std::cout << scale << "\n";
+
+        num_vertices += 1;  // << overcount by 1
+        vertices = (point *)malloc(num_vertices * sizeof(point));
+
+        // read vertices into array
+        mesh_obj.seekg(0);
+        
+        // keeps first vertex empty so face's lookup doesn't need to subtract 1
+        for (int i = 1; i < num_vertices; i++) {
+            getline(mesh_obj, line);
+            sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
+            vertices[i] = point((x - avg_x)/scale, (y - avg_y)/scale, (z - avg_z)/scale);
+        }
+
+        //std::cout << "min: "<< min_x << " " << min_y << " " << min_z << "\n";
+        //std::cout << "max: "<< max_x << " " << max_y << " " << max_z << "\n";
+        //std::cout << "avg: "<< avg_x << " " << avg_y << " " << avg_z << "\n";
+
+        // save location of first normal
+        first_normal = mesh_obj.tellg();
+
+        // count number over vertex normals
+        num_normals = 1;  // overcount
+        while (getline(mesh_obj, line) && line.rfind("vn ", 0) == 0) {
+            // std::cout << line << "\n";
+            num_normals++;
+        }
+        if (num_normals > 1) {
+            normals = (point *)malloc(num_normals * sizeof(point));
+            mesh_obj.seekg(first_normal);
+            for (int i = 1; i < num_normals; i++) {
+                getline(mesh_obj, line);
+                // std::cout << line << "\n";
+                sscanf(line.c_str(), "vn %lf %lf %lf", &x, &y, &z);
+                normals[i] = point(x, y, z);
+            }
+        }
+
+        // save location of first face
+        first_face = (int)mesh_obj.tellg() ;
+
+        // count number of faces
+        num_faces = 0;  // first face has already been scanned
+        while (getline(mesh_obj, line) && line.rfind("f ", 0) == 0) {
+            num_faces++;
+        }
+
+        if (num_normals > 1) {
+            faces = new TriangleFace_N[num_faces];
+        } else {
+            // faces = new TriangleFace[num_faces];
+        }
+
+        mesh_obj.clear();
+        mesh_obj.seekg(first_face);
+        int p1, p2, p3;
+        //std::cout << num_faces;
+        for (int i = 0; i < num_faces; i++) {
+            getline(mesh_obj, line);
+            //std::cout << line << "\n";
+            sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3);
+            faces[i] = TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
+            if (num_normals > 1) {
+                ((TriangleFace_N *)faces)[i].setNormals(
+                    normals[p1], normals[p2], normals[p3]);
+            }
+        }
+
+        num_vertices--;
+        mesh_obj.close();
+        free(vertices);
+        free(normals);
+    } else {
+        std::cout << "Unable to open mesh file";
+    }
+}
+
+std::ostream &operator<<(std::ostream &strm, const TriangleFace &a) {
+    return strm << "p1: " << a.p1 << " p2: " << a.p2 << " p3: " << a.p3;
+}
+
+std::ostream &operator<<(std::ostream &strm, const TriangleFace_N &a) {
+    return strm << "p1: " << a.p1 << " p2: " << a.p2 << " p3: " << a.p3
+                << "n1: " << a.n1 << " n2: " << a.n2 << " n3: " << a.n3;
 }
 
 void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
@@ -734,18 +834,38 @@ void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
 
     struct ray ray_transformed;
     rayTransform(ray, &ray_transformed, this);
-    
+
+    double f_lambda;
+    TriangleFace *closest_face = NULL;
+    point f_coords;
     for (int i = 0; i < num_faces; i++) {
-        faces[i].intersect(&ray_transformed, lambda, p, n, a, b);
+        f_lambda = INFINITY;
+        faces[i].intersect(&ray_transformed, &f_lambda, &f_coords);
+        if (f_lambda < *lambda) {
+            *lambda = f_lambda;
+            closest_face = &faces[i];
+            bary_coords = f_coords;
+        }
     }
 
     if (*lambda < INFINITY) {
+        point pi;
+        rayPosition(&ray_transformed, *lambda, &pi);
+        *n = closest_face->normal(&bary_coords);
+        // std::cout << typeid(closest_face).name() << "\n";
+        if (num_normals > 1) {
+            // std::cout << "closest face: " << *closest_face << "\n";
+            *n = ((TriangleFace_N *)closest_face)->normal(&bary_coords);
+        }
         normalTransform(n, n, this);
+        normalize(n);
         rayPosition(ray, *lambda, p);
     } else {
         *lambda = -1;
     }
 }
+
+TriangleFace::TriangleFace() {}
 
 TriangleFace::TriangleFace(point p1, point p2, point p3) {
     this->p1 = p1;
@@ -761,8 +881,8 @@ TriangleFace::TriangleFace(double x1, double y1, double z1, double x2,
     p3.x = x3, p3.y = y3, p3.z = z3;
 }
 
-void TriangleFace::intersect(struct ray *ray, double *lambda, struct point *p,
-                             struct point *n, double *a, double *b) {
+void TriangleFace::intersect(struct ray *ray, double *lambda,
+                             point *bary_coords) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified triangle.
 
@@ -770,39 +890,59 @@ void TriangleFace::intersect(struct ray *ray, double *lambda, struct point *p,
     point e23 = p3 - p2;
 
     point normal = cross(&e12, &e23);
-    // std::cout << "normal: " << normal << std::endl;
+    double denom = dot(&normal, &normal);
 
     // ray plane intersection calculation
-    point r = p1 - ray->p0;
+    point pi, r = p1 - ray->p0;
     double d_dot_n = dot(&ray->d, &normal);
     double r_dot_n = dot(&r, &normal);
     double t_lambda = r_dot_n / d_dot_n;
 
-    if (THR < t_lambda) {  // check that intersection with plane is positive
-        rayPosition(ray, t_lambda, p);
-        // e12 has already been calculated
-        point v1i = *p - p1;
+    if (t_lambda < THR) return;  // intersection with plane is negative
 
-        point crossp = cross(&e12, &v1i);
-        if (dot(&crossp, &normal) >= 0) {  // check within first edge
-            // e23 has already been calculated
-            point v2i = *p - p2;
-            crossp = cross(&e23, &v2i);
-            if (dot(&crossp, &normal) >= 0) {  // check within second edge
-                point e31 = p1 - p3;
-                point v3i = *p - p3;
-                crossp = cross(&e31, &v3i);
-                if (dot(&crossp, &normal) >= 0) {  // check within third edge
-                    // intersection is within triangle
-                    if (t_lambda < *lambda) {
-                        *lambda = t_lambda;
-                        *n = normal;
-                        normalize(n);
-                    }
-                }
-            }
-        }
-    }
+    double u, v, w;
+
+    rayPosition(ray, t_lambda, &pi);
+
+    // e12 has already been calculated
+    point v1i = pi - p1;
+    point crossp = cross(&e12, &v1i);
+    u = dot(&crossp, &normal);
+    if (u < 0) return;  // outside first edge
+    
+    // e23 has already been calculated
+    point v2i = pi - p2;
+    crossp = cross(&e23, &v2i);
+    v = dot(&crossp, &normal);
+    if (v < 0) return;  // outside second edge
+    
+    point e31 = p1 - p3;
+    point v3i = pi - p3;
+    crossp = cross(&e31, &v3i);
+    w = dot(&crossp, &normal);
+    if (w < 0) return;  // outside third edge
+
+    // intersection is within triangle
+    bary_coords->z = u / denom;
+    bary_coords->x = v / denom;
+    bary_coords->y = w / denom;
+    *lambda = t_lambda;
+}
+
+point TriangleFace::normal(point *bary_coords) {
+    point e12 = p2 - p1;
+    point e23 = p3 - p2;
+
+    return cross(&e12, &e23);
+}
+
+void TriangleFace_N::setNormals(point n1, point n2, point n3) {
+    this->n1 = n1, this->n2 = n2, this->n3 = n3;
+}
+
+point TriangleFace_N::normal(point *bary_coords) {
+    // std::cout << "n1: " << n1 << " n2: " << n2 << " n3: " << n3 << "\n";
+    return n1 * bary_coords->x + n2 * bary_coords->y + n3 * bary_coords->z;
 }
 
 void insertObject(Object *o, Object **list) {

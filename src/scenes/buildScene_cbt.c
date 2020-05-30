@@ -6,6 +6,7 @@ struct pointLS *l;
 struct textureNode *t_list = NULL;
 
 const char *checkers = "scenes/checkers.ppm";
+const char *mesh_file = "scenes/tea_pot.obj";
 
 // Cornell box
 
@@ -15,20 +16,14 @@ scene->cam_pos = point(0, 0, -15);
 //scene->cam_up = point(0, 1, 0);
 scene->cam_focal = -3;
 
-o = new Polygon(1, 1, 0);
-((Polygon *)o)->setNumPoints(5);
-((Polygon *)o)->addPoint(1, 0, 0);
-((Polygon *)o)->addPoint(0.3090, 0.9511, 0);
-((Polygon *)o)->addPoint(-0.8090, 0.5878, 0);
-((Polygon *)o)->addPoint(-0.8090, -0.5878, 0);
-((Polygon *)o)->addPoint(0.3090, -0.9511, 0);
-
-strcpy(o->label, "Polygon test");
+o = new Mesh(1.0, 1.0, 0.0);
+((Mesh *)o)->setMesh(mesh_file);
+strcpy(o->label, "Mesh test");
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.54;
 o->T *= RotY(scene->frame * PI / 120);
 o->T *= RotX(scene->frame * PI / 120);
-o->T *= Sc(5);
+o->T *= Sc(5.0);
 o->T *= Tr(0, 0, 5.5);
 invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
 insertObject(o, &(scene->object_list));
