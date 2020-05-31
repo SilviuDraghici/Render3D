@@ -132,6 +132,26 @@ class Polygon : public Object {
     void calculate_edge_vectors();
 };
 
+class BoundingBox {
+    protected:
+    double min_x, max_x;
+    double min_y, max_y;
+    double min_z, max_z;
+
+   public:
+    void setBounds(double min_x, double max_x, double min_y, double max_y,
+                double min_z, double max_z);
+    bool intersect(struct ray *r, double *lambda);
+};
+
+class VisibleBoundingBox : public BoundingBox {
+    double width = 0.02;
+    public:
+    color col;
+    VisibleBoundingBox();
+    bool intersect(struct ray *r, double *lambda);
+};
+
 class TriangleFace {
    protected:
     point p1, p2, p3;
@@ -169,6 +189,8 @@ class Mesh : public Object {
     TriangleFace_N *faces = NULL;
 
     point bary_coords;
+
+    VisibleBoundingBox box;
 
    public:
     using Object::Object;

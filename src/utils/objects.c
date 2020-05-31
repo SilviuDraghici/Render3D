@@ -328,214 +328,6 @@ void Box::intersect(struct ray *ray, double *lambda, struct point *p,
     } else {  // return no intersection flag
         *lambda = -1;
     }
-
-    /*
-    struct ray ray_transformed;
-    rayTransform(ray, &ray_transformed, this);
-    *lambda = -1;
-    struct point norm;
-    struct point temp_p;
-    struct point p1;
-    struct point e;
-    double x;
-    double y;
-
-    double l = -1;
-    double d_dot_n;
-    e.x = ray_transformed.p0.x;
-    e.y = ray_transformed.p0.y;
-    e.z = ray_transformed.p0.z;
-
-    norm.x = 1;
-    norm.y = 0;
-    norm.z = 0;
-    norm.w = 1;
-    d_dot_n = dot(&(ray_transformed.d), &norm);
-    if (d_dot_n != 0)
-    {
-      p1.x = 0.5 - e.x;
-      p1.y = -e.y;
-      p1.z = -e.z;
-
-      l = dot(&(p1), &norm) / d_dot_n;
-
-      if (l > THR)
-      {
-        // Check if the intersection point is inside the plane
-        rayPosition(&ray_transformed, l, &temp_p);
-
-        if (fabs(temp_p.x - 0.5) < THR && fabs(temp_p.z) < 0.5 + THR &&
-    fabs(temp_p.y) < 0.5 + THR && (*lambda == -1 || l < *lambda))
-        {
-          rayPosition(ray, l, p);
-          *lambda = l;
-          normalTransform(&norm, n, this);
-        }
-      }
-    }
-
-    l = -1;
-    norm.x = -1;
-    norm.y = 0;
-    norm.z = 0;
-    norm.w = 1;
-    d_dot_n = dot(&(ray_transformed.d), &norm);
-    if (d_dot_n != 0)
-    {
-      p1.x = -0.5 - e.x;
-      p1.y = -e.y;
-      p1.z = -e.z;
-
-      l = dot(&(p1), &norm) / d_dot_n;
-
-      if (l > THR)
-      {
-        // Check if the intersection point is inside the plane
-
-        rayPosition(&ray_transformed, l, &temp_p);
-
-        if (fabs(temp_p.x + 0.5) < THR && fabs(temp_p.z) < 0.5 + THR &&
-    fabs(temp_p.y) < 0.5 + THR && (*lambda == -1 || l < *lambda))
-        {
-          rayPosition(ray, l, p);
-          *lambda = l;
-          normalTransform(&norm, n, this);
-        }
-      }
-    }
-
-    l = -1;
-    norm.x = 0;
-    norm.y = 1;
-    norm.z = 0;
-    norm.w = 1;
-
-    d_dot_n = dot(&(ray_transformed.d), &norm);
-    if (d_dot_n != 0)
-    {
-      p1.x = -e.x;
-      p1.y = 0.5 - e.y;
-      p1.z = -e.z;
-
-      l = dot(&(p1), &norm) / d_dot_n;
-
-      if (l >= 0)
-      {
-        // Check if the intersection point is inside the plane
-        rayPosition(&ray_transformed, l, &temp_p);
-
-        if (fabs(temp_p.z) < 0.5 + THR && fabs(temp_p.x) < 0.5 + THR &&
-    fabs(temp_p.y - 0.5) < THR && (*lambda == -1 || l < *lambda))
-        {
-          rayPosition(ray, l, p);
-
-          *lambda = l;
-          normalTransform(&norm, n, this);
-          x = p->x;
-          y = p->y;
-        }
-      }
-    }
-
-    l = -1;
-    norm.x = 0;
-    norm.y = -1;
-    norm.z = 0;
-    norm.w = 1;
-
-    d_dot_n = dot(&(ray_transformed.d), &norm);
-    if (d_dot_n != 0)
-    {
-      p1.x = -e.x;
-      p1.y = -0.5 - e.y;
-      p1.z = -e.z;
-
-      l = dot(&(p1), &norm) / d_dot_n;
-      if (l >= 0)
-      {
-        // Check if the intersection point is inside the plane
-        rayPosition(&ray_transformed, l, &temp_p);
-
-        if (fabs(temp_p.z) < 0.5 + THR && fabs(temp_p.x) < 0.5 + THR &&
-    fabs(temp_p.y + 0.5) < THR && (*lambda == -1 || l < *lambda))
-        {
-          rayPosition(ray, l, p);
-          *lambda = l;
-          normalTransform(&norm, n, this);
-        }
-      }
-    }
-
-    l = -1;
-    norm.x = 0;
-    norm.y = 0;
-    norm.z = 1;
-    norm.w = 1;
-
-    d_dot_n = dot(&(ray_transformed.d), &norm);
-    if (d_dot_n != 0)
-    {
-      p1.x = -e.x;
-      p1.y = -e.y;
-      p1.z = 0.5 - e.z;
-
-      l = dot(&(p1), &norm) / d_dot_n;
-      if (l >= 0)
-      {
-        // Check if the intersection point is inside the plane
-        rayPosition(&ray_transformed, l, &temp_p);
-
-        if (fabs(temp_p.z - 0.5) < THR && fabs(temp_p.x) < 0.5 + THR &&
-    fabs(temp_p.y) < 0.5 + THR && (*lambda == -1 || l < *lambda))
-        {
-          rayPosition(ray, l, p);
-          *lambda = l;
-          normalTransform(&norm, n, this);
-        }
-      }
-    }
-
-    l = -1;
-    norm.x = 0;
-    norm.y = 0;
-    norm.z = -1;
-    norm.w = 1;
-
-    d_dot_n = dot(&(ray_transformed.d), &norm);
-    if (d_dot_n != 0)
-    {
-      p1.x = -e.x;
-      p1.y = -e.y;
-      p1.z = -0.5 - e.z;
-
-      l = dot(&(p1), &norm) / d_dot_n;
-      if (l >= 0)
-      {
-        // Check if the intersection point is inside the plane
-        rayPosition(&ray_transformed, l, &temp_p);
-
-        if (fabs(temp_p.z + 0.5) < THR && fabs(temp_p.x) < 0.5 + THR &&
-    fabs(temp_p.y) < 0.5 + THR && (*lambda == -1 || l < *lambda))
-        {
-          rayPosition(ray, l, p);
-          *lambda = l;
-
-          normalTransform(&norm, n, this);
-        }
-      }
-    }
-
-    if (*lambda > -1)
-    {
-      x = p->x;
-      y = p->y;
-      if (this->texImg != NULL)
-      {
-        *a = (x + 1) / 2;
-        *b = (-y + 1) / 2;
-      }
-    }
-    */
 }
 
 Triangle::Triangle(double r = 1, double g = 1, double b = 1) : Object(r, g, b) {
@@ -711,54 +503,83 @@ void Mesh::setMesh(const char *filename) {
     avg_x = avg_y = avg_z = 0;
 
     if (mesh_obj.is_open()) {
-        
         // count the number of vertices
         num_vertices = 0;
         while (getline(mesh_obj, line) && line.rfind("v ", 0) == 0) {
             num_vertices++;
             sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
-            avg_x += x, avg_y += y, avg_z +=z;
-            if(x < min_x) {
+            avg_x += x, avg_y += y, avg_z += z;
+            if (x < min_x) {
                 min_x = x;
-            } if (max_x < x){
+            }
+            if (max_x < x) {
                 max_x = x;
             }
 
-            if(y < min_y) {
+            if (y < min_y) {
                 min_y = y;
-            } if (max_y < y){
+            }
+            if (max_y < y) {
                 max_y = y;
             }
 
-            if(z < min_z) {
+            if (z < min_z) {
                 min_z = z;
-            } if (max_z < z){
+            }
+            if (max_z < z) {
                 max_z = z;
             }
         }
 
-        //calculate average diatance from 0 so that mesh can be centered
+        // calculate average diatance from 0 so that mesh can be centered
         avg_x /= num_vertices, avg_y /= num_vertices, avg_z /= num_vertices;
-        //calculate max dimension so mesh can be scaled down to 1x1x1 ish
-        scale = MAX(abs(max_x - min_x), MAX(abs(max_y - min_y),abs(max_z - min_z)));
-        //std::cout << scale << "\n";
+        // calculate max dimension so mesh can be scaled down to 1x1x1 ish
+        scale = MAX(abs(max_x - min_x),
+                    MAX(abs(max_y - min_y), abs(max_z - min_z)));
+
+        // reset to find new min and max
+        min_x = min_y = min_z = INFINITY;
+        max_x = max_y = max_z = -INFINITY;
 
         num_vertices += 1;  // << overcount by 1
         vertices = (point *)malloc(num_vertices * sizeof(point));
 
         // read vertices into array
         mesh_obj.seekg(0);
-        
+
         // keeps first vertex empty so face's lookup doesn't need to subtract 1
         for (int i = 1; i < num_vertices; i++) {
             getline(mesh_obj, line);
             sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
-            vertices[i] = point((x - avg_x)/scale, (y - avg_y)/scale, (z - avg_z)/scale);
+            x = (x - avg_x) / scale, y = (y - avg_y) / scale,
+            z = (z - avg_z) / scale;
+            vertices[i] = point(x, y, z);
+            if (x < min_x) {
+                min_x = x;
+            }
+            if (max_x < x) {
+                max_x = x;
+            }
+
+            if (y < min_y) {
+                min_y = y;
+            }
+            if (max_y < y) {
+                max_y = y;
+            }
+
+            if (z < min_z) {
+                min_z = z;
+            }
+            if (max_z < z) {
+                max_z = z;
+            }
         }
 
-        //std::cout << "min: "<< min_x << " " << min_y << " " << min_z << "\n";
-        //std::cout << "max: "<< max_x << " " << max_y << " " << max_z << "\n";
-        //std::cout << "avg: "<< avg_x << " " << avg_y << " " << avg_z << "\n";
+        box.setBounds(min_x, max_x, min_y, max_y, min_z, max_z);
+        // std::cout << "min: "<< min_x << " " << min_y << " " << min_z << "\n";
+        // std::cout << "max: "<< max_x << " " << max_y << " " << max_z << "\n";
+        // std::cout << "avg: "<< avg_x << " " << avg_y << " " << avg_z << "\n";
 
         // save location of first normal
         first_normal = mesh_obj.tellg();
@@ -781,7 +602,7 @@ void Mesh::setMesh(const char *filename) {
         }
 
         // save location of first face
-        first_face = (int)mesh_obj.tellg() ;
+        first_face = (int)mesh_obj.tellg();
 
         // count number of faces
         num_faces = 0;  // first face has already been scanned
@@ -798,10 +619,10 @@ void Mesh::setMesh(const char *filename) {
         mesh_obj.clear();
         mesh_obj.seekg(first_face);
         int p1, p2, p3;
-        //std::cout << num_faces;
+        // std::cout << num_faces;
         for (int i = 0; i < num_faces; i++) {
             getline(mesh_obj, line);
-            //std::cout << line << "\n";
+            // std::cout << line << "\n";
             sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3);
             faces[i] = TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
             if (num_normals > 1) {
@@ -835,7 +656,17 @@ void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
     struct ray ray_transformed;
     rayTransform(ray, &ray_transformed, this);
 
-    double f_lambda;
+    double f_lambda = INFINITY;
+    bool draw_frame = box.intersect(&ray_transformed, &f_lambda);
+    if (f_lambda == INFINITY) return;  // didn't hit bounding box
+    
+    if(draw_frame){
+        *lambda = f_lambda;
+        *a = -1;
+        *p = point(box.col.R, box.col.G, box.col.B);
+        return;
+    }
+
     TriangleFace *closest_face = NULL;
     point f_coords;
     for (int i = 0; i < num_faces; i++) {
@@ -863,6 +694,189 @@ void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
     } else {
         *lambda = -1;
     }
+}
+
+void BoundingBox::setBounds(double min_x, double max_x, double min_y,
+                            double max_y, double min_z, double max_z) {
+    this->min_x = min_x, this->max_x = max_x;
+    this->min_y = min_y, this->max_y = max_y;
+    this->min_z = min_z, this->max_z = max_z;
+}
+
+bool BoundingBox::intersect(struct ray *ray, double *lambda) {
+    // Computes and returns the value of 'lambda' at the intersection
+    // between the specified ray and the specified canonical box.
+    point p;
+
+    // current intersection lambda
+    double b_lambda;
+
+    // y-z plane box face at min_x
+    b_lambda = (min_x - ray->p0.x) / ray->d.x;
+    if (THR < b_lambda) {
+        rayPosition(ray, b_lambda, &p);
+        if ((min_y < p.y && p.y < max_y) && (min_z < p.z && p.z < max_z)) {
+            *lambda = b_lambda;
+        }
+    }
+
+    // y-z plane box face at max_x
+    b_lambda = (max_x - ray->p0.x) / ray->d.x;
+    if (THR < b_lambda && b_lambda < *lambda) {
+        rayPosition(ray, b_lambda, &p);
+        if ((min_y < p.y && p.y < max_y) && (min_z < p.z && p.z < max_z)) {
+            *lambda = b_lambda;
+        }
+    }
+
+    // x-z plane box face at min_y
+    b_lambda = (min_y - ray->p0.y) / ray->d.y;
+    if (THR < b_lambda && b_lambda < *lambda) {
+        rayPosition(ray, b_lambda, &p);
+        if ((min_x < p.x && p.x < max_x) && (min_z < p.z && p.z < max_z)) {
+            *lambda = b_lambda;
+        }
+    }
+
+    // x-z plane box face at max_y
+    b_lambda = (max_y - ray->p0.y) / ray->d.y;
+    if (THR < b_lambda && b_lambda < *lambda) {
+        rayPosition(ray, b_lambda, &p);
+        if ((min_x < p.x && p.x < max_x) && (min_z < p.z && p.z < max_z)) {
+            *lambda = b_lambda;
+        }
+    }
+
+    // x-y plane box face at min_z
+    b_lambda = (min_z - ray->p0.z) / ray->d.z;
+    if (THR < b_lambda && b_lambda < *lambda) {
+        rayPosition(ray, b_lambda, &p);
+        if ((min_x < p.x && p.x < max_x) && (min_y < p.y && p.y < max_y)) {
+            *lambda = b_lambda;
+        }
+    }
+
+    // x-y plane box face at max_z
+    b_lambda = (max_z - ray->p0.z) / ray->d.z;
+    if (THR < b_lambda && b_lambda < *lambda) {
+        rayPosition(ray, b_lambda, &p);
+        if ((min_x < p.x && p.x < max_x) && (min_y < p.y && p.y < max_y)) {
+            *lambda = b_lambda;
+        }
+    }
+    return false;
+}
+
+VisibleBoundingBox::VisibleBoundingBox() {
+    col = color(drand48(), drand48(), drand48());
+}
+
+bool VisibleBoundingBox::intersect(struct ray *ray, double *lambda) {
+    // Computes and returns the value of 'lambda' at the intersection
+    // between the specified ray and the specified canonical box.
+    point p;
+
+    // current intersection lambda
+    double b_lambda;
+    double a, b;
+    // y-z plane box face at min_x
+    b_lambda = (min_x - ray->p0.x) / ray->d.x;
+    rayPosition(ray, b_lambda, &p);
+    if(THR < b_lambda && (min_y < p.y && p.y < max_y) && (min_z < p.z && p.z < max_z)){
+        a = (p.y - min_y) / (max_y - min_y);
+        b = (p.z - min_z) / (max_z - min_z);
+        
+        if((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
+           (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)){
+            *lambda = b_lambda;
+            return true;
+        }   
+            *lambda = b_lambda;
+    }
+    
+
+    // y-z plane box face at max_x
+    b_lambda = (max_x - ray->p0.x) / ray->d.x;
+    rayPosition(ray, b_lambda, &p);
+    if (THR < b_lambda && (min_y < p.y && p.y < max_y) && (min_z < p.z && p.z < max_z)) {
+        a = (p.y - min_y) / (max_y - min_y);
+        b = (p.z - min_z) / (max_z - min_z);
+        if((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
+           (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)){
+            *lambda = b_lambda;
+            return true;
+        }
+        if (b_lambda < *lambda) {
+            *lambda = b_lambda;
+        }
+    }
+
+    // x-z plane box face at min_y
+    b_lambda = (min_y - ray->p0.y) / ray->d.y;
+    rayPosition(ray, b_lambda, &p);
+    if(THR < b_lambda && (min_x < p.x && p.x < max_x) && (min_z < p.z && p.z < max_z)) {
+        a = (p.x - min_x) / (max_x - min_x);
+        b = (p.z - min_z) / (max_z - min_z);
+        if((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
+           (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)){
+            *lambda = b_lambda;
+            return true;
+        }
+        if (b_lambda < *lambda) {
+            *lambda = b_lambda;
+        }
+    }
+    
+    // x-z plane box face at max_y
+    b_lambda = (max_y - ray->p0.y) / ray->d.y;
+    rayPosition(ray, b_lambda, &p);
+    if (THR < b_lambda && (min_x < p.x && p.x < max_x) && (min_z < p.z && p.z < max_z)) {
+        a = (p.x - min_x) / (max_x - min_x);
+        b = (p.z - min_z) / (max_z - min_z);
+        if((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
+           (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)){
+            *lambda = b_lambda;
+            return true;
+        }
+        if (b_lambda < *lambda) {
+            *lambda = b_lambda;
+        }
+    }
+    
+
+    // x-y plane box face at min_z
+    b_lambda = (min_z - ray->p0.z) / ray->d.z;
+    rayPosition(ray, b_lambda, &p);
+    if (THR < b_lambda && (min_x < p.x && p.x < max_x) && (min_y < p.y && p.y < max_y)) {
+        a = (p.x - min_x) / (max_x - min_x);
+        b = (p.y - min_y) / (max_y - min_y);
+        if((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
+           (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)){
+            *lambda = b_lambda;
+            return true;
+        }
+        if (b_lambda < *lambda) {
+            *lambda = b_lambda;
+        }
+    }
+    
+
+    // x-y plane box face at max_z
+    b_lambda = (max_z - ray->p0.z) / ray->d.z;
+    rayPosition(ray, b_lambda, &p);
+    if (THR < b_lambda && (min_x < p.x && p.x < max_x) && (min_y < p.y && p.y < max_y)) {
+        a = (p.x - min_x) / (max_x - min_x);
+        b = (p.y - min_y) / (max_y - min_y);
+        if((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
+           (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)){
+            *lambda = b_lambda;
+            return true;
+        }
+        if (b_lambda < *lambda) {
+            *lambda = b_lambda;
+        }
+    }
+    return false;
 }
 
 TriangleFace::TriangleFace() {}
@@ -909,13 +923,13 @@ void TriangleFace::intersect(struct ray *ray, double *lambda,
     point crossp = cross(&e12, &v1i);
     u = dot(&crossp, &normal);
     if (u < 0) return;  // outside first edge
-    
+
     // e23 has already been calculated
     point v2i = pi - p2;
     crossp = cross(&e23, &v2i);
     v = dot(&crossp, &normal);
     if (v < 0) return;  // outside second edge
-    
+
     point e31 = p1 - p3;
     point v3i = pi - p3;
     crossp = cross(&e31, &v3i);

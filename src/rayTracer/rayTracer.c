@@ -115,7 +115,7 @@ void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
     //            errors. NULL for rays originating from the center of projection.
 
     double lambda;              // Lambda at intersection
-    double a, b;                // Texture coordinates
+    double a = 0, b;                // Texture coordinates
     Object *obj = NULL;  // Pointer to object at intersection
     struct point p;             // Intersection point
     struct point n;             // Normal at intersection
@@ -127,6 +127,12 @@ void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
         return;
     }
     findFirstHit(scene, ray, &lambda, Os, &obj, &p, &n, &a, &b);
+    if (a == -1){
+        //std::cout << "bb\n";
+        *col = color(p.x, p.y, p.z);
+        return;
+    }
+
     if (lambda == -1 || obj == NULL) {
         *col = -1;
         return;
