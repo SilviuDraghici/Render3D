@@ -26,6 +26,7 @@ struct point {
         x = pt.x;
         y = pt.y;
         z = pt.z;
+        w = pt.w;
         return *this;
     }
 

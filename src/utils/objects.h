@@ -132,27 +132,13 @@ class Polygon : public Object {
     void calculate_edge_vectors();
 };
 
-class BoundingBox {
-    protected:
-    double min_x, max_x;
-    double min_y, max_y;
-    double min_z, max_z;
-
-   public:
-    void setBounds(double min_x, double max_x, double min_y, double max_y,
-                double min_z, double max_z);
-    bool intersect(struct ray *r, double *lambda);
-};
-
-class VisibleBoundingBox : public BoundingBox {
-    double width = 0.02;
+class Intersectable {
     public:
-    color col;
-    VisibleBoundingBox();
-    bool intersect(struct ray *r, double *lambda);
+    virtual Intersectable *intersect(struct ray *r, double *lambda,
+                           point *bary_coords) = 0;
 };
 
-class TriangleFace {
+class TriangleFace : public Intersectable {
    protected:
     point p1, p2, p3;
 
@@ -162,8 +148,14 @@ class TriangleFace {
     TriangleFace(point p1, point p2, point p3);
     TriangleFace(double x1, double y1, double z1, double x2, double y2,
                  double z2, double x3, double y3, double z3);
-    void intersect(struct ray *r, double *lambda, point *bary_coords);
-    point normal(point *bary_coords);
+    Intersectable *intersect(struct ray *r, double *lambda, point *bary_coords);
+    double min_x();
+    double min_y();
+    double min_z();
+    double max_x();
+    double max_y();
+    double max_z();
+    virtual point normal(point *bary_coords);
 };
 
 class TriangleFace_N : public TriangleFace {
@@ -175,6 +167,32 @@ class TriangleFace_N : public TriangleFace {
     using TriangleFace::TriangleFace;
     void setNormals(point n1, point n2, point n3);
     point normal(point *bary_coords);
+};
+
+class BoundingBox : public Intersectable {
+    int depth;
+
+   protected:
+    Intersectable *c1, *c2;
+    double min_x, max_x;
+    double min_y, max_y;
+    double min_z, max_z;
+
+   public:
+    void setChildren(TriangleFace_N *faces, int start, int end);
+    void setBounds(double min_x, double max_x, double min_y, double max_y,
+                   double min_z, double max_z);
+    Intersectable *intersect(struct ray *r, double *lambda, point *bary_coords);
+};
+
+class VisibleBoundingBox : public BoundingBox {
+    double width = 0.02;
+
+   public:
+    color col;
+    VisibleBoundingBox();
+    color getCol();
+    Intersectable *intersect(struct ray *r, double *lambda, point *bary_coords);
 };
 
 class Mesh : public Object {
@@ -190,7 +208,7 @@ class Mesh : public Object {
 
     point bary_coords;
 
-    VisibleBoundingBox box;
+    BoundingBox *box = NULL;
 
    public:
     using Object::Object;

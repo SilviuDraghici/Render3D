@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <chrono>
 
 #include "../utils/affinetransforms.h"
 #include "../utils/buildscene.h"
@@ -14,15 +15,21 @@
 #include "../utils/ray.h"
 #include "../utils/utils.h"
 
-static Scene *scene;
 
+//#define DEBUG
+
+static Scene *scene;
 void rayTraceMain(int argc, char *argv[]) {
     if (argc < 5) {
         fprintf(stderr, "RayTracer: Can not parse input parameters\n");
         fprintf(stderr, "USAGE: Render3D 0 size antialias output_name\n");
         fprintf(stderr, "   size = Image size (both along x and y)\n");
-        fprintf(stderr, "   antialias = A single digit, 0 disables antialiasing. Anything else enables antialiasing\n");
-        fprintf(stderr, "   output_name = Name of the output file, e.g. MyRender.ppm\n");
+        fprintf(stderr,
+                "   antialias = A single digit, 0 disables antialiasing. "
+                "Anything else enables antialiasing\n");
+        fprintf(
+            stderr,
+            "   output_name = Name of the output file, e.g. MyRender.ppm\n");
         exit(0);
     }
 
@@ -32,7 +39,7 @@ void rayTraceMain(int argc, char *argv[]) {
     scene->sx = atoi(argv[2]);
     strcpy(&output_name[0], argv[4]);
 
-    if(6 <= argc){
+    if (6 <= argc) {
         sc.frame = atoi(argv[5]) - 1;
     }
 
@@ -63,11 +70,14 @@ void rayTraceMain(int argc, char *argv[]) {
     buildScene(scene);
 
     struct view *cam;  // Camera and view for this scene
-    cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up), scene->cam_focal, -2, 2, 4);
+    cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up),
+                    scene->cam_focal, -2, 2, 4);
 
     if (cam == NULL) {
-        fprintf(stderr, "Unable to set up the view and camera parameters. Our of memory!\n");
-        //cleanup(object_list, light_list, texture_list);
+        fprintf(stderr,
+                "Unable to set up the view and camera parameters. Our of "
+                "memory!\n");
+        // cleanup(object_list, light_list, texture_list);
         deleteImage(outImage);
         exit(0);
     }
@@ -81,8 +91,20 @@ void rayTraceMain(int argc, char *argv[]) {
 
     fprintf(stderr, "Rendering...\n");
 
-    for (int j = 0; j < scene->sx; j++) {  // For each of the pixels in the image
-        for (int i = 0; i < scene->sx; i++) {
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+    double start_j = 0, end_j = scene->sx, start_i = 0, end_i = scene->sx;
+#ifdef DEBUG
+    start_i = 505, start_j = 510;
+    end_i = start_i + 1, end_j = start_j + 1;
+#endif
+
+    for (int j = start_j; j < end_j;
+         j++) {  // For each of the pixels in the image
+        for (int i = start_i; i < end_i; i++) {
+#ifdef DEBUG
+            printf("-------pixel: (%d %d)-------\n", i, j);
+#endif
             getRayFromPixel(scene, &ray, cam, i, j);
             depth = 1;
             col = 0;
@@ -90,16 +112,25 @@ void rayTraceMain(int argc, char *argv[]) {
             if (col.R == -1) {
                 col = background;
             }
-            rgbIm[3 * (j * outImage->sx + i) + 0] = (unsigned char)(255 * col.R);
-            rgbIm[3 * (j * outImage->sx + i) + 1] = (unsigned char)(255 * col.G);
-            rgbIm[3 * (j * outImage->sx + i) + 2] = (unsigned char)(255 * col.B);
+            rgbIm[3 * (j * outImage->sx + i) + 0] =
+                (unsigned char)(255 * col.R);
+            rgbIm[3 * (j * outImage->sx + i) + 1] =
+                (unsigned char)(255 * col.G);
+            rgbIm[3 * (j * outImage->sx + i) + 2] =
+                (unsigned char)(255 * col.B);
         }  // end for i
     }      // end for j
-
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     // Output rendered image
     imageOutput(outImage, output_name);
 
     fprintf(stderr, "Ray Tracing Done!\n");
+
+    auto time = end - begin;
+    auto mins = std::chrono::duration_cast<std::chrono::minutes>(time).count();
+    auto secs = std::chrono::duration_cast<std::chrono::seconds>(time).count();
+    auto nano = std::chrono::duration_cast<std::chrono::nanoseconds>(time).count();
+    std::cout << "Time: min:" << mins << " sec:" << secs << " nano:" << nano << std::endl;
 }
 
 void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
@@ -108,27 +139,34 @@ void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
     // Parameters:
     //   *ray   -  A pointer to the ray being traced
     //   depth  -  Current recursion depth for recursive raytracing
-    //   *col   - Pointer to an RGB colour structure so you can return the object colour
-    //            at the intersection point of this ray with the closest scene object.
+    //   *col   - Pointer to an RGB colour structure so you can return the
+    //   object colour
+    //            at the intersection point of this ray with the closest scene
+    //            object.
     //   *Os    - 'Object source' is a pointer to the object from which the ray
-    //            originates so you can discard self-intersections due to numerical
-    //            errors. NULL for rays originating from the center of projection.
+    //            originates so you can discard self-intersections due to
+    //            numerical errors. NULL for rays originating from the center of
+    //            projection.
 
-    double lambda;              // Lambda at intersection
-    double a = 0, b;                // Texture coordinates
+    double lambda;       // Lambda at intersection
+    double a = 0, b;     // Texture coordinates
     Object *obj = NULL;  // Pointer to object at intersection
-    struct point p;             // Intersection point
-    struct point n;             // Normal at intersection
-    struct color I;             // Colour returned by shading function
+    struct point p;      // Intersection point
+    struct point n;      // Normal at intersection
+    struct color I;      // Colour returned by shading function
 
-    if (depth > scene->rt_max_depth)  // Max recursion depth reached. Return invalid colour.
+    if (depth > scene->rt_max_depth)  // Max recursion depth reached. Return
+                                      // invalid colour.
     {
         *col = -1;
         return;
     }
     findFirstHit(scene, ray, &lambda, Os, &obj, &p, &n, &a, &b);
-    if (a == -1){
-        //std::cout << "bb\n";
+    //std::cout << lambda << " a: " << a << "\n";
+    if (a == -1) {
+#ifdef DEBUG
+        std::cout << "bb\n";
+#endif
         *col = color(p.x, p.y, p.z);
         return;
     }
@@ -140,12 +178,16 @@ void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
     rtShade(obj, &p, &n, ray, depth, a, b, col);
 }
 
-void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray, int depth, double a, double b, struct color *col) {
-    // This function implements the shading model as described in lecture. It takes
-    // - A pointer to the first object intersected by the ray (to get the colour properties)
+void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray,
+             int depth, double a, double b, struct color *col) {
+    // This function implements the shading model as described in lecture. It
+    // takes
+    // - A pointer to the first object intersected by the ray (to get the colour
+    // properties)
     // - The coordinates of the intersection point (in world coordinates)
     // - The normal at the point
-    // - The ray (needed to determine the reflection direction to use for the global component, as well as for
+    // - The ray (needed to determine the reflection direction to use for the
+    // global component, as well as for
     //   the Phong specular component)
     // - The current recursion depth
     // - The (a,b) texture coordinates (meaningless unless texture is enabled)
@@ -172,12 +214,13 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray, int
     // check for alpha map
     alphaMap(obj, a, b, &alpha, obj->rt.alpha);
 
-    //vector from intersection point to camera
+    // vector from intersection point to camera
     struct point c;
     c = -ray->d;
     normalize(&c);
 
-    double ra = obj->rt.ambient, rd = obj->rt.diffuse, rs = obj->rt.specular, rg = obj->rt.global;
+    double ra = obj->rt.ambient, rd = obj->rt.diffuse, rs = obj->rt.specular,
+           rg = obj->rt.global;
 
     struct color ambient;
     ambient = objcol * ra * alpha;
@@ -193,22 +236,23 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray, int
     struct pointLS *light = scene->rt_point_light_list;
 
     while (light != NULL) {
-        //ray from intersection point to light source
+        // ray from intersection point to light source
         struct ray pToLight;
         // pToLight.p0 = *p - n * THR;
         pToLight.p0 = *p;
 
         pToLight.d = light->p0 - *p;
         double light_lambda;
-        //we don't care about these details of the hit
+        // we don't care about these details of the hit
         Object *dummyobj = NULL;
         struct point dummyp;
         double dummya;
 
-        findFirstHit(scene, &pToLight, &light_lambda, obj, &dummyobj, &dummyp, &dummyp, &dummya, &dummya);
+        findFirstHit(scene, &pToLight, &light_lambda, obj, &dummyobj, &dummyp,
+                     &dummyp, &dummya, &dummya);
 
         if (!(THR < light_lambda && light_lambda < 1)) {
-            //vector from intersection point to light
+            // vector from intersection point to light
             struct point s;
             s = light->p0 - *p;
             normalize(&s);
@@ -219,14 +263,15 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray, int
             }
             diffuse += objcol * rd * light->col * n_dot_s * alpha;
 
-            //perfect light ray reflection
+            // perfect light ray reflection
             struct ray light_reflection;
             normalize(&pToLight.d);
             pToLight.d = -pToLight.d;
             rayReflect(&pToLight, p, n, &light_reflection);
             double c_dot_m = dot(&c, &(light_reflection.d));
 
-            specular += light->col * rs * pow(MAX(0, c_dot_m), obj->rt.shinyness) * alpha;
+            specular += light->col * rs *
+                        pow(MAX(0, c_dot_m), obj->rt.shinyness) * alpha;
         }
 
         light = light->next;
@@ -250,7 +295,7 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray, int
         }
     }
 
-    //perfect camera ray reflection
+    // perfect camera ray reflection
     struct ray cam_reflection;
     rayReflect(ray, p, n, &cam_reflection);
 
@@ -271,7 +316,8 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray, int
     return;
 }
 
-void rt_brandished_trace(struct ray *ray, Object *obj, struct color *col, int depth) {
+void rt_brandished_trace(struct ray *ray, Object *obj, struct color *col,
+                         int depth) {
     struct ray brandished_ray;
     memcpy(&brandished_ray, ray, sizeof(struct ray));
     struct color brandished_color = 0;

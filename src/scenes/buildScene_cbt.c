@@ -7,6 +7,8 @@ struct textureNode *t_list = NULL;
 
 const char *checkers = "scenes/checkers.ppm";
 const char *mesh_file = "scenes/tea_pot.obj";
+//const char *mesh_file = "scenes/triangular_prism.obj";
+//const char *mesh_file = "scenes/bunny.obj";
 
 // Cornell box
 drand48();
@@ -25,7 +27,7 @@ o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.54;
 o->T *= RotY(scene->frame * PI / 120);
 o->T *= RotX(scene->frame * PI / 120);
-o->T *= Sc(10.0);
+o->T *= Sc(15.0);
 o->T *= Tr(0, 0, 5.5);
 invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
 insertObject(o, &(scene->object_list));

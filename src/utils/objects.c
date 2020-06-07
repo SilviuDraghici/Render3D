@@ -11,6 +11,9 @@
 #include "ray.h"
 #include "utils.h"
 
+#define BB BoundingBox
+//#define BB VisibleBoundingBox
+
 Object::Object(double r = 1, double g = 1, double b = 1) {
     col.R = r;
     col.G = g;
@@ -491,10 +494,14 @@ void Polygon::calculate_edge_vectors() {
 void Mesh::setMesh(const char *filename) {
     frontAndBack = 0;
 
+    box = new BB;
+
     std::string line;
     std::ifstream mesh_obj(filename);
 
-    std::streampos first_normal, first_face;
+    std::streampos first_vertex, first_normal, first_face;
+
+    num_vertices = 0, num_faces = 0;
 
     double x, y, z, scale;
     double min_x, max_x, avg_x, min_y, max_y, avg_y, min_z, max_z, avg_z;
@@ -502,124 +509,111 @@ void Mesh::setMesh(const char *filename) {
     max_x = max_y = max_z = -INFINITY;
     avg_x = avg_y = avg_z = 0;
 
-    if (mesh_obj.is_open()) {
-        // count the number of vertices
-        num_vertices = 0;
-        while (getline(mesh_obj, line) && line.rfind("v ", 0) == 0) {
-            num_vertices++;
-            sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
-            avg_x += x, avg_y += y, avg_z += z;
-            if (x < min_x) {
-                min_x = x;
-            }
-            if (max_x < x) {
-                max_x = x;
-            }
+    if (!mesh_obj.is_open()) {
+        std::cout << "Unable to open mesh file: " << filename << "\n";
+        return;
+    }
 
-            if (y < min_y) {
-                min_y = y;
-            }
-            if (max_y < y) {
-                max_y = y;
-            }
+    // scrub through comments
+    while (getline(mesh_obj, line) && line.rfind("#", 0) == 0) {
+        // sscanf(line.c_str(), "# Vertices: %d", &num_vertices);
+        sscanf(line.c_str(), "# Faces: %d", &num_faces);
+    }
 
-            if (z < min_z) {
-                min_z = z;
-            }
-            if (max_z < z) {
-                max_z = z;
-            }
+    first_vertex = (int)mesh_obj.tellg() - (line.size() + 1);
+    mesh_obj.seekg(first_vertex);
+
+    // count the number of vertices
+    while (getline(mesh_obj, line) && line.rfind("v ", 0) == 0) {
+        num_vertices++;
+        sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
+        avg_x += x, avg_y += y, avg_z += z;
+        if (x < min_x) {
+            min_x = x;
+        }
+        if (max_x < x) {
+            max_x = x;
         }
 
-        // calculate average diatance from 0 so that mesh can be centered
-        avg_x /= num_vertices, avg_y /= num_vertices, avg_z /= num_vertices;
-        // calculate max dimension so mesh can be scaled down to 1x1x1 ish
-        scale = MAX(abs(max_x - min_x),
-                    MAX(abs(max_y - min_y), abs(max_z - min_z)));
+        if (y < min_y) {
+            min_y = y;
+        }
+        if (max_y < y) {
+            max_y = y;
+        }
 
-        // reset to find new min and max
-        min_x = min_y = min_z = INFINITY;
-        max_x = max_y = max_z = -INFINITY;
+        if (z < min_z) {
+            min_z = z;
+        }
+        if (max_z < z) {
+            max_z = z;
+        }
+    }
 
-        num_vertices += 1;  // << overcount by 1
-        vertices = (point *)malloc(num_vertices * sizeof(point));
+    // calculate average diatance from 0 so that mesh can be centered
+    avg_x /= num_vertices, avg_y /= num_vertices, avg_z /= num_vertices;
+    // calculate max dimension so mesh can be scaled down to 1x1x1 ish
+    scale =
+        MAX(abs(max_x - min_x), MAX(abs(max_y - min_y), abs(max_z - min_z)));
 
-        // read vertices into array
-        mesh_obj.seekg(0);
+    num_vertices += 1;  // << overcount by 1
+    vertices = (point *)malloc(num_vertices * sizeof(point));
 
-        // keeps first vertex empty so face's lookup doesn't need to subtract 1
-        for (int i = 1; i < num_vertices; i++) {
+    // read vertices into array
+    mesh_obj.seekg(first_vertex);
+
+    // start filling at 1 so face's lookup doesn't need to subtract 1
+    for (int i = 1; i < num_vertices; i++) {
+        getline(mesh_obj, line);
+        sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
+        x = (x - avg_x) / scale, y = (y - avg_y) / scale,
+        z = (z - avg_z) / scale;
+        vertices[i] = point(x, y, z);
+    }
+
+    // save location of first normal
+    first_normal = mesh_obj.tellg();
+
+    // count number over vertex normals
+    num_normals = 1;  // overcount
+    while (getline(mesh_obj, line) && line.rfind("vn ", 0) == 0) {
+        // std::cout << line << "\n";
+        num_normals++;
+    }
+    if (num_normals > 1) {
+        normals = (point *)malloc(num_normals * sizeof(point));
+        mesh_obj.seekg(first_normal);
+        for (int i = 1; i < num_normals; i++) {
             getline(mesh_obj, line);
-            sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
-            x = (x - avg_x) / scale, y = (y - avg_y) / scale,
-            z = (z - avg_z) / scale;
-            vertices[i] = point(x, y, z);
-            if (x < min_x) {
-                min_x = x;
-            }
-            if (max_x < x) {
-                max_x = x;
-            }
-
-            if (y < min_y) {
-                min_y = y;
-            }
-            if (max_y < y) {
-                max_y = y;
-            }
-
-            if (z < min_z) {
-                min_z = z;
-            }
-            if (max_z < z) {
-                max_z = z;
-            }
-        }
-
-        box.setBounds(min_x, max_x, min_y, max_y, min_z, max_z);
-        // std::cout << "min: "<< min_x << " " << min_y << " " << min_z << "\n";
-        // std::cout << "max: "<< max_x << " " << max_y << " " << max_z << "\n";
-        // std::cout << "avg: "<< avg_x << " " << avg_y << " " << avg_z << "\n";
-
-        // save location of first normal
-        first_normal = mesh_obj.tellg();
-
-        // count number over vertex normals
-        num_normals = 1;  // overcount
-        while (getline(mesh_obj, line) && line.rfind("vn ", 0) == 0) {
             // std::cout << line << "\n";
-            num_normals++;
+            sscanf(line.c_str(), "vn %lf %lf %lf", &x, &y, &z);
+            normals[i] = point(x, y, z);
         }
-        if (num_normals > 1) {
-            normals = (point *)malloc(num_normals * sizeof(point));
-            mesh_obj.seekg(first_normal);
-            for (int i = 1; i < num_normals; i++) {
-                getline(mesh_obj, line);
-                // std::cout << line << "\n";
-                sscanf(line.c_str(), "vn %lf %lf %lf", &x, &y, &z);
-                normals[i] = point(x, y, z);
-            }
-        }
+    }
 
-        // save location of first face
-        first_face = (int)mesh_obj.tellg();
+    // save location of first face
+    first_face = (int)mesh_obj.tellg();
 
+    if (num_faces == 0) {
         // count number of faces
-        num_faces = 0;  // first face has already been scanned
         while (getline(mesh_obj, line) && line.rfind("f ", 0) == 0) {
             num_faces++;
         }
+    }
 
-        if (num_normals > 1) {
-            faces = new TriangleFace_N[num_faces];
-        } else {
-            // faces = new TriangleFace[num_faces];
-        }
+    if (num_normals > 1) {
+        faces = new TriangleFace_N[num_faces];
+    } else {
+        // faces = new TriangleFace[num_faces];
+    }
 
-        mesh_obj.clear();
+    mesh_obj.clear();
+    mesh_obj.seekg(first_face);
+
+    int p1, p2, p3, n1, n2, n3;
+    getline(mesh_obj, line);
+    if (sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3) == 3) {
         mesh_obj.seekg(first_face);
-        int p1, p2, p3;
-        // std::cout << num_faces;
         for (int i = 0; i < num_faces; i++) {
             getline(mesh_obj, line);
             // std::cout << line << "\n";
@@ -630,14 +624,24 @@ void Mesh::setMesh(const char *filename) {
                     normals[p1], normals[p2], normals[p3]);
             }
         }
-
-        num_vertices--;
-        mesh_obj.close();
-        free(vertices);
-        free(normals);
     } else {
-        std::cout << "Unable to open mesh file";
+        mesh_obj.seekg(first_face);
+        for (int i = 0; i < num_faces; i++) {
+            getline(mesh_obj, line);
+            // std::cout << line << "\n";
+            sscanf(line.c_str(), "f %d//%d %d//%d %d//%d", &p1, &n1, &p2, &n2,
+                   &p3, &n3);
+            faces[i] = TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
+            ((TriangleFace_N *)faces)[i].setNormals(normals[n1], normals[n2], normals[n3]);
+        }
     }
+
+    box->setChildren(faces, 0, num_faces);
+
+    num_vertices--;
+    mesh_obj.close();
+    free(vertices);
+    free(normals);
 }
 
 std::ostream &operator<<(std::ostream &strm, const TriangleFace &a) {
@@ -657,31 +661,23 @@ void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
     rayTransform(ray, &ray_transformed, this);
 
     double f_lambda = INFINITY;
-    bool draw_frame = box.intersect(&ray_transformed, &f_lambda);
-    if (f_lambda == INFINITY) return;  // didn't hit bounding box
-    
-    if(draw_frame){
+    point bary_coords;
+    TriangleFace *closest_face;
+    closest_face = (TriangleFace *)box->intersect(&ray_transformed, &f_lambda,
+                                                  &bary_coords);
+
+    if (bary_coords.w == -1) {
+#if 0
+            printf("box\n");
+#endif
         *lambda = f_lambda;
         *a = -1;
-        *p = point(box.col.R, box.col.G, box.col.B);
+        *p = bary_coords;
         return;
     }
 
-    TriangleFace *closest_face = NULL;
-    point f_coords;
-    for (int i = 0; i < num_faces; i++) {
-        f_lambda = INFINITY;
-        faces[i].intersect(&ray_transformed, &f_lambda, &f_coords);
-        if (f_lambda < *lambda) {
-            *lambda = f_lambda;
-            closest_face = &faces[i];
-            bary_coords = f_coords;
-        }
-    }
-
-    if (*lambda < INFINITY) {
-        point pi;
-        rayPosition(&ray_transformed, *lambda, &pi);
+    if (closest_face != NULL) {
+        *lambda = f_lambda;
         *n = closest_face->normal(&bary_coords);
         // std::cout << typeid(closest_face).name() << "\n";
         if (num_normals > 1) {
@@ -703,7 +699,57 @@ void BoundingBox::setBounds(double min_x, double max_x, double min_y,
     this->min_z = min_z, this->max_z = max_z;
 }
 
-bool BoundingBox::intersect(struct ray *ray, double *lambda) {
+void BoundingBox::setChildren(TriangleFace_N *faces, int start, int end) {
+    // std::cout << "start: " << start << " end: " << end << "\n";
+    double x, y, z;
+    min_x = min_y = min_z = INFINITY;
+    max_x = max_y = max_z = -INFINITY;
+    for (int i = start; i < end; i++) {
+        x = faces[i].min_x();
+        if (x < min_x) {
+            min_x = x;
+        }
+        x = faces[i].max_x();
+        if (max_x < x) {
+            max_x = x;
+        }
+
+        y = faces[i].min_y();
+        if (y < min_y) {
+            min_y = y;
+        }
+        y = faces[i].max_y();
+        if (max_y < y) {
+            max_y = y;
+        }
+
+        z = faces[i].min_z();
+        if (z < min_z) {
+            min_z = z;
+        }
+        z = faces[i].max_z();
+        if (max_z < z) {
+            max_z = z;
+        }
+    }
+
+    if (end - start == 1) {
+        c1 = &faces[start];
+        c2 = NULL;
+    } else if (end - start == 2) {
+        c1 = &faces[start];
+        c2 = &faces[start + 1];
+    } else {
+        int mid = (start + end) / 2;
+        c1 = new BB;
+        c2 = new BB;
+        ((BB *)c1)->setChildren(faces, start, mid);
+        ((BB *)c2)->setChildren(faces, mid, end);
+    }
+}
+
+Intersectable *BoundingBox::intersect(struct ray *ray, double *lambda,
+                                      point *bary_coords) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical box.
     point p;
@@ -764,47 +810,84 @@ bool BoundingBox::intersect(struct ray *ray, double *lambda) {
             *lambda = b_lambda;
         }
     }
-    return false;
+
+    if (*lambda < INFINITY) {
+        *lambda = INFINITY;
+        Intersectable *c1_result = c1->intersect(ray, lambda, bary_coords);
+
+        if (c2 == NULL) {
+            return c1_result;
+        } else {
+            double c_lambda = INFINITY;
+            point c_bary_coords;
+            Intersectable *c2_result =
+                c2->intersect(ray, &c_lambda, &c_bary_coords);
+            if (c_lambda < *lambda) {
+                *lambda = c_lambda;
+                *bary_coords = c_bary_coords;
+                return c2_result;
+            } else {
+                return c1_result;
+            }
+        }
+    }
+
+    return NULL;
 }
 
 VisibleBoundingBox::VisibleBoundingBox() {
     col = color(drand48(), drand48(), drand48());
 }
 
-bool VisibleBoundingBox::intersect(struct ray *ray, double *lambda) {
+color VisibleBoundingBox::getCol() { return col; }
+
+Intersectable *VisibleBoundingBox::intersect(struct ray *ray, double *lambda,
+                                             point *bary_coords) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical box.
     point p;
-
+    color col = getCol();
+    bary_coords->x = col.R;
+    bary_coords->y = col.G;
+    bary_coords->z = col.B;
     // current intersection lambda
     double b_lambda;
     double a, b;
     // y-z plane box face at min_x
     b_lambda = (min_x - ray->p0.x) / ray->d.x;
     rayPosition(ray, b_lambda, &p);
-    if(THR < b_lambda && (min_y < p.y && p.y < max_y) && (min_z < p.z && p.z < max_z)){
+    if (THR < b_lambda && (min_y < p.y && p.y < max_y) &&
+        (min_z < p.z && p.z < max_z)) {
         a = (p.y - min_y) / (max_y - min_y);
         b = (p.z - min_z) / (max_z - min_z);
-        
-        if((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
-           (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)){
+
+        if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
+            (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
             *lambda = b_lambda;
-            return true;
-        }   
-            *lambda = b_lambda;
+            bary_coords->w = -1;
+#if 0
+                printf("hit box %f\n", *lambda);
+#endif
+            return NULL;
+        }
+        *lambda = b_lambda;
     }
-    
 
     // y-z plane box face at max_x
     b_lambda = (max_x - ray->p0.x) / ray->d.x;
     rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (min_y < p.y && p.y < max_y) && (min_z < p.z && p.z < max_z)) {
+    if (THR < b_lambda && (min_y < p.y && p.y < max_y) &&
+        (min_z < p.z && p.z < max_z)) {
         a = (p.y - min_y) / (max_y - min_y);
         b = (p.z - min_z) / (max_z - min_z);
-        if((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
-           (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)){
+        if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
+            (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
             *lambda = b_lambda;
-            return true;
+            bary_coords->w = -1;
+#if 0
+                printf("hit box %f\n", *lambda);
+#endif
+            return NULL;
         }
         if (b_lambda < *lambda) {
             *lambda = b_lambda;
@@ -814,69 +897,115 @@ bool VisibleBoundingBox::intersect(struct ray *ray, double *lambda) {
     // x-z plane box face at min_y
     b_lambda = (min_y - ray->p0.y) / ray->d.y;
     rayPosition(ray, b_lambda, &p);
-    if(THR < b_lambda && (min_x < p.x && p.x < max_x) && (min_z < p.z && p.z < max_z)) {
+    if (THR < b_lambda && (min_x < p.x && p.x < max_x) &&
+        (min_z < p.z && p.z < max_z)) {
         a = (p.x - min_x) / (max_x - min_x);
         b = (p.z - min_z) / (max_z - min_z);
-        if((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
-           (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)){
+        if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
+            (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
             *lambda = b_lambda;
-            return true;
+            bary_coords->w = -1;
+#if 0
+                printf("hit box %f\n", *lambda);
+#endif
+            return NULL;
         }
         if (b_lambda < *lambda) {
             *lambda = b_lambda;
         }
     }
-    
+
     // x-z plane box face at max_y
     b_lambda = (max_y - ray->p0.y) / ray->d.y;
     rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (min_x < p.x && p.x < max_x) && (min_z < p.z && p.z < max_z)) {
+    if (THR < b_lambda && (min_x < p.x && p.x < max_x) &&
+        (min_z < p.z && p.z < max_z)) {
         a = (p.x - min_x) / (max_x - min_x);
         b = (p.z - min_z) / (max_z - min_z);
-        if((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
-           (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)){
+        if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
+            (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
             *lambda = b_lambda;
-            return true;
+            bary_coords->w = -1;
+#if 0
+               printf("hit box %f\n", *lambda);
+#endif
+            return NULL;
         }
         if (b_lambda < *lambda) {
             *lambda = b_lambda;
         }
     }
-    
 
     // x-y plane box face at min_z
     b_lambda = (min_z - ray->p0.z) / ray->d.z;
     rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (min_x < p.x && p.x < max_x) && (min_y < p.y && p.y < max_y)) {
+    if (THR < b_lambda && (min_x < p.x && p.x < max_x) &&
+        (min_y < p.y && p.y < max_y)) {
         a = (p.x - min_x) / (max_x - min_x);
         b = (p.y - min_y) / (max_y - min_y);
-        if((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
-           (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)){
+        if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
+            (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
             *lambda = b_lambda;
-            return true;
+            bary_coords->w = -1;
+#if 0
+                printf("hit box %f\n", *lambda);
+#endif
+            return NULL;
         }
         if (b_lambda < *lambda) {
             *lambda = b_lambda;
         }
     }
-    
 
     // x-y plane box face at max_z
     b_lambda = (max_z - ray->p0.z) / ray->d.z;
     rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (min_x < p.x && p.x < max_x) && (min_y < p.y && p.y < max_y)) {
+    if (THR < b_lambda && (min_x < p.x && p.x < max_x) &&
+        (min_y < p.y && p.y < max_y)) {
         a = (p.x - min_x) / (max_x - min_x);
         b = (p.y - min_y) / (max_y - min_y);
-        if((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
-           (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)){
+        if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
+            (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
             *lambda = b_lambda;
-            return true;
+            bary_coords->w = -1;
+#if 0
+                printf("hit box %f\n", *lambda);
+#endif
+            return NULL;
         }
         if (b_lambda < *lambda) {
             *lambda = b_lambda;
         }
     }
-    return false;
+
+    if (*lambda < INFINITY) {
+        *lambda = INFINITY;
+        Intersectable *c1_result = c1->intersect(ray, lambda, bary_coords);
+
+        if (c2 == NULL || bary_coords->w == -1) {
+            return c1_result;
+        } else {
+            double c_lambda = INFINITY;
+            point c_bary_coords;
+            Intersectable *c2_result =
+                c2->intersect(ray, &c_lambda, &c_bary_coords);
+#if 0 
+                printf("hit box %f %f \n", *lambda, c_lambda);
+#endif
+            if (c_lambda < *lambda || c_bary_coords.w == -1) {
+                *lambda = c_lambda;
+                *bary_coords = c_bary_coords;
+                return c2_result;
+            } else {
+#if 0
+                printf("else %f %f\n", *lambda, bary_coords->w);
+#endif
+                return c1_result;
+            }
+        }
+    }
+
+    return NULL;
 }
 
 TriangleFace::TriangleFace() {}
@@ -895,8 +1024,15 @@ TriangleFace::TriangleFace(double x1, double y1, double z1, double x2,
     p3.x = x3, p3.y = y3, p3.z = z3;
 }
 
-void TriangleFace::intersect(struct ray *ray, double *lambda,
-                             point *bary_coords) {
+double TriangleFace::min_x() { return MIN(p1.x, MIN(p2.x, p3.x)); }
+double TriangleFace::min_y() { return MIN(p1.y, MIN(p2.y, p3.y)); }
+double TriangleFace::min_z() { return MIN(p1.z, MIN(p2.z, p3.z)); }
+double TriangleFace::max_x() { return MAX(p1.x, MAX(p2.x, p3.x)); }
+double TriangleFace::max_y() { return MAX(p1.y, MAX(p2.y, p3.y)); }
+double TriangleFace::max_z() { return MAX(p1.z, MAX(p2.z, p3.z)); }
+
+Intersectable *TriangleFace::intersect(struct ray *ray, double *lambda,
+                                       point *bary_coords) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified triangle.
 
@@ -912,7 +1048,7 @@ void TriangleFace::intersect(struct ray *ray, double *lambda,
     double r_dot_n = dot(&r, &normal);
     double t_lambda = r_dot_n / d_dot_n;
 
-    if (t_lambda < THR) return;  // intersection with plane is negative
+    if (t_lambda < THR) return NULL;  // intersection with plane is negative
 
     double u, v, w;
 
@@ -922,25 +1058,29 @@ void TriangleFace::intersect(struct ray *ray, double *lambda,
     point v1i = pi - p1;
     point crossp = cross(&e12, &v1i);
     u = dot(&crossp, &normal);
-    if (u < 0) return;  // outside first edge
+    if (u < 0) return NULL;  // outside first edge
 
     // e23 has already been calculated
     point v2i = pi - p2;
     crossp = cross(&e23, &v2i);
     v = dot(&crossp, &normal);
-    if (v < 0) return;  // outside second edge
+    if (v < 0) return NULL;  // outside second edge
 
     point e31 = p1 - p3;
     point v3i = pi - p3;
     crossp = cross(&e31, &v3i);
     w = dot(&crossp, &normal);
-    if (w < 0) return;  // outside third edge
+    if (w < 0) return NULL;  // outside third edge
 
     // intersection is within triangle
     bary_coords->z = u / denom;
     bary_coords->x = v / denom;
     bary_coords->y = w / denom;
     *lambda = t_lambda;
+#if 0
+         printf("triangle %f %f\n", *lambda, bary_coords->w);
+#endif
+    return this;
 }
 
 point TriangleFace::normal(point *bary_coords) {
