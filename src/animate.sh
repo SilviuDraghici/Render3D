@@ -7,7 +7,7 @@ rm -rf frames/*
 for i in `seq -w 1 240`
 do
     echo "Frame $i"
-    ./Render3D 0 512 100 out.ppm $i
+    ./Render3D 0 1024 100 out.ppm $i
     mv out.ppm frames/$i.ppm
     echo
 done

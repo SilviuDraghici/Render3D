@@ -169,6 +169,10 @@ class TriangleFace_N : public TriangleFace {
     point normal(point *bary_coords);
 };
 
+int comp_face_max_x(const void *a, const void *b);
+int comp_face_max_y(const void *a, const void *b);
+int comp_face_max_z(const void *a, const void *b);
+
 class BoundingBox : public Intersectable {
     int depth;
 

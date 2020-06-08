@@ -632,13 +632,15 @@ void Mesh::setMesh(const char *filename) {
             sscanf(line.c_str(), "f %d//%d %d//%d %d//%d", &p1, &n1, &p2, &n2,
                    &p3, &n3);
             faces[i] = TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
-            ((TriangleFace_N *)faces)[i].setNormals(normals[n1], normals[n2], normals[n3]);
+            ((TriangleFace_N *)faces)[i].setNormals(normals[n1], normals[n2],
+                                                    normals[n3]);
         }
     }
 
+    qsort(faces, num_faces, sizeof(TriangleFace_N), comp_face_max_x);
+
     box->setChildren(faces, 0, num_faces);
 
-    num_vertices--;
     mesh_obj.close();
     free(vertices);
     free(normals);
@@ -651,6 +653,24 @@ std::ostream &operator<<(std::ostream &strm, const TriangleFace &a) {
 std::ostream &operator<<(std::ostream &strm, const TriangleFace_N &a) {
     return strm << "p1: " << a.p1 << " p2: " << a.p2 << " p3: " << a.p3
                 << "n1: " << a.n1 << " n2: " << a.n2 << " n3: " << a.n3;
+}
+
+int comp_face_max_x(const void *a, const void *b) {
+    TriangleFace_N *ta = (TriangleFace_N *)a, *tb = (TriangleFace_N *)b;
+    double result = ta->max_x() - tb->max_x();
+    return result > 0;
+}
+
+int comp_face_max_y(const void *a, const void *b) {
+    TriangleFace_N *ta = (TriangleFace_N *)a, *tb = (TriangleFace_N *)b;
+    double result = ta->max_y() - tb->max_y();
+    return result > 0;
+}
+
+int comp_face_max_z(const void *a, const void *b) {
+    TriangleFace_N *ta = (TriangleFace_N *)a, *tb = (TriangleFace_N *)b;
+    double result = ta->max_z() - tb->max_z();
+    return result > 0;
 }
 
 void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
@@ -762,73 +782,74 @@ Intersectable *BoundingBox::intersect(struct ray *ray, double *lambda,
     if (THR < b_lambda) {
         rayPosition(ray, b_lambda, &p);
         if ((min_y < p.y && p.y < max_y) && (min_z < p.z && p.z < max_z)) {
-            *lambda = b_lambda;
+            goto check_children;
         }
     }
 
     // y-z plane box face at max_x
     b_lambda = (max_x - ray->p0.x) / ray->d.x;
-    if (THR < b_lambda && b_lambda < *lambda) {
+    if (THR < b_lambda) {
         rayPosition(ray, b_lambda, &p);
         if ((min_y < p.y && p.y < max_y) && (min_z < p.z && p.z < max_z)) {
-            *lambda = b_lambda;
+            goto check_children;
         }
     }
 
     // x-z plane box face at min_y
     b_lambda = (min_y - ray->p0.y) / ray->d.y;
-    if (THR < b_lambda && b_lambda < *lambda) {
+    if (THR < b_lambda) {
         rayPosition(ray, b_lambda, &p);
         if ((min_x < p.x && p.x < max_x) && (min_z < p.z && p.z < max_z)) {
-            *lambda = b_lambda;
+            goto check_children;
         }
     }
 
     // x-z plane box face at max_y
     b_lambda = (max_y - ray->p0.y) / ray->d.y;
-    if (THR < b_lambda && b_lambda < *lambda) {
+    if (THR < b_lambda) {
         rayPosition(ray, b_lambda, &p);
         if ((min_x < p.x && p.x < max_x) && (min_z < p.z && p.z < max_z)) {
-            *lambda = b_lambda;
+            goto check_children;
         }
     }
 
     // x-y plane box face at min_z
     b_lambda = (min_z - ray->p0.z) / ray->d.z;
-    if (THR < b_lambda && b_lambda < *lambda) {
+    if (THR < b_lambda) {
         rayPosition(ray, b_lambda, &p);
         if ((min_x < p.x && p.x < max_x) && (min_y < p.y && p.y < max_y)) {
-            *lambda = b_lambda;
+            goto check_children;
         }
     }
 
     // x-y plane box face at max_z
     b_lambda = (max_z - ray->p0.z) / ray->d.z;
-    if (THR < b_lambda && b_lambda < *lambda) {
+    if (THR < b_lambda) {
         rayPosition(ray, b_lambda, &p);
         if ((min_x < p.x && p.x < max_x) && (min_y < p.y && p.y < max_y)) {
-            *lambda = b_lambda;
+            goto check_children;
         }
     }
+    // if this is reached there was no intersection
+    return NULL;
 
-    if (*lambda < INFINITY) {
-        *lambda = INFINITY;
-        Intersectable *c1_result = c1->intersect(ray, lambda, bary_coords);
+check_children:
+    *lambda = INFINITY;
+    Intersectable *c1_result = c1->intersect(ray, lambda, bary_coords);
 
-        if (c2 == NULL) {
-            return c1_result;
+    if (c2 == NULL) {
+        return c1_result;
+    } else {
+        double c_lambda = INFINITY;
+        point c_bary_coords;
+        Intersectable *c2_result =
+            c2->intersect(ray, &c_lambda, &c_bary_coords);
+        if (c_lambda < *lambda) {
+            *lambda = c_lambda;
+            *bary_coords = c_bary_coords;
+            return c2_result;
         } else {
-            double c_lambda = INFINITY;
-            point c_bary_coords;
-            Intersectable *c2_result =
-                c2->intersect(ray, &c_lambda, &c_bary_coords);
-            if (c_lambda < *lambda) {
-                *lambda = c_lambda;
-                *bary_coords = c_bary_coords;
-                return c2_result;
-            } else {
-                return c1_result;
-            }
+            return c1_result;
         }
     }
 
