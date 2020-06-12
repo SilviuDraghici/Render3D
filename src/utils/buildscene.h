@@ -2,6 +2,7 @@
 #define BUILDSCENE_H
 
 #include "objects.h"
+#include "meshes.h"
 
 typedef struct scene_struct {
     //general settings:

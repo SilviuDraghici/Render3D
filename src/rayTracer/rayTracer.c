@@ -90,7 +90,10 @@ void rayTraceMain(int argc, char *argv[]) {
     color background = 0;
 
     fprintf(stderr, "Rendering...\n");
-
+    
+    //debug :
+    num_intersection_tests = 0;
+    num_intersect_calls = 0;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
     double start_j = 0, end_j = scene->sx, start_i = 0, end_i = scene->sx;
@@ -126,11 +129,13 @@ void rayTraceMain(int argc, char *argv[]) {
 
     fprintf(stderr, "Ray Tracing Done!\n");
 
+    //debug :
     auto time = end - begin;
     auto mins = std::chrono::duration_cast<std::chrono::minutes>(time).count();
-    auto secs = std::chrono::duration_cast<std::chrono::seconds>(time).count();
-    auto nano = std::chrono::duration_cast<std::chrono::nanoseconds>(time).count();
-    std::cout << "Time: min:" << mins << " sec:" << secs << " nano:" << nano << std::endl;
+    auto secs = std::chrono::duration_cast<std::chrono::seconds>(time).count() - mins * 60;
+    auto milli = std::chrono::duration_cast<std::chrono::milliseconds>(time).count() - secs * 1000;
+    std::cout << "Time: min:" << mins << " sec:" << secs << " milli:" << milli << std::endl;
+    std::cout << "Average number of intersection tests: " << num_intersection_tests/num_intersect_calls << "\n";
 }
 
 void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
