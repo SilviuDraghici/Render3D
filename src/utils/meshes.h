@@ -11,6 +11,12 @@ class Intersectable {
     public:
     virtual Intersectable *intersect(struct ray *r, double *lambda,
                            point *bary_coords) = 0;
+    virtual double min_x() = 0;
+    virtual double min_y() = 0;
+    virtual double min_z() = 0;
+    virtual double max_x() = 0;
+    virtual double max_y() = 0;
+    virtual double max_z() = 0;
 };
 
 class TriangleFace : public Intersectable {
@@ -49,23 +55,29 @@ class BoundingBox : public Intersectable {
 
    protected:
     Intersectable *c1, *c2;
-    double min_x, max_x;
-    double min_y, max_y;
-    double min_z, max_z;
+    double b_min_x, b_max_x;
+    double b_min_y, b_max_y;
+    double b_min_z, b_max_z;
 
    public:
     void setChildren(TriangleFace_N *faces, int start, int end);
     void setBounds(double min_x, double max_x, double min_y, double max_y,
                    double min_z, double max_z);
+    double min_x();
+    double min_y();
+    double min_z();
+    double max_x();
+    double max_y();
+    double max_z();
     Intersectable *intersect(struct ray *r, double *lambda, point *bary_coords);
 };
 
-class VisibleBoundingBox : public BoundingBox {
+class BoundingBox_Visible : public BoundingBox {
     double width = 0.02;
 
    public:
     color col;
-    VisibleBoundingBox();
+    BoundingBox_Visible();
     color getCol();
     Intersectable *intersect(struct ray *r, double *lambda, point *bary_coords);
 };
@@ -87,7 +99,7 @@ class Mesh : public Object {
 
    public:
     using Object::Object;
-    void setMesh(const char *filename, point *cam_gaze);
+    void setMesh(const char *filename);
     void intersect(struct ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
 };

@@ -6,14 +6,16 @@ struct pointLS *l;
 struct textureNode *t_list = NULL;
 
 const char *checkers = "scenes/checkers.ppm";
-const char *mesh_file = "scenes/tea_pot.obj";
+
 //const char *mesh_file = "scenes/triangular_prism.obj";
+const char *mesh_file = "scenes/tea_pot.obj";
 //const char *mesh_file = "scenes/bunny.obj";
 
+drand48();
+drand48();
+drand48();
+
 // Cornell box
-drand48();
-drand48();
-drand48();
 scene->cam_pos = point(0, 0, -15);
 //scene->cam_gaze_point = point(0, 0, 0);
 //scene->cam_gaze = cam_gaze_point - cam_pos;

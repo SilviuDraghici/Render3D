@@ -17,19 +17,19 @@
 
 static Scene *scene;
 
-
 int samples_per_update = 100;
 
 unsigned long int NUM_RAYS;
 
 double total_weight;
 
-//array of light sources
+// array of light sources
 Object **light_listt;
 int num_lights;
 int curr_light;
 
-inline void explicit_light_sample(struct ray *ray, Object *obj, struct point *p, struct point *n, Object **explt) {
+inline void explicit_light_sample(struct ray *ray, Object *obj, struct point *p,
+                                  struct point *n, Object **explt) {
     if (ray->pt.isLightRay == 0) {
         // ray from intersection point to light source
         struct ray pToLight;
@@ -47,9 +47,9 @@ inline void explicit_light_sample(struct ray *ray, Object *obj, struct point *p,
 
         double x, y, z;
         light_listt[curr_light]->randomPoint(&x, &y, &z);
-        pToLight.d.x = x - p->x;  //0 - p.px;
-        pToLight.d.y = y - p->y;  //9.95 - p.py;
-        pToLight.d.z = z - p->z;  //5 - p.pz;
+        pToLight.d.x = x - p->x;  // 0 - p.px;
+        pToLight.d.y = y - p->y;  // 9.95 - p.py;
+        pToLight.d.z = z - p->z;  // 5 - p.pz;
         pToLight.d.w = 1;
 
         double light_lambda;
@@ -58,15 +58,18 @@ inline void explicit_light_sample(struct ray *ray, Object *obj, struct point *p,
         struct point nls;
         double La, Lb;
 
-        findFirstHit(scene, &pToLight, &light_lambda, obj, &obstruction, &lightp, &nls,
-                     &La, &Lb);
+        findFirstHit(scene, &pToLight, &light_lambda, obj, &obstruction,
+                     &lightp, &nls, &La, &Lb);
 
-        //printf("source: %s, obstruction: %s\n", obj->label, obstruction->label);
+        // printf("source: %s, obstruction: %s\n", obj->label,
+        // obstruction->label);
         *explt = light_listt[curr_light];
         if (obstruction == light_listt[curr_light]) {
-            //printf("total weight: %f\n", total_weight);
+            // printf("total weight: %f\n", total_weight);
             double A = total_weight * light_listt[curr_light]->pt.LSweight;
-            double dxd = pToLight.d.x * pToLight.d.x + pToLight.d.y * pToLight.d.y + pToLight.d.z * pToLight.d.z;
+            double dxd = pToLight.d.x * pToLight.d.x +
+                         pToLight.d.y * pToLight.d.y +
+                         pToLight.d.z * pToLight.d.z;
             normalize(&pToLight.d);
             double n_dot_l = fabs(dot(n, &pToLight.d));
             double nls_dot_l = fabs(dot(&nls, &pToLight.d));
@@ -90,18 +93,20 @@ void pathTraceMain(int argc, char *argv[]) {
         fprintf(stderr, "USAGE: Render3D 1 size num_samples output_name\n");
         fprintf(stderr, "   size = Image size (both along x and y)\n");
         fprintf(stderr, "   num_samples = Number of samples per pixel\n");
-        fprintf(stderr, "   output_name = Name of the output file, e.g. MyRender.ppm\n");
+        fprintf(
+            stderr,
+            "   output_name = Name of the output file, e.g. MyRender.ppm\n");
         exit(0);
     }
 
     Scene sc;
     scene = &sc;
-    
+
     scene->sx = atoi(argv[2]);
     scene->pt_num_samples = atoi(argv[3]);
     strcpy(&output_name[0], argv[4]);
-    
-    if(6 <= argc){
+
+    if (6 <= argc) {
         sc.frame = atoi(argv[5]) - 1;
     }
 
@@ -116,7 +121,7 @@ void pathTraceMain(int argc, char *argv[]) {
         rgbIm = (double *)outImage->rgbdata;
     }
 
-    //array of weights per pixel used to scale image colors
+    // array of weights per pixel used to scale image colors
     double *wght;  // Holds weights for each pixel - to provide log response
     double wt;
     wght = (double *)calloc(scene->sx * scene->sx, sizeof(double));
@@ -143,7 +148,7 @@ void pathTraceMain(int argc, char *argv[]) {
     scene->cam_focal = -1;
 
     buildScene(scene);
-    //count number of lights
+    // count number of lights
     num_lights = 0;
     Object *curr_obj = scene->object_list;
     while (curr_obj != NULL) {
@@ -153,7 +158,7 @@ void pathTraceMain(int argc, char *argv[]) {
         curr_obj = curr_obj->next;
     }
 
-    //create array of light pointers
+    // create array of light pointers
     light_listt = (Object **)malloc(num_lights * sizeof(Object *));
     num_lights = 0;
     curr_obj = scene->object_list;
@@ -167,11 +172,14 @@ void pathTraceMain(int argc, char *argv[]) {
     curr_light = 0;
 
     struct view *cam;  // Camera and view for this scene
-    cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up), scene->cam_focal, -2, 2, 4);
+    cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up),
+                    scene->cam_focal, -2, 2, 4);
 
     if (cam == NULL) {
-        fprintf(stderr, "Unable to set up the view and camera parameters. Our of memory!\n");
-        //cleanup(object_list, light_listt, texture_list);
+        fprintf(stderr,
+                "Unable to set up the view and camera parameters. Our of "
+                "memory!\n");
+        // cleanup(object_list, light_listt, texture_list);
         deleteImage(outImage);
         exit(0);
     }
@@ -194,9 +202,11 @@ void pathTraceMain(int argc, char *argv[]) {
 
     for (k = 1; k <= scene->pt_num_samples; k++) {
         fprintf(stderr, "\r%d/%d", k, scene->pt_num_samples);
-        //fflush(stderr);
-#pragma omp parallel for schedule(dynamic, 1) private(i, j, wt, ray, col, is, js)
-        for (j = 0; j < scene->sx; j++) {  // For each of the pixels in the image
+        // fflush(stderr);
+#pragma omp parallel for schedule(dynamic, 1) private(i, j, wt, ray, col, is, \
+                                                      js)
+        for (j = 0; j < scene->sx;
+             j++) {  // For each of the pixels in the image
             for (i = 0; i < scene->sx; i++) {
                 col = 0;
 
@@ -213,9 +223,12 @@ void pathTraceMain(int argc, char *argv[]) {
                 wt = *(wght + i + (j * scene->sx));
 
                 PathTrace(&ray, 1, &col, NULL, NULL);
-                rgbIm[3 * (j * outImage->sx + i) + 0] += col.R * pow(2, -log(wt));
-                rgbIm[3 * (j * outImage->sx + i) + 1] += col.G * pow(2, -log(wt));
-                rgbIm[3 * (j * outImage->sx + i) + 2] += col.B * pow(2, -log(wt));
+                rgbIm[3 * (j * outImage->sx + i) + 0] +=
+                    col.R * pow(2, -log(wt));
+                rgbIm[3 * (j * outImage->sx + i) + 1] +=
+                    col.G * pow(2, -log(wt));
+                rgbIm[3 * (j * outImage->sx + i) + 2] +=
+                    col.B * pow(2, -log(wt));
 
                 wt += col.R;
                 wt += col.G;
@@ -233,31 +246,38 @@ void pathTraceMain(int argc, char *argv[]) {
     t2 = time(NULL);
 
     // Output rendered image
-    dataOutput(rgbIm, scene->sx, output_name);
+    if (k % samples_per_update != 1) {
+        dataOutput(rgbIm, scene->sx, output_name);
+    }
 
     fprintf(stderr, "\nPath Tracing Done!\n");
 
     fprintf(stderr, "Total number of rays created: %ld\n", NUM_RAYS);
-    fprintf(stderr, "Rays per second: %.0f\n", (double)NUM_RAYS / (double)difftime(t2, t1));
+    fprintf(stderr, "Rays per second: %.0f\n",
+            (double)NUM_RAYS / (double)difftime(t2, t1));
 }
 
-void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os, Object *explicit_l) {
+void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os,
+               Object *explicit_l) {
     // Trace one light path through the scene.
     //
     // Parameters:
     //   *ray   -  A pointer to the ray being traced
     //   depth  -  Current recursion depth for recursive raytracing
-    //   *col   - Pointer to an RGB colour structure so you can return the object colour
-    //            at the intersection point of this ray with the closest scene object.
+    //   *col   - Pointer to an RGB colour structure so you can return the
+    //   object colour
+    //            at the intersection point of this ray with the closest scene
+    //            object.
     //   *Os    - 'Object source' is a pointer to the object from which the ray
-    //            originates so you can discard self-intersections due to numerical
-    //            errors. NULL for rays originating from the center of projection.
+    //            originates so you can discard self-intersections due to
+    //            numerical errors. NULL for rays originating from the center of
+    //            projection.
     NUM_RAYS++;
-    double lambda;              // Lambda at intersection
-    double a, b;                // Texture coordinates
+    double lambda;       // Lambda at intersection
+    double a, b;         // Texture coordinates
     Object *obj = NULL;  // Pointer to object at intersection
-    struct point p;             // Intersection point
-    struct point n;             // Normal at intersection
+    struct point p;      // Intersection point
+    struct point n;      // Normal at intersection
     struct point d;
     struct color objcol;  // Colour for the object in R G and B
     double diffuse, reflect, refract;
@@ -267,11 +287,15 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os, Object
 
     Object *explt = explicit_l;
 
-    if (depth > scene->pt_max_depth)  // Max recursion depth reached. Return black (no light coming into pixel from this path).
+    if (depth >
+        scene->pt_max_depth)  // Max recursion depth reached. Return black (no
+                              // light coming into pixel from this path).
     {
-        *col = ray->pt.expl_col;  // These are accumulators, initialized at 0. Whenever we find a source of light these
-                                  // get incremented accordingly. At the end of the recursion, we return whatever light
-                                  // we accumulated into these three values.
+        *col = ray->pt.expl_col;  // These are accumulators, initialized at 0.
+                                  // Whenever we find a source of light these
+                                  // get incremented accordingly. At the end of
+                                  // the recursion, we return whatever light we
+                                  // accumulated into these three values.
         return;
     }
 
@@ -297,12 +321,12 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os, Object
         refract = 1 - diffuse;
         reflect = obj->pt.reflect;
 
-        //scale down so total is still 1
+        // scale down so total is still 1
         diffuse *= (1 - reflect);
         refract *= (1 - reflect);
     }
 
-    //all the other terms use this
+    // all the other terms use this
     ray->pt.ray_col *= objcol;
 
     // if hit light source
@@ -316,9 +340,9 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os, Object
         return;
     }
 
-    //make sure normal is on side of incoming ray
+    // make sure normal is on side of incoming ray
     if (obj->frontAndBack && dot(&ray->d, &n) > 0) {
-        //printf("flip\n");
+        // printf("flip\n");
         n.x *= -1;
         n.y *= -1;
         n.z *= -1;
@@ -327,23 +351,23 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os, Object
     memcpy(&ray->p0, &p, sizeof(struct point));
 
     dice = drand48();
-    if (dice <= diffuse) {  //diffuse
+    if (dice <= diffuse) {  // diffuse
         // ******************** Importance sampling ************************
         cosWeightedSample(&n, &d);
         ray->d = d;
 
         explicit_light_sample(ray, obj, &p, &n, &explt);
-        
-    } else if (dice <= diffuse + reflect) {  //reflective
+
+    } else if (dice <= diffuse + reflect) {  // reflective
         explt = NULL;
         struct ray ray_reflected;
         rayReflect(ray, &p, &n, &ray_reflected);
-        //burnished reflection
+        // burnished reflection
         ray->d.x = rand_normal_dist(ray_reflected.d.x, obj->refl_sig);
         ray->d.y = rand_normal_dist(ray_reflected.d.y, obj->refl_sig);
         ray->d.z = rand_normal_dist(ray_reflected.d.z, obj->refl_sig);
         normalize(&ray->d);
-    } else {  //refractive
+    } else {  // refractive
         explt = NULL;
         struct ray refractRay;
         double s, R_Shlick;
@@ -351,14 +375,16 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os, Object
         if (s > 0 && drand48() < (1 - R_Shlick)) { /*keep refraction*/
         } else {
             // refract the ray because of total internal reflection (s <= 0)
-            // or dice role resulted in accumulating relected portion (drand48() > (1 - R_Shlick))
+            // or dice role resulted in accumulating relected portion (drand48()
+            // > (1 - R_Shlick))
             rayReflect(ray, &p, &n, &refractRay);
         }
         ray->d = refractRay.d;
     }
 
     dice = drand48();
-    max_col = MAX(MAX(ray->pt.ray_col.R, ray->pt.ray_col.G), MAX(ray->pt.ray_col.R, ray->pt.ray_col.B));
+    max_col = MAX(MAX(ray->pt.ray_col.R, ray->pt.ray_col.G),
+                  MAX(ray->pt.ray_col.R, ray->pt.ray_col.B));
     if (sqrt(dice) < max_col) {
         return PathTrace(ray, depth + 1, col, obj, explt);
     } else {
@@ -368,12 +394,12 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os, Object
 }
 
 void normalizeLightWeights(Object *object_list) {
-    // Update light source weights - will give you weights for each light source that add up to 1
+    // Update light source weights - will give you weights for each light source
+    // that add up to 1
     Object *obj = object_list;
     total_weight = 0;
     while (obj != NULL) {
-        if (obj->isLightSource)
-            total_weight += obj->pt.LSweight;
+        if (obj->isLightSource) total_weight += obj->pt.LSweight;
         obj = obj->next;
     }
     obj = object_list;

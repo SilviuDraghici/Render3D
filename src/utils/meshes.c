@@ -1,17 +1,17 @@
 #include "meshes.h"
 
-#include "ray.h"
-
 #include <fstream>
 #include <iostream>
 
+#include "ray.h"
+
 #define BB BoundingBox
-//#define BB VisibleBoundingBox
+//#define BB BoundingBox_Visible
 
 double num_intersection_tests;
 double num_intersect_calls;
 
-TriangleFace::TriangleFace(){}
+TriangleFace::TriangleFace() {}
 
 TriangleFace::TriangleFace(point p1, point p2, point p3) {
     this->p1 = p1;
@@ -38,8 +38,8 @@ Intersectable *TriangleFace::intersect(struct ray *ray, double *lambda,
                                        point *bary_coords) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified triangle.
-    
-    //debug :
+
+    // debug :
     num_intersection_tests++;
 
     point e12 = p2 - p1;
@@ -116,59 +116,72 @@ std::ostream &operator<<(std::ostream &strm, const TriangleFace_N &a) {
 
 void BoundingBox::setBounds(double min_x, double max_x, double min_y,
                             double max_y, double min_z, double max_z) {
-    this->min_x = min_x, this->max_x = max_x;
-    this->min_y = min_y, this->max_y = max_y;
-    this->min_z = min_z, this->max_z = max_z;
+    this->b_min_x = min_x, this->b_max_x = max_x;
+    this->b_min_y = min_y, this->b_max_y = max_y;
+    this->b_min_z = min_z, this->b_max_z = max_z;
 }
 
 void BoundingBox::setChildren(TriangleFace_N *faces, int start, int end) {
     // std::cout << "start: " << start << " end: " << end << "\n";
     double x, y, z;
-    min_x = min_y = min_z = INFINITY;
-    max_x = max_y = max_z = -INFINITY;
+    b_min_x = b_min_y = b_min_z = INFINITY;
+    b_max_x = b_max_y = b_max_z = -INFINITY;
     for (int i = start; i < end; i++) {
         x = faces[i].min_x();
-        if (x < min_x) {
-            min_x = x;
+        if (x < b_min_x) {
+            b_min_x = x;
         }
         x = faces[i].max_x();
-        if (max_x < x) {
-            max_x = x;
+        if (b_max_x < x) {
+            b_max_x = x;
         }
 
         y = faces[i].min_y();
-        if (y < min_y) {
-            min_y = y;
+        if (y < b_min_y) {
+            b_min_y = y;
         }
         y = faces[i].max_y();
-        if (max_y < y) {
-            max_y = y;
+        if (b_max_y < y) {
+            b_max_y = y;
         }
 
         z = faces[i].min_z();
-        if (z < min_z) {
-            min_z = z;
+        if (z < b_min_z) {
+            b_min_z = z;
         }
         z = faces[i].max_z();
-        if (max_z < z) {
-            max_z = z;
+        if (b_max_z < z) {
+            b_max_z = z;
         }
     }
 
-    if (end - start == 1) {
-        c1 = &faces[start];
-        c2 = NULL;
-    } else if (end - start == 2) {
+    if (end - start == 2) {
         c1 = &faces[start];
         c2 = &faces[start + 1];
     } else {
         int mid = (start + end) / 2;
-        c1 = new BB;
-        c2 = new BB;
-        ((BB *)c1)->setChildren(faces, start, mid);
-        ((BB *)c2)->setChildren(faces, mid, end);
+        if(mid - start == 1){
+            c1 = &faces[start];
+        } else {
+            c1 = new BB;
+            ((BB *)c1)->setChildren(faces, start, mid);
+        }
+        
+        if(end - mid == 1){
+            c1 = &faces[mid];
+        } else {
+            c2 = new BB;
+            ((BB *)c2)->setChildren(faces, mid, end);
+        }
     }
 }
+
+double BoundingBox::min_x() { return b_min_x; }
+double BoundingBox::min_y() { return b_min_y; }
+double BoundingBox::min_z() { return b_min_z; }
+double BoundingBox::max_x() { return b_max_x; }
+double BoundingBox::max_y() { return b_max_y; }
+double BoundingBox::max_z() { return b_max_z; }
 
 Intersectable *BoundingBox::intersect(struct ray *ray, double *lambda,
                                       point *bary_coords) {
@@ -184,55 +197,55 @@ Intersectable *BoundingBox::intersect(struct ray *ray, double *lambda,
     double b_lambda;
 
     // y-z plane box face at min_x
-    b_lambda = (min_x - ray->p0.x) / ray->d.x;
+    b_lambda = (b_min_x - ray->p0.x) / ray->d.x;
     if (THR < b_lambda) {
         rayPosition(ray, b_lambda, &p);
-        if ((min_y < p.y && p.y < max_y) && (min_z < p.z && p.z < max_z)) {
+        if ((b_min_y < p.y && p.y < b_max_y) && (b_min_z < p.z && p.z < b_max_z)) {
             goto check_children;
         }
     }
 
     // y-z plane box face at max_x
-    b_lambda = (max_x - ray->p0.x) / ray->d.x;
+    b_lambda = (b_max_x - ray->p0.x) / ray->d.x;
     if (THR < b_lambda) {
         rayPosition(ray, b_lambda, &p);
-        if ((min_y < p.y && p.y < max_y) && (min_z < p.z && p.z < max_z)) {
+        if ((b_min_y < p.y && p.y < b_max_y) && (b_min_z < p.z && p.z < b_max_z)) {
             goto check_children;
         }
     }
 
     // x-z plane box face at min_y
-    b_lambda = (min_y - ray->p0.y) / ray->d.y;
+    b_lambda = (b_min_y - ray->p0.y) / ray->d.y;
     if (THR < b_lambda) {
         rayPosition(ray, b_lambda, &p);
-        if ((min_x < p.x && p.x < max_x) && (min_z < p.z && p.z < max_z)) {
+        if ((b_min_x < p.x && p.x < b_max_x) && (b_min_z < p.z && p.z < b_max_z)) {
             goto check_children;
         }
     }
 
     // x-z plane box face at max_y
-    b_lambda = (max_y - ray->p0.y) / ray->d.y;
+    b_lambda = (b_max_y - ray->p0.y) / ray->d.y;
     if (THR < b_lambda) {
         rayPosition(ray, b_lambda, &p);
-        if ((min_x < p.x && p.x < max_x) && (min_z < p.z && p.z < max_z)) {
+        if ((b_min_x < p.x && p.x < b_max_x) && (b_min_z < p.z && p.z < b_max_z)) {
             goto check_children;
         }
     }
 
     // x-y plane box face at min_z
-    b_lambda = (min_z - ray->p0.z) / ray->d.z;
+    b_lambda = (b_min_z - ray->p0.z) / ray->d.z;
     if (THR < b_lambda) {
         rayPosition(ray, b_lambda, &p);
-        if ((min_x < p.x && p.x < max_x) && (min_y < p.y && p.y < max_y)) {
+        if ((b_min_x < p.x && p.x < b_max_x) && (b_min_y < p.y && p.y < b_max_y)) {
             goto check_children;
         }
     }
 
     // x-y plane box face at max_z
-    b_lambda = (max_z - ray->p0.z) / ray->d.z;
+    b_lambda = (b_max_z - ray->p0.z) / ray->d.z;
     if (THR < b_lambda) {
         rayPosition(ray, b_lambda, &p);
-        if ((min_x < p.x && p.x < max_x) && (min_y < p.y && p.y < max_y)) {
+        if ((b_min_x < p.x && p.x < b_max_x) && (b_min_y < p.y && p.y < b_max_y)) {
             goto check_children;
         }
     }
@@ -262,18 +275,18 @@ check_children:
     return NULL;
 }
 
-VisibleBoundingBox::VisibleBoundingBox() {
+BoundingBox_Visible::BoundingBox_Visible() {
     col = color(drand48(), drand48(), drand48());
 }
 
-color VisibleBoundingBox::getCol() { return col; }
+color BoundingBox_Visible::getCol() { return col; }
 
-Intersectable *VisibleBoundingBox::intersect(struct ray *ray, double *lambda,
-                                             point *bary_coords) {
+Intersectable *BoundingBox_Visible::intersect(struct ray *ray, double *lambda,
+                                              point *bary_coords) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical box.
 
-    //debug :
+    // debug :
     num_intersection_tests++;
 
     point p;
@@ -285,12 +298,12 @@ Intersectable *VisibleBoundingBox::intersect(struct ray *ray, double *lambda,
     double b_lambda;
     double a, b;
     // y-z plane box face at min_x
-    b_lambda = (min_x - ray->p0.x) / ray->d.x;
+    b_lambda = (b_min_x - ray->p0.x) / ray->d.x;
     rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (min_y < p.y && p.y < max_y) &&
-        (min_z < p.z && p.z < max_z)) {
-        a = (p.y - min_y) / (max_y - min_y);
-        b = (p.z - min_z) / (max_z - min_z);
+    if (THR < b_lambda && (b_min_y < p.y && p.y < b_max_y) &&
+        (b_min_z < p.z && p.z < b_max_z)) {
+        a = (p.y - b_min_y) / (b_max_y - b_min_y);
+        b = (p.z - b_min_z) / (b_max_z - b_min_z);
 
         if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
             (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
@@ -305,12 +318,12 @@ Intersectable *VisibleBoundingBox::intersect(struct ray *ray, double *lambda,
     }
 
     // y-z plane box face at max_x
-    b_lambda = (max_x - ray->p0.x) / ray->d.x;
+    b_lambda = (b_max_x - ray->p0.x) / ray->d.x;
     rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (min_y < p.y && p.y < max_y) &&
-        (min_z < p.z && p.z < max_z)) {
-        a = (p.y - min_y) / (max_y - min_y);
-        b = (p.z - min_z) / (max_z - min_z);
+    if (THR < b_lambda && (b_min_y < p.y && p.y < b_max_y) &&
+        (b_min_z < p.z && p.z < b_max_z)) {
+        a = (p.y - b_min_y) / (b_max_y - b_min_y);
+        b = (p.z - b_min_z) / (b_max_z - b_min_z);
         if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
             (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
             *lambda = b_lambda;
@@ -326,12 +339,12 @@ Intersectable *VisibleBoundingBox::intersect(struct ray *ray, double *lambda,
     }
 
     // x-z plane box face at min_y
-    b_lambda = (min_y - ray->p0.y) / ray->d.y;
+    b_lambda = (b_min_y - ray->p0.y) / ray->d.y;
     rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (min_x < p.x && p.x < max_x) &&
-        (min_z < p.z && p.z < max_z)) {
-        a = (p.x - min_x) / (max_x - min_x);
-        b = (p.z - min_z) / (max_z - min_z);
+    if (THR < b_lambda && (b_min_x < p.x && p.x < b_max_x) &&
+        (b_min_z < p.z && p.z < b_max_z)) {
+        a = (p.x - b_min_x) / (b_max_x - b_min_x);
+        b = (p.z - b_min_z) / (b_max_z - b_min_z);
         if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
             (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
             *lambda = b_lambda;
@@ -347,12 +360,12 @@ Intersectable *VisibleBoundingBox::intersect(struct ray *ray, double *lambda,
     }
 
     // x-z plane box face at max_y
-    b_lambda = (max_y - ray->p0.y) / ray->d.y;
+    b_lambda = (b_max_y - ray->p0.y) / ray->d.y;
     rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (min_x < p.x && p.x < max_x) &&
-        (min_z < p.z && p.z < max_z)) {
-        a = (p.x - min_x) / (max_x - min_x);
-        b = (p.z - min_z) / (max_z - min_z);
+    if (THR < b_lambda && (b_min_x < p.x && p.x < b_max_x) &&
+        (b_min_z < p.z && p.z < b_max_z)) {
+        a = (p.x - b_min_x) / (b_max_x - b_min_x);
+        b = (p.z - b_min_z) / (b_max_z - b_min_z);
         if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
             (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
             *lambda = b_lambda;
@@ -368,12 +381,12 @@ Intersectable *VisibleBoundingBox::intersect(struct ray *ray, double *lambda,
     }
 
     // x-y plane box face at min_z
-    b_lambda = (min_z - ray->p0.z) / ray->d.z;
+    b_lambda = (b_min_z - ray->p0.z) / ray->d.z;
     rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (min_x < p.x && p.x < max_x) &&
-        (min_y < p.y && p.y < max_y)) {
-        a = (p.x - min_x) / (max_x - min_x);
-        b = (p.y - min_y) / (max_y - min_y);
+    if (THR < b_lambda && (b_min_x < p.x && p.x < b_max_x) &&
+        (b_min_y < p.y && p.y < b_max_y)) {
+        a = (p.x - b_min_x) / (b_max_x - b_min_x);
+        b = (p.y - b_min_y) / (b_max_y - b_min_y);
         if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
             (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
             *lambda = b_lambda;
@@ -389,12 +402,12 @@ Intersectable *VisibleBoundingBox::intersect(struct ray *ray, double *lambda,
     }
 
     // x-y plane box face at max_z
-    b_lambda = (max_z - ray->p0.z) / ray->d.z;
+    b_lambda = (b_max_z - ray->p0.z) / ray->d.z;
     rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (min_x < p.x && p.x < max_x) &&
-        (min_y < p.y && p.y < max_y)) {
-        a = (p.x - min_x) / (max_x - min_x);
-        b = (p.y - min_y) / (max_y - min_y);
+    if (THR < b_lambda && (b_min_x < p.x && p.x < b_max_x) &&
+        (b_min_y < p.y && p.y < b_max_y)) {
+        a = (p.x - b_min_x) / (b_max_x - b_min_x);
+        b = (p.y - b_min_y) / (b_max_y - b_min_y);
         if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
             (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
             *lambda = b_lambda;
@@ -439,7 +452,7 @@ Intersectable *VisibleBoundingBox::intersect(struct ray *ray, double *lambda,
     return NULL;
 }
 
-void Mesh::setMesh(const char *filename, point *cam_gaze) {
+void Mesh::setMesh(const char *filename) {
     frontAndBack = 0;
 
     box = new BB;
@@ -585,51 +598,19 @@ void Mesh::setMesh(const char *filename, point *cam_gaze) {
         }
     }
 
-
-
     // the faces are sorted by max vertex along one of the axis.
-    // which axis is sorted is chosen based on which axis 
+    // which axis is sorted is chosen based on which axis
     // is closest to being perdendicular to the
     // camera's gaze direction
-    int (*compare)(const void*, const void*) = comp_face_max_x;
-    if (scale == abs(max_y - min_y)){
+    int (*compare)(const void *, const void *) = comp_face_max_x;
+    if (scale == abs(max_y - min_y)) {
         compare = comp_face_max_y;
-    } else if(scale == abs(max_z - min_z)){
+    } else if (scale == abs(max_z - min_z)) {
         compare = comp_face_max_z;
     }
-
-
-    /*point x_axis = point(1,0,0);
-    x_axis.w = 0;
-    x_axis = this->T * x_axis;
-    normalize(&x_axis);
-    x_axis.w = 1;
-    double x_axis_dot = abs(dot(cam_gaze, &x_axis));
-    double perpendicualar_axis_dot = x_axis_dot;
-
-    point y_axis = point(0,1,0);
-    y_axis.w = 0;
-    y_axis = this->T * y_axis;
-    normalize(&y_axis);
-    y_axis.w = 1;
-    double y_axis_dot = abs(dot(cam_gaze, &y_axis));
-    if(y_axis_dot < perpendicualar_axis_dot){
-        perpendicualar_axis_dot = y_axis_dot;
-        compare = comp_face_max_y;
-    }
-    
-    point z_axis = point(0,0,1);
-    z_axis.w = 0;
-    z_axis = this->T * z_axis;
-    normalize(&z_axis);
-    z_axis.w = 1;
-    double z_axis_dot = abs(dot(cam_gaze, &z_axis));
-    if(z_axis_dot < perpendicualar_axis_dot){
-        compare = comp_face_max_z;
-    }*/
 
     qsort(faces, num_faces, sizeof(TriangleFace_N), compare);
-    
+
     box->setChildren(faces, 0, num_faces);
 
     mesh_obj.close();
@@ -637,12 +618,11 @@ void Mesh::setMesh(const char *filename, point *cam_gaze) {
     free(normals);
 }
 
-
 void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
                      struct point *n, double *a, double *b) {
     *lambda = INFINITY;
 
-    //debug :
+    // debug :
     num_intersect_calls++;
 
     struct ray ray_transformed;
