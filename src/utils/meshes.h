@@ -7,10 +7,11 @@
 extern double num_intersection_tests;
 extern double num_intersect_calls;
 
-class Intersectable {
+class BVH_Node {
     public:
-    virtual Intersectable *intersect(struct ray *r, double *lambda,
+    virtual BVH_Node *intersect(struct ray *r, double *lambda,
                            point *bary_coords) = 0;
+    virtual bool isFace() = 0;
     virtual double min_x() = 0;
     virtual double min_y() = 0;
     virtual double min_z() = 0;
@@ -19,7 +20,7 @@ class Intersectable {
     virtual double max_z() = 0;
 };
 
-class TriangleFace : public Intersectable {
+class TriangleFace : public BVH_Node {
    protected:
     point p1, p2, p3;
 
@@ -29,7 +30,8 @@ class TriangleFace : public Intersectable {
     TriangleFace(point p1, point p2, point p3);
     TriangleFace(double x1, double y1, double z1, double x2, double y2,
                  double z2, double x3, double y3, double z3);
-    Intersectable *intersect(struct ray *r, double *lambda, point *bary_coords);
+    BVH_Node *intersect(struct ray *r, double *lambda, point *bary_coords);
+    bool isFace();
     double min_x();
     double min_y();
     double min_z();
@@ -50,16 +52,14 @@ class TriangleFace_N : public TriangleFace {
     point normal(point *bary_coords);
 };
 
-class BoundingBox : public Intersectable {
+class BoundingBox : public BVH_Node {
     int depth;
 
-   protected:
-    Intersectable *c1, *c2;
+   public:
+    BVH_Node *c1, *c2;
     double b_min_x, b_max_x;
     double b_min_y, b_max_y;
     double b_min_z, b_max_z;
-
-   public:
     void setChildren(TriangleFace_N *faces, int start, int end);
     void setBounds(double min_x, double max_x, double min_y, double max_y,
                    double min_z, double max_z);
@@ -69,7 +69,8 @@ class BoundingBox : public Intersectable {
     double max_x();
     double max_y();
     double max_z();
-    Intersectable *intersect(struct ray *r, double *lambda, point *bary_coords);
+    BVH_Node *intersect(struct ray *r, double *lambda, point *bary_coords);
+    bool isFace();
 };
 
 class BoundingBox_Visible : public BoundingBox {
@@ -79,7 +80,7 @@ class BoundingBox_Visible : public BoundingBox {
     color col;
     BoundingBox_Visible();
     color getCol();
-    Intersectable *intersect(struct ray *r, double *lambda, point *bary_coords);
+    BVH_Node *intersect(struct ray *r, double *lambda, point *bary_coords);
 };
 
 class Mesh : public Object {
