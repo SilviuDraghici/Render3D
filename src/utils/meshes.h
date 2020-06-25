@@ -60,7 +60,7 @@ class BoundingBox : public BVH_Node {
     double b_min_x, b_max_x;
     double b_min_y, b_max_y;
     double b_min_z, b_max_z;
-    void setChildren(TriangleFace_N *faces, int start, int end);
+    void setChildren(TriangleFace *faces[], int start, int end);
     void setBounds(double min_x, double max_x, double min_y, double max_y,
                    double min_z, double max_z);
     double min_x();
@@ -92,7 +92,7 @@ class Mesh : public Object {
     point *normals = NULL;
 
     int num_faces = 0;
-    TriangleFace_N *faces = NULL;
+    TriangleFace **faces = NULL;
 
     point bary_coords;
 
@@ -103,6 +103,31 @@ class Mesh : public Object {
     void setMesh(const char *filename);
     void intersect(struct ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
+};
+
+class PQ_Node {
+   public:
+    double lambda;
+    BVH_Node *node;
+    PQ_Node(double l, BVH_Node *n) {
+        lambda = l;
+        node = n;
+    }
+    PQ_Node(double l) {
+        lambda = l;
+        node = NULL;
+    }
+
+    friend bool operator<(const PQ_Node &lhs, const PQ_Node &rhs) {
+        return lhs.lambda < rhs.lambda;
+    }
+    friend bool operator>(const PQ_Node &lhs, const PQ_Node &rhs) {
+        return lhs.lambda > rhs.lambda;
+    }
+
+    friend std::ostream &operator<<(std::ostream &strm, const PQ_Node &a) {
+        return strm << a.lambda;
+    }
 };
 
 int comp_face_max_x(const void *a, const void *b);

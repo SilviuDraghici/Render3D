@@ -100,6 +100,7 @@ void pathTraceMain(int argc, char *argv[]) {
     }
 
     Scene sc;
+    sc.path_tracing_mode = 1;
     scene = &sc;
 
     scene->sx = atoi(argv[2]);
@@ -287,8 +288,7 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os,
 
     Object *explt = explicit_l;
 
-    if (depth >
-        scene->pt_max_depth)  // Max recursion depth reached. Return black (no
+    if (depth > scene->pt_max_depth)  // Max recursion depth reached. Return black (no
                               // light coming into pixel from this path).
     {
         *col = ray->pt.expl_col;  // These are accumulators, initialized at 0.

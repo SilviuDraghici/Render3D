@@ -15,7 +15,7 @@ typedef struct scene_struct {
 
     int pt_num_samples = 1000;
 
-
+    bool path_tracing_mode = 0;
 
     //set 1 to use antialiasing in the raytrcer
     //path tracer implicitly has antialiasing

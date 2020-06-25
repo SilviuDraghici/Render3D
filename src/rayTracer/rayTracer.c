@@ -98,7 +98,7 @@ void rayTraceMain(int argc, char *argv[]) {
 
     double start_j = 0, end_j = scene->sx, start_i = 0, end_i = scene->sx;
 #ifdef DEBUG
-    start_i = 505, start_j = 510;
+    start_i = 447, start_j = 552;
     end_i = start_i + 1, end_j = start_j + 1;
 #endif
 
@@ -169,9 +169,6 @@ void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
     findFirstHit(scene, ray, &lambda, Os, &obj, &p, &n, &a, &b);
     //std::cout << lambda << " a: " << a << "\n";
     if (a == -1) {
-#ifdef DEBUG
-        std::cout << "bb\n";
-#endif
         *col = color(p.x, p.y, p.z);
         return;
     }

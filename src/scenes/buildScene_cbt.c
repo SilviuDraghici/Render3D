@@ -8,8 +8,18 @@ struct textureNode *t_list = NULL;
 const char *checkers = "scenes/checkers.ppm";
 
 //const char *mesh_file = "scenes/triangular_prism.obj";
-const char *mesh_file = "scenes/tea_pot.obj";
+//const char *mesh_file = "scenes/tea_pot.obj";
+const char *mesh_file = "scenes/tea_pot_N.obj";
 //const char *mesh_file = "scenes/bunny.obj";
+//const char *mesh_file = "scenes/hand.obj";
+
+
+//dragon meshes
+//const char *mesh_file = "scenes/dragon_030k.obj";
+//const char *mesh_file = "scenes/dragon_108k.obj";
+//const char *mesh_file = "scenes/dragon_435k.obj";
+//const char *mesh_file = "scenes/dragon_871k.obj";
+
 
 drand48();
 drand48();
@@ -22,7 +32,10 @@ scene->cam_pos = point(0, 0, -15);
 //scene->cam_up = point(0, 1, 0);
 scene->cam_focal = -3;
 
-o = new Mesh(1.0, 1.0, 0.0);
+scene->rt_max_depth = 1;
+scene->pt_max_depth = 20;
+
+o = new Mesh(74/255.0, 255/255.0, 249/255.0);
 ((Mesh *)o)->setMesh(mesh_file);
 strcpy(o->label, "Mesh test");
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
@@ -34,8 +47,11 @@ o->T *= Tr(0, 0, 5.5);
 invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
 insertObject(o, &(scene->object_list));
 
-int draw_box = 0;
+bool draw_box = scene->path_tracing_mode;
 if (draw_box){
+
+    o->set_pathTrace_properties(0.0, 0.0, 1.0);
+
     // Left
     o = new Plane(.75, .25, .25);
     o->set_pathTrace_properties(1.0, 0.0, 0.0);

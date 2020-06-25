@@ -2,8 +2,8 @@
 
 #include <fstream>
 #include <iostream>
-#include <queue>
 #include <limits>
+#include <queue>
 
 #include "ray.h"
 
@@ -125,54 +125,55 @@ void BoundingBox::setBounds(double min_x, double max_x, double min_y,
     this->b_min_z = min_z, this->b_max_z = max_z;
 }
 
-void BoundingBox::setChildren(TriangleFace_N *faces, int start, int end) {
+void BoundingBox::setChildren(TriangleFace *faces[], int start, int end) {
     // std::cout << "start: " << start << " end: " << end << "\n";
     double x, y, z;
     b_min_x = b_min_y = b_min_z = INFINITY;
     b_max_x = b_max_y = b_max_z = -INFINITY;
     for (int i = start; i < end; i++) {
-        x = faces[i].min_x();
+        x = faces[i]->min_x();
         if (x < b_min_x) {
             b_min_x = x;
         }
-        x = faces[i].max_x();
+        x = faces[i]->max_x();
         if (b_max_x < x) {
             b_max_x = x;
         }
 
-        y = faces[i].min_y();
+        y = faces[i]->min_y();
         if (y < b_min_y) {
             b_min_y = y;
         }
-        y = faces[i].max_y();
+        y = faces[i]->max_y();
         if (b_max_y < y) {
             b_max_y = y;
         }
 
-        z = faces[i].min_z();
+        z = faces[i]->min_z();
         if (z < b_min_z) {
             b_min_z = z;
         }
-        z = faces[i].max_z();
+        z = faces[i]->max_z();
         if (b_max_z < z) {
             b_max_z = z;
         }
     }
 
     if (end - start == 2) {
-        c1 = &faces[start];
-        c2 = &faces[start + 1];
+        c1 = faces[start];
+        c2 = faces[start + 1];
     } else {
         int mid = (start + end) / 2;
+
         if (mid - start == 1) {
-            c1 = &faces[start];
+            c1 = faces[start];
         } else {
             c1 = new BB;
             ((BB *)c1)->setChildren(faces, start, mid);
         }
 
         if (end - mid == 1) {
-            c1 = &faces[mid];
+            c1 = faces[mid];
         } else {
             c2 = new BB;
             ((BB *)c2)->setChildren(faces, mid, end);
@@ -551,11 +552,7 @@ void Mesh::setMesh(const char *filename) {
         }
     }
 
-    if (num_normals > 1) {
-        faces = new TriangleFace_N[num_faces];
-    } else {
-        // faces = new TriangleFace[num_faces];
-    }
+        faces = (TriangleFace **)malloc(num_faces * sizeof(TriangleFace *));
 
     mesh_obj.clear();
     mesh_obj.seekg(first_face);
@@ -568,10 +565,11 @@ void Mesh::setMesh(const char *filename) {
             getline(mesh_obj, line);
             // std::cout << line << "\n";
             sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3);
-            faces[i] = TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
             if (num_normals > 1) {
-                ((TriangleFace_N *)faces)[i].setNormals(
-                    normals[p1], normals[p2], normals[p3]);
+                faces[i] = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
+                ((TriangleFace_N *)faces[i])->setNormals(normals[p1], normals[p2], normals[p3]);
+            } else {
+                faces[i] = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
             }
         }
     } else {
@@ -581,9 +579,12 @@ void Mesh::setMesh(const char *filename) {
             // std::cout << line << "\n";
             sscanf(line.c_str(), "f %d//%d %d//%d %d//%d", &p1, &n1, &p2, &n2,
                    &p3, &n3);
-            faces[i] = TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
-            ((TriangleFace_N *)faces)[i].setNormals(normals[n1], normals[n2],
-                                                    normals[n3]);
+            if (num_normals > 1) {
+                faces[i] = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
+                ((TriangleFace_N *)faces[i])->setNormals(normals[n1], normals[n2], normals[n3]);
+            } else {
+                faces[i] = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
+            }
         }
     }
 
@@ -598,39 +599,15 @@ void Mesh::setMesh(const char *filename) {
         compare = comp_face_max_z;
     }
 
-    qsort(faces, num_faces, sizeof(TriangleFace_N), compare);
+    qsort(faces, num_faces, sizeof(TriangleFace *), compare);
 
     box->setChildren(faces, 0, num_faces);
 
     mesh_obj.close();
     free(vertices);
     free(normals);
+    free(faces);
 }
-double EPSILON = std::numeric_limits<double>::epsilon();
-class B {
-   public:
-    double lambda;
-    BVH_Node *node;
-    B(double l, BVH_Node *n) {
-        lambda = l;
-        node = n;
-    }
-    B(double l) {
-        lambda = l;
-        node = NULL;
-    }
-
-    friend bool operator<(const B &lhs, const B &rhs) {
-        return lhs.lambda < rhs.lambda;// < -EPSILON;
-    }
-    friend bool operator>(const B &lhs, const B &rhs) {
-        return lhs.lambda > rhs.lambda;// > EPSILON;
-    }
-
-    friend std::ostream &operator<<(std::ostream &strm, const B &a) {
-        return strm << a.lambda;
-    }
-};
 
 void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
                      struct point *n, double *a, double *b) {
@@ -639,22 +616,6 @@ void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
     // debug :
     num_intersect_calls++;
 
-    /*
-    std::priority_queue<B, std::vector<B>, std::greater<B>> q;
-    for (double n : {1., 8.8, 5., 6., 3., 4., 0., 9., 7., 2.}) {
-        q.emplace(n);
-    }
-    while (!q.empty()) {
-        std::cout << q.top() << " ";
-        q.pop();
-    }
-    std::cout << '\n';
-    */
-
-#ifdef DEBUG
-    std::cout << " Mesh call\n";
-#endif
-
     struct ray ray_transformed;
     rayTransform(ray, &ray_transformed, this);
 
@@ -662,42 +623,37 @@ void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
     point bary_coords;
     TriangleFace *closest_face = NULL;
 
-    std::priority_queue<B, std::vector<B>, std::greater<B>> bvh_queue;
+    std::priority_queue<PQ_Node, std::vector<PQ_Node>, std::greater<PQ_Node>> bvh_queue;
 
     box->intersect(&ray_transformed, &f_lambda, &bary_coords);
     if (f_lambda < INFINITY) {
         bvh_queue.emplace(f_lambda, box);
     }
 
-    double curr_lamb = INFINITY;
-    point f_bary_coords;
-    BVH_Node *currentNode = NULL;
-    BoundingBox *currentBox = NULL;
+    BVH_Node *currentNode;
+    BoundingBox *currentBox;
     while (!bvh_queue.empty()) {
-        curr_lamb = bvh_queue.top().lambda;
         currentNode = bvh_queue.top().node;
         bvh_queue.pop();
 
-        if (curr_lamb < *lambda) {
-            if (currentNode->isFace()) {
-                    *lambda = curr_lamb;
-                    closest_face = (TriangleFace *)currentNode;
-            } else {
-                currentBox = ((BoundingBox *)currentNode);
+        if (currentNode->isFace()) {
+            closest_face = (TriangleFace *)currentNode;
+            break;
+        }
 
-                f_lambda = INFINITY;
-                currentBox->c1->intersect(&ray_transformed, &f_lambda, &f_bary_coords);
-                if (f_lambda < INFINITY) {
-                    bvh_queue.emplace(f_lambda, currentBox->c1);
-                }
+        currentBox = ((BoundingBox *)currentNode);
 
-                if (currentBox->c2 != NULL) {
-                    f_lambda = INFINITY;
-                    currentBox->c2->intersect(&ray_transformed, &f_lambda, &f_bary_coords);
-                    if (f_lambda < INFINITY) {
-                        bvh_queue.emplace(f_lambda, currentBox->c2);
-                    }
-                }
+        f_lambda = INFINITY;
+        currentBox->c1->intersect(&ray_transformed, &f_lambda, &bary_coords);
+        if (f_lambda < INFINITY) {
+            bvh_queue.emplace(f_lambda, currentBox->c1);
+        }
+
+        if (currentBox->c2 != NULL) {
+            f_lambda = INFINITY;
+            currentBox->c2->intersect(&ray_transformed, &f_lambda, &bary_coords);
+            if (f_lambda < INFINITY) {
+                bvh_queue.emplace(f_lambda, currentBox->c2);
             }
         }
     }
@@ -710,14 +666,8 @@ void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
     }
 
     if (closest_face != NULL) {
-        closest_face->intersect(&ray_transformed, &f_lambda, &bary_coords);
-        //*lambda = f_lambda;
+        closest_face->intersect(&ray_transformed, lambda, &bary_coords);
         *n = closest_face->normal(&bary_coords);
-        // std::cout << typeid(closest_face).name() << "\n";
-        if (num_normals > 1) {
-            // std::cout << "closest face: " << *closest_face << "\n";
-            *n = ((TriangleFace_N *)closest_face)->normal(&bary_coords);
-        }
         normalTransform(n, n, this);
         normalize(n);
         rayPosition(ray, *lambda, p);
@@ -727,19 +677,19 @@ void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
 }
 
 int comp_face_max_x(const void *a, const void *b) {
-    TriangleFace_N *ta = (TriangleFace_N *)a, *tb = (TriangleFace_N *)b;
-    double result = ta->max_x() - tb->max_x();
+    TriangleFace **ta = (TriangleFace **)a, **tb = (TriangleFace **)b;
+    double result = (*ta)->max_x() - (*tb)->max_x();
     return result > 0;
 }
 
 int comp_face_max_y(const void *a, const void *b) {
-    TriangleFace_N *ta = (TriangleFace_N *)a, *tb = (TriangleFace_N *)b;
-    double result = ta->max_y() - tb->max_y();
+    TriangleFace **ta = (TriangleFace **)a, **tb = (TriangleFace **)b;
+    double result = (*ta)->max_y() - (*tb)->max_y();
     return result > 0;
 }
 
 int comp_face_max_z(const void *a, const void *b) {
-    TriangleFace_N *ta = (TriangleFace_N *)a, *tb = (TriangleFace_N *)b;
-    double result = ta->max_z() - tb->max_z();
+    TriangleFace **ta = (TriangleFace **)a, **tb = (TriangleFace **)b;
+    double result = (*ta)->max_z() - (*tb)->max_z();
     return result > 0;
 }
