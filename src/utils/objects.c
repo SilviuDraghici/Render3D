@@ -29,6 +29,12 @@ Object::Object(double r = 1, double g = 1, double b = 1) {
     next = NULL;
 }
 
+void Object::set_color(double r, double g, double b){
+    col.R = r;
+    col.G = g;
+    col.B = b;
+}
+
 void Object::set_rayTrace_properties(double ambient, double diffuse,
                                      double specular, double global,
                                      double alpha, double shiny) {

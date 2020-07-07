@@ -1,5 +1,5 @@
 CFLAGS = -O3 -g -lm -fopenmp
-UOBJ = utils.o affineTransforms.o imageProcessor.o objects.o meshes.o mappings.o ray.o camera.o buildscene.o rayTracer.o pathTracer.o Render3D.o
+UOBJ = utils.o affineTransforms.o imageProcessor.o objects.o BVH.o meshes.o mappings.o ray.o camera.o buildscene.o rayTracer.o pathTracer.o Render3D.o
 UTILS = utils/
 RAY = rayTracer/
 PTH = pathTracer/
@@ -38,7 +38,12 @@ objects.o: ${UTILS}objects.c ${UTILS}objects.h ${UTILS}color.h ${UTILS}mappings.
 	g++ ${CFLAGS} -c $^
 	@echo
 
-meshes.o: ${UTILS}meshes.c ${UTILS}meshes.h ${UTILS}color.h ${UTILS}mappings.h ${UTILS}ray.h ${UTILS}utils.h ${UTILS}objects.h
+BVH.o: ${UTILS}BVH.c ${UTILS}BVH.h  
+	@echo Building BVH
+	g++ ${CFLAGS} -c $^
+	@echo
+
+meshes.o: ${UTILS}meshes.c ${UTILS}meshes.h ${UTILS}color.h ${UTILS}mappings.h ${UTILS}ray.h ${UTILS}utils.h ${UTILS}objects.h ${UTILS}BVH.h
 	@echo Building Meshes
 	g++ ${CFLAGS} -c $^
 	@echo

@@ -7,13 +7,9 @@
 
 #include "ray.h"
 
-#define BB BoundingBox
 //#define BB BoundingBox_Visible
 
 //#define DEBUG
-
-double num_intersection_tests;
-double num_intersect_calls;
 
 TriangleFace::TriangleFace() {}
 
@@ -31,12 +27,12 @@ TriangleFace::TriangleFace(double x1, double y1, double z1, double x2,
     p3.x = x3, p3.y = y3, p3.z = z3;
 }
 
-double TriangleFace::min_x() { return MIN(p1.x, MIN(p2.x, p3.x)); }
-double TriangleFace::min_y() { return MIN(p1.y, MIN(p2.y, p3.y)); }
-double TriangleFace::min_z() { return MIN(p1.z, MIN(p2.z, p3.z)); }
-double TriangleFace::max_x() { return MAX(p1.x, MAX(p2.x, p3.x)); }
-double TriangleFace::max_y() { return MAX(p1.y, MAX(p2.y, p3.y)); }
-double TriangleFace::max_z() { return MAX(p1.z, MAX(p2.z, p3.z)); }
+double TriangleFace::min_x() const{ return MIN(p1.x, MIN(p2.x, p3.x)); }
+double TriangleFace::min_y() const{ return MIN(p1.y, MIN(p2.y, p3.y)); }
+double TriangleFace::min_z() const{ return MIN(p1.z, MIN(p2.z, p3.z)); }
+double TriangleFace::max_x() const{ return MAX(p1.x, MAX(p2.x, p3.x)); }
+double TriangleFace::max_y() const{ return MAX(p1.y, MAX(p2.y, p3.y)); }
+double TriangleFace::max_z() const{ return MAX(p1.z, MAX(p2.z, p3.z)); }
 
 BVH_Node *TriangleFace::intersect(struct ray *ray, double *lambda,
                                   point *bary_coords) {
@@ -124,147 +120,6 @@ void BoundingBox::setBounds(double min_x, double max_x, double min_y,
     this->b_min_y = min_y, this->b_max_y = max_y;
     this->b_min_z = min_z, this->b_max_z = max_z;
 }
-
-void BoundingBox::setChildren(TriangleFace *faces[], int start, int end) {
-    // std::cout << "start: " << start << " end: " << end << "\n";
-    double x, y, z;
-    b_min_x = b_min_y = b_min_z = INFINITY;
-    b_max_x = b_max_y = b_max_z = -INFINITY;
-    for (int i = start; i < end; i++) {
-        x = faces[i]->min_x();
-        if (x < b_min_x) {
-            b_min_x = x;
-        }
-        x = faces[i]->max_x();
-        if (b_max_x < x) {
-            b_max_x = x;
-        }
-
-        y = faces[i]->min_y();
-        if (y < b_min_y) {
-            b_min_y = y;
-        }
-        y = faces[i]->max_y();
-        if (b_max_y < y) {
-            b_max_y = y;
-        }
-
-        z = faces[i]->min_z();
-        if (z < b_min_z) {
-            b_min_z = z;
-        }
-        z = faces[i]->max_z();
-        if (b_max_z < z) {
-            b_max_z = z;
-        }
-    }
-
-    if (end - start == 2) {
-        c1 = faces[start];
-        c2 = faces[start + 1];
-    } else {
-        int mid = (start + end) / 2;
-
-        if (mid - start == 1) {
-            c1 = faces[start];
-        } else {
-            c1 = new BB;
-            ((BB *)c1)->setChildren(faces, start, mid);
-        }
-
-        if (end - mid == 1) {
-            c1 = faces[mid];
-        } else {
-            c2 = new BB;
-            ((BB *)c2)->setChildren(faces, mid, end);
-        }
-    }
-}
-
-double BoundingBox::min_x() { return b_min_x; }
-double BoundingBox::min_y() { return b_min_y; }
-double BoundingBox::min_z() { return b_min_z; }
-double BoundingBox::max_x() { return b_max_x; }
-double BoundingBox::max_y() { return b_max_y; }
-double BoundingBox::max_z() { return b_max_z; }
-
-BVH_Node *BoundingBox::intersect(struct ray *ray, double *lambda,
-                                 point *bary_coords) {
-    // Computes and returns the value of 'lambda' at the intersection
-    // between the specified ray and the specified canonical box.
-
-    // debug :
-    num_intersection_tests++;
-
-    point p;
-
-    // current intersection lambda
-    double b_lambda;
-
-    // y-z plane box face at min_x
-    b_lambda = (b_min_x - ray->p0.x) / ray->d.x;
-    if (THR < b_lambda) {
-        rayPosition(ray, b_lambda, &p);
-        if ((b_min_y < p.y && p.y < b_max_y) &&
-            (b_min_z < p.z && p.z < b_max_z)) {
-            *lambda = b_lambda;
-        }
-    }
-
-    // y-z plane box face at max_x
-    b_lambda = (b_max_x - ray->p0.x) / ray->d.x;
-    if (THR < b_lambda && b_lambda < *lambda) {
-        rayPosition(ray, b_lambda, &p);
-        if ((b_min_y < p.y && p.y < b_max_y) &&
-            (b_min_z < p.z && p.z < b_max_z)) {
-            *lambda = b_lambda;
-        }
-    }
-
-    // x-z plane box face at min_y
-    b_lambda = (b_min_y - ray->p0.y) / ray->d.y;
-    if (THR < b_lambda && b_lambda < *lambda) {
-        rayPosition(ray, b_lambda, &p);
-        if ((b_min_x < p.x && p.x < b_max_x) &&
-            (b_min_z < p.z && p.z < b_max_z)) {
-            *lambda = b_lambda;
-        }
-    }
-
-    // x-z plane box face at max_y
-    b_lambda = (b_max_y - ray->p0.y) / ray->d.y;
-    if (THR < b_lambda && b_lambda < *lambda) {
-        rayPosition(ray, b_lambda, &p);
-        if ((b_min_x < p.x && p.x < b_max_x) &&
-            (b_min_z < p.z && p.z < b_max_z)) {
-            *lambda = b_lambda;
-        }
-    }
-
-    // x-y plane box face at min_z
-    b_lambda = (b_min_z - ray->p0.z) / ray->d.z;
-    if (THR < b_lambda && b_lambda < *lambda) {
-        rayPosition(ray, b_lambda, &p);
-        if ((b_min_x < p.x && p.x < b_max_x) &&
-            (b_min_y < p.y && p.y < b_max_y)) {
-            *lambda = b_lambda;
-        }
-    }
-
-    // x-y plane box face at max_z
-    b_lambda = (b_max_z - ray->p0.z) / ray->d.z;
-    if (THR < b_lambda && b_lambda < *lambda) {
-        rayPosition(ray, b_lambda, &p);
-        if ((b_min_x < p.x && p.x < b_max_x) &&
-            (b_min_y < p.y && p.y < b_max_y)) {
-            *lambda = b_lambda;
-        }
-    }
-
-    return NULL;
-}
-
-bool BoundingBox::isFace() { return false; }
 
 BoundingBox_Visible::BoundingBox_Visible() {
     col = color(drand48(), drand48(), drand48());
@@ -552,7 +407,7 @@ void Mesh::setMesh(const char *filename) {
         }
     }
 
-        faces = (TriangleFace **)malloc(num_faces * sizeof(TriangleFace *));
+    faces = (PrimitiveData *)malloc(num_faces * sizeof(PrimitiveData));
 
     mesh_obj.clear();
     mesh_obj.seekg(first_face);
@@ -567,7 +422,7 @@ void Mesh::setMesh(const char *filename) {
             sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3);
             if (num_normals > 1) {
                 faces[i] = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
-                ((TriangleFace_N *)faces[i])->setNormals(normals[p1], normals[p2], normals[p3]);
+                ((TriangleFace_N *)faces[i].primitive)->setNormals(normals[p1], normals[p2], normals[p3]);
             } else {
                 faces[i] = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
             }
@@ -581,7 +436,7 @@ void Mesh::setMesh(const char *filename) {
                    &p3, &n3);
             if (num_normals > 1) {
                 faces[i] = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
-                ((TriangleFace_N *)faces[i])->setNormals(normals[n1], normals[n2], normals[n3]);
+                ((TriangleFace_N *)faces[i].primitive)->setNormals(normals[n1], normals[n2], normals[n3]);
             } else {
                 faces[i] = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
             }
@@ -599,11 +454,13 @@ void Mesh::setMesh(const char *filename) {
         compare = comp_face_max_z;
     }
 
-    qsort(faces, num_faces, sizeof(TriangleFace *), compare);
+    qsort(faces, num_faces, sizeof(PrimitiveData), compare);
 
-    box->setChildren(faces, 0, num_faces);
+    bvh.set_build_method(BuildMethod::MidSplit);
+    bvh.build(faces, num_faces);
 
     mesh_obj.close();
+    
     free(vertices);
     free(normals);
     free(faces);
@@ -613,58 +470,15 @@ void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
                      struct point *n, double *a, double *b) {
     *lambda = INFINITY;
 
-    // debug :
-    num_intersect_calls++;
 
     struct ray ray_transformed;
     rayTransform(ray, &ray_transformed, this);
 
-    double f_lambda = INFINITY;
+    TriangleFace *closest_face;
+    //((bvh).*(bvh.search))(ray);
+    closest_face = (TriangleFace *)bvh.search(&ray_transformed);
+
     point bary_coords;
-    TriangleFace *closest_face = NULL;
-
-    std::priority_queue<PQ_Node, std::vector<PQ_Node>, std::greater<PQ_Node>> bvh_queue;
-
-    box->intersect(&ray_transformed, &f_lambda, &bary_coords);
-    if (f_lambda < INFINITY) {
-        bvh_queue.emplace(f_lambda, box);
-    }
-
-    BVH_Node *currentNode;
-    BoundingBox *currentBox;
-    while (!bvh_queue.empty()) {
-        currentNode = bvh_queue.top().node;
-        bvh_queue.pop();
-
-        if (currentNode->isFace()) {
-            closest_face = (TriangleFace *)currentNode;
-            break;
-        }
-
-        currentBox = ((BoundingBox *)currentNode);
-
-        f_lambda = INFINITY;
-        currentBox->c1->intersect(&ray_transformed, &f_lambda, &bary_coords);
-        if (f_lambda < INFINITY) {
-            bvh_queue.emplace(f_lambda, currentBox->c1);
-        }
-
-        if (currentBox->c2 != NULL) {
-            f_lambda = INFINITY;
-            currentBox->c2->intersect(&ray_transformed, &f_lambda, &bary_coords);
-            if (f_lambda < INFINITY) {
-                bvh_queue.emplace(f_lambda, currentBox->c2);
-            }
-        }
-    }
-
-    if (bary_coords.w == -1) {
-        *lambda = f_lambda;
-        *a = -1;
-        *p = bary_coords;
-        return;
-    }
-
     if (closest_face != NULL) {
         closest_face->intersect(&ray_transformed, lambda, &bary_coords);
         *n = closest_face->normal(&bary_coords);
@@ -674,22 +488,4 @@ void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
     } else {
         *lambda = -1;
     }
-}
-
-int comp_face_max_x(const void *a, const void *b) {
-    TriangleFace **ta = (TriangleFace **)a, **tb = (TriangleFace **)b;
-    double result = (*ta)->max_x() - (*tb)->max_x();
-    return result > 0;
-}
-
-int comp_face_max_y(const void *a, const void *b) {
-    TriangleFace **ta = (TriangleFace **)a, **tb = (TriangleFace **)b;
-    double result = (*ta)->max_y() - (*tb)->max_y();
-    return result > 0;
-}
-
-int comp_face_max_z(const void *a, const void *b) {
-    TriangleFace **ta = (TriangleFace **)a, **tb = (TriangleFace **)b;
-    double result = (*ta)->max_z() - (*tb)->max_z();
-    return result > 0;
 }

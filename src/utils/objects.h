@@ -55,7 +55,7 @@ class Object {
     int isLightSource;  // Flag to indicate if this is an area light source
 
     Object(double r, double g, double b);
-
+    void set_color(double r, double g, double b);
     void set_rayTrace_properties(double ambient, double diffuse,
                                  double specular, double global, double alpha,
                                  double shiny);

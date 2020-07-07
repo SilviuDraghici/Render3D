@@ -15,9 +15,6 @@ struct color {
     double G;
     double B;
     
-//inline vec3 operator*(float t, const vec3 &v1) {
-//    return vec3(t * v1.e[0], t * v1.e[1], t * v1.e[2]);
-//}
     color(double r = 0, double g = 0, double b = 0) {
         R = r;
         G = g;
@@ -71,16 +68,5 @@ struct color {
         return color(R + a.R, G + a.G, B + a.B);
     }
 };
-/*
-   The structures below are used to define an object colour in terms of the
-   components of the Phong illumination model. Note that we typically
-   define colours together with objects, so you should not need to
-   instantiate lone instances of the colour structure.
-
-   Also, note that you can easily make your objects completely white
-   (or completely monochromatic) by not being careful how the different
-   components in the Phong model add up. Take a moment and think how
-   you want your object to look before you set these values.
-*/
 
 #endif

@@ -1,4 +1,5 @@
 #include <string.h>
+
 #include <iostream>
 
 #ifndef UTILS_H
@@ -7,7 +8,7 @@
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 
-#define THR 0.0001
+#define THR 0.000000001
 #define PI 3.14159265354
 
 /* The structure below defines a point in 3D homogeneous coordinates        */
@@ -37,23 +38,32 @@ struct point {
         return *this;
     }
 
-    point operator+(const point &a) const {
+    inline point operator+(const point &a) const {
         return point(x + a.x, y + a.y, z + a.z);
     }
-    point operator-(const point &a) const {
+
+    inline point operator-(const point &a) const {
         return point(x - a.x, y - a.y, z - a.z);
     }
 
-    point operator-() const { return point(-x, -y, -z); }
+    inline point operator-() const { return point(-x, -y, -z); }
 
-    point operator*(double scalar) const {
+    inline point operator*(double scalar) const {
         return point(x * scalar, y * scalar, z * scalar);
     }
 
     //std::ostream &operator<<(std::ostream &strm) {
-      //  return strm << "(" << x << ", " << y << ", " << z << ", " << w << ")";
+    //  return strm << "(" << x << ", " << y << ", " << z << ", " << w << ")";
     //}
 };
+
+inline point operator*(double t, point const &v1) {
+    return point(t * v1.x, t * v1.y, t * v1.z);
+}
+
+//inline point operator*(point const &v1, double t) {
+//  return point(t * v1.x, t * v1.y, t * v1.z);
+//}
 
 std::ostream &operator<<(std::ostream &strm, const struct point &a);
 
