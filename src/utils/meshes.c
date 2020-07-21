@@ -443,20 +443,7 @@ void Mesh::setMesh(const char *filename) {
         }
     }
 
-    // the faces are sorted by max vertex along one of the axis.
-    // which axis is sorted is chosen based on which axis
-    // is closest to being perdendicular to the
-    // camera's gaze direction
-    int (*compare)(const void *, const void *) = comp_face_max_x;
-    if (scale == abs(max_y - min_y)) {
-        compare = comp_face_max_y;
-    } else if (scale == abs(max_z - min_z)) {
-        compare = comp_face_max_z;
-    }
-
-    qsort(faces, num_faces, sizeof(PrimitiveData), compare);
-
-    bvh.set_build_method(BuildMethod::MidSplit);
+    bvh.set_build_method(BuildMethod::SAH);
     bvh.build(faces, num_faces);
 
     mesh_obj.close();

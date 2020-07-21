@@ -15,6 +15,21 @@ enum class BuildMethod { SAH,
 enum class SearchMethod { DFS,
                           BFS };
 
+class Bounds {
+   public:
+    point min, max;
+    Bounds(){
+        min.x = min.y = min.z = INFINITY;
+        max.x = max.y = max.z = -INFINITY;
+    }
+    Axis longestAxis() const;
+    double offset(const point &p, Axis dim) const;
+    double surface_area() const;
+};
+
+void union_bounds(Bounds &a, point &b, Bounds &union_box);
+void union_bounds(Bounds &a, Bounds &b, Bounds &union_box);
+
 class BVH_Node {
    public:
     virtual BVH_Node *intersect(struct ray *r, double *lambda,
@@ -26,22 +41,24 @@ class BVH_Node {
     virtual double max_x() const = 0;
     virtual double max_y() const = 0;
     virtual double max_z() const = 0;
+    virtual Axis longestAxis() const;
 };
 
 struct PrimitiveData {
     BVH_Node *primitive;
-    point min, max, center;
+    Bounds bound;
+    point center;
     PrimitiveData &operator=(const BVH_Node *prim) {
         primitive = (BVH_Node *)prim;
-        min.x = prim->min_x();
-        min.y = prim->min_y();
-        min.z = prim->min_z();
+        bound.min.x = prim->min_x();
+        bound.min.y = prim->min_y();
+        bound.min.z = prim->min_z();
 
-        max.x = prim->max_x();
-        max.y = prim->max_y();
-        max.z = prim->max_z();
+        bound.max.x = prim->max_x();
+        bound.max.y = prim->max_y();
+        bound.max.z = prim->max_z();
 
-        center = 0.5 * min + 0.5 * max;
+        center = 0.5 * bound.min + 0.5 * bound.max;
         return *this;
     }
 };
@@ -52,7 +69,7 @@ class BVH {
     //build methods
     void SAH_build(PrimitiveData prims[], int num_prims);
     void midsplit_build(PrimitiveData prims[], int num_prims);
-    
+
     typedef void (BVH::*BVH_build)(PrimitiveData prims[], int num_prims);
     BVH_build build_ptr = &BVH::SAH_build;
 
@@ -64,7 +81,6 @@ class BVH {
     BVH_search search_ptr = &BVH::bfs_pqueue_search;
 
    public:
-
     void set_build_method(BuildMethod split_method);
     inline void build(PrimitiveData prims[], int num_prims) {
         // build the BVH using the selected split method

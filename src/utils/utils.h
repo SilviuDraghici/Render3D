@@ -11,6 +11,10 @@
 #define THR 0.000000001
 #define PI 3.14159265354
 
+enum class Axis { X,
+                  Y,
+                  Z };
+
 /* The structure below defines a point in 3D homogeneous coordinates        */
 struct point {
     double x;
@@ -23,6 +27,41 @@ struct point {
         z = pz;
         w = 1;
     }
+
+    double &operator[](Axis axis) {
+        switch (axis) {
+            case Axis::X: {
+                return x;
+                break;
+            }
+            case Axis::Y: {
+                return y;
+                break;
+            }
+            case Axis::Z: {
+                return z;
+                break;
+            }
+        }
+    }
+
+    double operator[](Axis axis) const{
+        switch (axis) {
+            case Axis::X: {
+                return x;
+                break;
+            }
+            case Axis::Y: {
+                return y;
+                break;
+            }
+            case Axis::Z: {
+                return z;
+                break;
+            }
+        }
+    }
+
     point &operator=(const point &pt) {
         x = pt.x;
         y = pt.y;
