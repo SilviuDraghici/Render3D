@@ -1,15 +1,21 @@
 #!/bin/bash
 NAME=${1:-out}
+RES=1024
+
+echo_err() { printf "%s\n" "$*" >&2; }
+
+echo_err Resolution: ${RES}x${RES}
+echo_err
 
 mkdir -p frames
 rm -rf frames/*
 #Recycle Bin
 for i in `seq -w 1 239`
 do
-    echo "Frame $i"
-    ./Render3D 0 1024 100 zz.ppm $i
+    echo_err "Frame $i"
+    ./Render3D 0 1024 200 zz.ppm $i
     mv zz.ppm frames/$i.ppm
-    echo
+    echo_err
 done
 
 mogrify -format png -quality 100 frames/*.ppm

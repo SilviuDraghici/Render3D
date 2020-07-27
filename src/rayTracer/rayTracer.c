@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <chrono>
 
 #include "../utils/affinetransforms.h"
 #include "../utils/buildscene.h"
@@ -14,6 +13,7 @@
 #include "../utils/objects.h"
 #include "../utils/ray.h"
 #include "../utils/utils.h"
+#include "../utils/timer.h"
 
 
 //#define DEBUG
@@ -67,7 +67,11 @@ void rayTraceMain(int argc, char *argv[]) {
 
     scene->cam_focal = -1;
 
+    Timer buildscene_timer("Buildscene");
+    buildscene_timer.start();
     buildScene(scene);
+    buildscene_timer.end();
+    buildscene_timer.print_elapsed_time(std::cerr);
 
     struct view *cam;  // Camera and view for this scene
     cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up),
@@ -89,12 +93,13 @@ void rayTraceMain(int argc, char *argv[]) {
     color col;
     color background = 0;
 
-    fprintf(stderr, "Rendering...\n");
+    std::cout << "Rendering...\n";
     
     //debug :
     num_intersection_tests = 0;
     num_intersect_calls = 0;
-    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    Timer raytracing_timer("Raytracing");
+    raytracing_timer.start();
 
     double start_j = 0, end_j = scene->sx, start_i = 0, end_i = scene->sx;
 #ifdef DEBUG
@@ -123,19 +128,15 @@ void rayTraceMain(int argc, char *argv[]) {
                 (unsigned char)(255 * col.B);
         }  // end for i
     }      // end for j
-    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    raytracing_timer.end();
     // Output rendered image
     imageOutput(outImage, output_name);
 
-    fprintf(stderr, "Ray Tracing Done!\n");
+    std::cout << "Ray Tracing Done!\n";
 
     //debug :
-    auto time = end - begin;
-    auto mins = std::chrono::duration_cast<std::chrono::minutes>(time).count();
-    auto secs = std::chrono::duration_cast<std::chrono::seconds>(time).count() - mins * 60;
-    auto milli = std::chrono::duration_cast<std::chrono::milliseconds>(time).count() - secs * 1000;
-    std::cout << "Time: min:" << mins << " sec:" << secs << " milli:" << milli << std::endl;
-    std::cout << "Average number of intersection tests: " << num_intersection_tests/num_intersect_calls << "\n";
+    raytracing_timer.print_elapsed_time(std::cerr);
+    std::cerr << "Average number of intersection tests: " << num_intersection_tests/num_intersect_calls << "\n";
 }
 
 void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {

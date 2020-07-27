@@ -7,12 +7,12 @@ struct textureNode *t_list = NULL;
 
 const char *checkers = "scenes/checkers.ppm";
 
-//const char *mesh_file = "scenes/triangular_prism.obj";
-//const char *mesh_file = "scenes/tea_pot.obj";
-//const char *mesh_file = "scenes/tea_pot_N.obj";
-//const char *mesh_file = "scenes/wineglass.obj";
-//const char *mesh_file = "scenes/bunny.obj";
-//const char *mesh_file = "scenes/hand.obj";
+//const char *mesh_file = "scenes/triangular_prism_8.obj";
+//const char *mesh_file = "scenes/tea_pot_992.obj";
+//const char *mesh_file = "scenes/tea_pot_N_992.obj";
+//const char *mesh_file = "scenes/wineglass_13k.obj";
+//const char *mesh_file = "scenes/bunny_69k.obj";
+//const char *mesh_file = "scenes/hand_134k.obj";
 const char *mesh_file = "scenes/lucy_1M.obj";
 
 

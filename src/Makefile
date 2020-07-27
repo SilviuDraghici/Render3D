@@ -1,5 +1,5 @@
 CFLAGS = -O3 -g -lm -fopenmp
-UOBJ = utils.o affineTransforms.o imageProcessor.o objects.o BVH.o meshes.o mappings.o ray.o camera.o buildscene.o rayTracer.o pathTracer.o Render3D.o
+UOBJ = timer.o utils.o affineTransforms.o imageProcessor.o objects.o BVH.o meshes.o mappings.o ray.o camera.o buildscene.o rayTracer.o pathTracer.o Render3D.o
 UTILS = utils/
 RAY = rayTracer/
 PTH = pathTracer/
@@ -15,6 +15,11 @@ OBJ = obj/
 
 Render3D.o: Render3D.c  ${RAY}rayTracer.h
 	@echo Building Render3D.o
+	g++ ${CFLAGS} -c $^
+	@echo
+
+timer.o: ${UTILS}timer.c ${UTILS}timer.h
+	@echo Building Timer
 	g++ ${CFLAGS} -c $^
 	@echo
 

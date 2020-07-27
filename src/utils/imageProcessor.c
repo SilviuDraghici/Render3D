@@ -204,7 +204,7 @@ void imageOutput(struct image *im, const char *filename) {
     //
     // Assumes a 24 bit per pixel image stored as unsigned chars
     //
-    fprintf(stderr, "Saving Image\n");
+    printf("Saving Image\n");
     FILE *f;
 
     if (im != NULL)
