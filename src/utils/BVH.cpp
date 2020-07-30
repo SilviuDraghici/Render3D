@@ -222,11 +222,6 @@ BVH_Node *SAH_split(PrimitiveData prims[], int start, int end) {
 
     BoundingBox *b_box = new BoundingBox;
 
-    Bounds bound;
-    for (int i = start; i < end; i++) {
-        union_bounds(bound, prims[i].bound, bound);
-    }
-
     Bounds centroid_bounds;
     for (int i = start; i < end; i++) {
         union_bounds(centroid_bounds, prims[i].center, centroid_bounds);
@@ -256,7 +251,7 @@ BVH_Node *SAH_split(PrimitiveData prims[], int start, int end) {
             union_bounds(b1, buckets[j].bound, b1);
             count1 += buckets[j].count;
         }
-        split_cost[i] = 0.125 + (b0.surface_area() * count0 + b1.surface_area() * count1) / bound.surface_area();
+        split_cost[i] = b0.surface_area() * count0 + b1.surface_area() * count1;
     }
 
     double min_cost = split_cost[0];

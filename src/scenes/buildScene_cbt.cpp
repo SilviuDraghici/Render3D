@@ -22,7 +22,6 @@ const char *mesh_file = "scenes/lucy_1M.obj";
 //const char *mesh_file = "scenes/dragon_435k.obj";
 //const char *mesh_file = "scenes/dragon_871k.obj";
 
-
 drand48();
 drand48();
 drand48();

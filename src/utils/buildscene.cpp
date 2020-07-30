@@ -8,5 +8,5 @@
 #include "utils.h"
 
 void buildScene(Scene *scene) {
-#include "../scenes/buildscene_cbt.c"
+#include "../scenes/buildscene_cbt.cpp"
 }

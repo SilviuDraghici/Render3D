@@ -4,8 +4,28 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "svdDynamic.c"
-#include "svdDynamic.h"
+inline double &d4x4(double *T, int r, int c) {
+    return *(T + 4 * r + c);
+}
+
+inline double determinant_3x3(double A[3][3]) {
+    //        ┌─     ─┐
+    //        │ a b c │
+    //  A  =  │ d e f │
+    //        │ g h i │
+    //        └─     ─┘
+    // |A| = a(ei − fh) − b(di − fg) + c(dh − eg)
+
+    double a = A[0][0], b = A[0][1], c = A[0][2];
+    double d = A[1][0], e = A[1][1], f = A[1][2];
+    double g = A[2][0], h = A[2][1], i = A[2][2];
+
+    double eifh = (e * i) - (f * h);
+    double difg = (d * i) - (f * g);
+    double dheg = (d * h) - (e * g);
+
+    return (a * eifh) - (b * difg) + (c * dheg);
+}
 
 struct matrix Sc(double Xscale, double Yscale, double Zscale) {
     // Returns tranform for left multiplying
@@ -85,39 +105,66 @@ void invert(double *T, double *Tinv) {
     // Computes the inverse of transformation matrix T.
     // the result is returned in Tinv.
 
-    double *U, *s, *V, *rv1;
-    int singFlag, i;
+    // because all the affine transforms have the form:
+    //        ┌─       ─┐
+    //        │ a b c d │
+    //  T  =  │ e f g h │
+    //        │ i j k l │
+    //        │ 0 0 0 1 │
+    //        └─       ─┘
+    // the determinant of the top left 3x3 is equal to T's determinant
+    double A[3][3] = {{d4x4(T, 0, 0), d4x4(T, 0, 1), d4x4(T, 0, 2)},
+                      {d4x4(T, 1, 0), d4x4(T, 1, 1), d4x4(T, 1, 2)},
+                      {d4x4(T, 2, 0), d4x4(T, 2, 1), d4x4(T, 2, 2)}};
 
-    // Invert the affine transform
-    U = NULL;
-    s = NULL;
-    V = NULL;
-    rv1 = NULL;
-    singFlag = 0;
+    double determinant = determinant_3x3(A);
 
-    SVD(T, 4, 4, &U, &s, &V, &rv1);
-    if (U == NULL || s == NULL || V == NULL) {
+    if (determinant == 0) {
         fprintf(stderr, "Error: Matrix not invertible for this object, returning identity\n");
         memcpy(Tinv, eye4x4, 16 * sizeof(double));
         return;
     }
 
-    // Check for singular matrices...
-    for (i = 0; i < 4; i++)
-        if (*(s + i) < 1e-9)
-            singFlag = 1;
-    if (singFlag) {
-        fprintf(stderr, "Error: Transformation matrix is singular, returning identity\n");
-        memcpy(Tinv, eye4x4, 16 * sizeof(double));
-        return;
+    //builds the sub-matrices to build the cofactor matrix 
+    int Tr, Tc;
+    for (int r = 0; r < 4; r++) {
+        for (int c = 0; c < 4; c++) {
+            Tr = Tc = 0;
+            for (int i = 0; i < 3; i++) {
+                if (i == r) { Tr++; }
+                
+                Tc = 0;
+                for (int j = 0; j < 3; j++) {
+                    if (j == c) { Tc++; }
+                    A[i][j] = d4x4(T, Tr, Tc);
+                    Tc++;
+                }
+
+                Tr++;
+            }
+            //build the cofactor matrix
+            d4x4(Tinv, r, c) = pow(-1, (r + 1) + (c + 1)) * determinant_3x3(A);
+        }
     }
 
-    // Compute and store inverse matrix
-    InvertMatrix(U, s, V, 4, Tinv);
+    double inv_det = 1 / determinant;
 
-    free(U);
-    free(s);
-    free(V);
+    //transpose(Tinv) = 1/det(T) * cofactor(T)
+    for (int r = 0; r < 4; r++) {
+        for (int c = 0; c < 4; c++) {
+            d4x4(Tinv, r, c) *= inv_det;
+        }
+    }
+    
+    //Takes the transpose of transpose(Tinv)
+    double temp;
+    for (int r = 0; r < 4; r++) {
+        for (int c = 0; c < r; c++) {
+            temp = d4x4(Tinv, r, c);
+            d4x4(Tinv, r, c) = d4x4(Tinv, c, r);
+            d4x4(Tinv, c, r) = temp;
+        }
+    }
 }
 
 void printmatrix(struct matrix matrix) {
