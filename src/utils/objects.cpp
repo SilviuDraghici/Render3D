@@ -7,9 +7,42 @@
 #include <iostream>
 #include <string>
 
+#include "affineTransforms.h"
 #include "mappings.h"
 #include "ray.h"
 #include "utils.h"
+
+void union_bounds(Bounds &a, point &b, Bounds &union_box) {
+    union_box.min.x = MIN(a.min.x, b.x);
+    union_box.min.y = MIN(a.min.y, b.y);
+    union_box.min.z = MIN(a.min.z, b.z);
+    union_box.max.x = MAX(a.max.x, b.x);
+    union_box.max.y = MAX(a.max.y, b.y);
+    union_box.max.z = MAX(a.max.z, b.z);
+}
+
+void union_bounds(Bounds &a, Bounds &b, Bounds &union_box) {
+    //assigns the bounds of union_box to fit a and b
+    union_box.min.x = MIN(a.min.x, b.min.x);
+    union_box.min.y = MIN(a.min.y, b.min.y);
+    union_box.min.z = MIN(a.min.z, b.min.z);
+    union_box.max.x = MAX(a.max.x, b.max.x);
+    union_box.max.y = MAX(a.max.y, b.max.y);
+    union_box.max.z = MAX(a.max.z, b.max.z);
+}
+
+Axis Primitive::longestAxis() const {
+    double x = max_x() - min_x();
+    double y = max_y() - min_y();
+    double z = max_z() - min_z();
+    if (x > y && x > z) {
+        return Axis::X;
+    } else if (y > z) {
+        return Axis::Y;
+    } else {
+        return Axis::Z;
+    }
+}
 
 Object::Object(double r = 1, double g = 1, double b = 1) {
     col.R = r;
@@ -29,7 +62,7 @@ Object::Object(double r = 1, double g = 1, double b = 1) {
     next = NULL;
 }
 
-void Object::set_color(double r, double g, double b){
+void Object::set_color(double r, double g, double b) {
     col.R = r;
     col.G = g;
     col.B = b;
@@ -84,6 +117,10 @@ void Object::surfaceCoordinates(double a, double b, double *x, double *y,
     fprintf(stderr, "Object::surfaceCoordinates\n");
 }
 
+void Object::set_canonical_bounds() {
+    std::cout << "Canonical Bounds not set!\n";
+}
+
 void Object::randomPoint(double *x, double *y, double *z) {
     point r = 0;
     r = T * r;
@@ -92,6 +129,59 @@ void Object::randomPoint(double *x, double *y, double *z) {
     *z = r.z;
     fprintf(stderr, "Object::randomPoint\n");
 }
+
+double Object::intersect(struct ray *r, double lambda) {
+    lambda = INFINITY;
+    double dummy_doub;
+    point dummy_point;
+    intersect(r, &lambda, &dummy_point, &dummy_point, &dummy_doub, &dummy_doub);
+    return lambda;
+}
+
+void Object::invert_and_bound() {
+    // calculates inverse matrix and sets w_bound
+    invert(&T.T[0][0], &Tinv.T[0][0]);
+
+    set_canonical_bounds();
+    //std::cout << label << "----------------------\n";
+    //std::cout << "c bound:"<< w_bound.min << " " << w_bound.max << "\n";
+
+    //convert canonical bounds to world coordinates
+    point a, b, c, d, e, f, g, h;
+    a = T * point(w_bound.min.x, w_bound.min.y , w_bound.min.z);
+    b = T * point(w_bound.min.x, w_bound.min.y , w_bound.max.z);
+    c = T * point(w_bound.min.x, w_bound.max.y , w_bound.min.z);
+    d = T * point(w_bound.min.x, w_bound.max.y , w_bound.max.z);
+    
+    e = T * point(w_bound.max.x, w_bound.max.y , w_bound.max.z);
+    f = T * point(w_bound.max.x, w_bound.max.y , w_bound.min.z);
+    g = T * point(w_bound.max.x, w_bound.min.y , w_bound.max.z);
+    h = T * point(w_bound.max.x, w_bound.min.y , w_bound.min.z);
+
+    //printmatrix(T);
+    //std::cout << "\n" << T << "\n";
+    //std::cout << "w bound:"<< a << " " << b << "\n";
+
+    // find world_bounds
+    w_bound.min.x = MIN(MIN(MIN(MIN(a.x, b.x), c.x), d.x), MIN(MIN(MIN(e.x, f.x), g.x), h.x));
+    w_bound.min.y = MIN(MIN(MIN(MIN(a.y, b.y), c.y), d.y), MIN(MIN(MIN(e.y, f.y), g.y), h.y));
+    w_bound.min.z = MIN(MIN(MIN(MIN(a.z, b.z), c.z), d.z), MIN(MIN(MIN(e.z, f.z), g.z), h.z));
+    w_bound.max.x = MAX(MAX(MAX(MAX(a.x, b.x), c.x), d.x), MAX(MAX(MAX(e.x, f.x), g.x), h.x));
+    w_bound.max.y = MAX(MAX(MAX(MAX(a.y, b.y), c.y), d.y), MAX(MAX(MAX(e.y, f.y), g.y), h.y));
+    w_bound.max.z = MAX(MAX(MAX(MAX(a.z, b.z), c.z), d.z), MAX(MAX(MAX(e.z, f.z), g.z), h.z));
+
+}
+
+bool Object::isprim() {
+    return true;
+}
+
+double Object::min_x() const { return w_bound.min.x; }
+double Object::min_y() const { return w_bound.min.y; }
+double Object::min_z() const { return w_bound.min.z; }
+double Object::max_x() const { return w_bound.max.x; }
+double Object::max_y() const { return w_bound.max.y; }
+double Object::max_z() const { return w_bound.max.z; }
 
 ///////////////////////////////Plane//////////////////////////////////////
 
@@ -106,7 +196,7 @@ void Plane::intersect(struct ray *ray, double *lambda, struct point *p,
 
     struct ray ray_transformed;
     rayTransform(ray, &ray_transformed, this);
-    *lambda = -1;
+    *lambda = INFINITY;
     struct point norm;
     // normal of canonical plane
     norm.x = 0;
@@ -117,11 +207,10 @@ void Plane::intersect(struct ray *ray, double *lambda, struct point *p,
     double l;
     double d_dot_n = dot(&(ray_transformed.d), &norm);
     if (d_dot_n != 0) {
-        p1.x = -ray_transformed.p0.x;
-        p1.y = -ray_transformed.p0.y;
-        p1.z = -ray_transformed.p0.z;
+        p1 = -ray_transformed.p0;
 
         l = dot(&(p1), &norm) / d_dot_n;
+        if (l < THR) return;
         // Check if the intersection point is inside the plane
         rayPosition(&ray_transformed, l, p);
         double x = p->x;
@@ -138,6 +227,11 @@ void Plane::intersect(struct ray *ray, double *lambda, struct point *p,
         *a = (x + 1) / 2;
         *b = (-y + 1) / 2;
     }
+}
+
+void Plane::set_canonical_bounds() {
+    w_bound.min = point(-1, -1, 0);
+    w_bound.max = point(1, 1, 0);
 }
 
 void Plane::surfaceCoordinates(double a, double b, double *x, double *y,
@@ -180,7 +274,7 @@ void Sphere::intersect(struct ray *ray, double *lambda, struct point *p,
     rayTransform(ray, &ray_transformed, this);
     solveQuadratic(&ray_transformed, &l1, &l2);
 
-    *lambda = -1;
+    *lambda = INFINITY;
     if (MAX(l1, l2) >= THR) {
         if (MIN(l1, l2) <= THR) {
             *lambda = MAX(l1, l2);
@@ -190,7 +284,7 @@ void Sphere::intersect(struct ray *ray, double *lambda, struct point *p,
     }
 
     double x, y, z;
-    if (*lambda != -1) {
+    if (*lambda != INFINITY) {
         rayPosition(&ray_transformed, *lambda, p);
         n->x = p->x;
         n->y = p->y;
@@ -209,6 +303,11 @@ void Sphere::intersect(struct ray *ray, double *lambda, struct point *p,
         *a = 0.5 + (atan2(z, x)) / (2 * PI);
         *b = 0.5 - (asin(y)) / (PI);
     }
+}
+
+void Sphere::set_canonical_bounds() {
+    w_bound.min = point(-1, -1, -1);
+    w_bound.max = point(1, 1, 1);
 }
 
 void Sphere::surfaceCoordinates(double a, double b, double *x, double *y,
@@ -247,10 +346,7 @@ void Box::intersect(struct ray *ray, double *lambda, struct point *p,
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical box.
 
-    // default large number to compare intersection lamdas to
-    double MAX = 1000000000;
-
-    *lambda = MAX;
+    *lambda = INFINITY;
 
     // current intersection lambda
     double b_lambda;
@@ -328,7 +424,7 @@ void Box::intersect(struct ray *ray, double *lambda, struct point *p,
     // printf("intersect point: (%f, %f, %f)\n", p->x, p->y, p->z);
 
     // if there is an intersection, update the normal and intersection point
-    if (*lambda != MAX) {
+    if (*lambda != INFINITY) {
         normalTransform(n, n, this);
         rayPosition(ray, *lambda, p);
     } else {  // return no intersection flag
@@ -494,21 +590,8 @@ void Polygon::calculate_edge_vectors() {
     e[numPoints - 1] = p[0] - p[numPoints - 1];
 }
 
-
-void insertObject(Object *o, Object **list) {
-    if (o == NULL) return;
-    // Inserts an object into the object list.
-    if (*(list) == NULL) {
-        *(list) = o;
-        (*(list))->next = NULL;
-    } else {
-        o->next = (*(list))->next;
-        (*(list))->next = o;
-    }
-}
-
 void normalTransform(struct point *n, struct point *n_transformed,
-                            Object *obj) {
+                     Object *obj) {
     // Computes the normal at an affinely transformed point given the original
     // normal and the object's inverse transformation. From the notes:
     // n_transformed=A^-T*n normalized.

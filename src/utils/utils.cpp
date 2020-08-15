@@ -1,11 +1,39 @@
 #include "utils.h"
 
+#include <iomanip>
 #include <math.h>
+#include <string>
 
 #include "ray.h"
 
 std::ostream &operator<<(std::ostream &strm, const struct point &a) {
     return strm << "(" << a.x << ", " << a.y << ", " << a.z << ", " << a.w << ")";
+}
+
+std::ostream &operator<<(std::ostream &strm, const struct matrix &m){
+    int wid = 0;
+    for(int i = 0; i < 4; i++){
+        for(int j = 0; j < 4; j++){
+            wid = MAX(wid, std::to_string(m.T[i][j]).length());
+        }
+    }
+    strm << std::setw(wid) << std::to_string(m.T[0][0]) << " ";
+    strm << std::setw(wid) << std::to_string(m.T[0][1]) << " ";
+    strm << std::setw(wid) << std::to_string(m.T[0][2]) << " ";
+    strm << std::setw(wid) << std::to_string(m.T[0][3]) << "\n";
+    strm << std::setw(wid) << std::to_string(m.T[1][0]) << " ";
+    strm << std::setw(wid) << std::to_string(m.T[1][1]) << " ";
+    strm << std::setw(wid) << std::to_string(m.T[1][2]) << " ";
+    strm << std::setw(wid) << std::to_string(m.T[1][3]) << "\n";
+    strm << std::setw(wid) << std::to_string(m.T[2][0]) << " ";
+    strm << std::setw(wid) << std::to_string(m.T[2][1]) << " ";
+    strm << std::setw(wid) << std::to_string(m.T[2][2]) << " ";
+    strm << std::setw(wid) << std::to_string(m.T[2][3]) << "\n";
+    strm << std::setw(wid) << std::to_string(m.T[3][0]) << " ";
+    strm << std::setw(wid) << std::to_string(m.T[3][1]) << " ";
+    strm << std::setw(wid) << std::to_string(m.T[3][2]) << " ";
+    strm << std::setw(wid) << std::to_string(m.T[3][3]) << "\n";
+    return strm;
 }
 
 struct matrix I() {

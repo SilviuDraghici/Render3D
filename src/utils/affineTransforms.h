@@ -15,7 +15,7 @@ struct matrix RotZ(double theta);
 
 void invert(double *T, double *Tinv);
 
-void printmatrix(struct matrix matrix);
+void printmatrix(struct matrix &matrix);
 
 void cosWeightedSample(struct point *n, struct point *d);
 #endif

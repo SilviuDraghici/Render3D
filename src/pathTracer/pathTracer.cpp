@@ -30,59 +30,56 @@ int curr_light;
 
 inline void explicit_light_sample(struct ray *ray, Object *obj, struct point *p,
                                   struct point *n, Object **explt) {
-    if (ray->pt.isLightRay == 0) {
-        // ray from intersection point to light source
-        struct ray pToLight;
-        pToLight.p0 = *p;
+    // ray from intersection point to light source
+    struct ray pToLight;
+    pToLight.p0 = *p;
 
-        double prob = 0;
-        double dice = drand48();
-        for (int i = 0; i < num_lights; i++) {
-            prob += light_listt[i]->pt.LSweight;
-            if (dice < prob) {
-                curr_light = i;
-                break;
-            }
-        }
-
-        double x, y, z;
-        light_listt[curr_light]->randomPoint(&x, &y, &z);
-        pToLight.d.x = x - p->x;  // 0 - p.px;
-        pToLight.d.y = y - p->y;  // 9.95 - p.py;
-        pToLight.d.z = z - p->z;  // 5 - p.pz;
-        pToLight.d.w = 1;
-
-        double light_lambda;
-        Object *obstruction = NULL;
-        struct point lightp;
-        struct point nls;
-        double La, Lb;
-
-        findFirstHit(scene, &pToLight, &light_lambda, obj, &obstruction,
-                     &lightp, &nls, &La, &Lb);
-
-        // printf("source: %s, obstruction: %s\n", obj->label,
-        // obstruction->label);
-        *explt = light_listt[curr_light];
-        if (obstruction == light_listt[curr_light]) {
-            // printf("total weight: %f\n", total_weight);
-            double A = total_weight * light_listt[curr_light]->pt.LSweight;
-            double dxd = pToLight.d.x * pToLight.d.x +
-                         pToLight.d.y * pToLight.d.y +
-                         pToLight.d.z * pToLight.d.z;
-            normalize(&pToLight.d);
-            double n_dot_l = fabs(dot(n, &pToLight.d));
-            double nls_dot_l = fabs(dot(&nls, &pToLight.d));
-            double w = MIN(1, (A * n_dot_l * nls_dot_l) / (dxd));
-
-            struct color light_col;
-            // set light color
-            textureMap(light_listt[curr_light], La, Lb, &light_col);
-
-            ray->pt.expl_col += ray->pt.ray_col * light_col * w;
+    double prob = 0;
+    double dice = drand48();
+    for (int i = 0; i < num_lights; i++) {
+        prob += light_listt[i]->pt.LSweight;
+        if (dice < prob) {
+            curr_light = i;
+            break;
         }
     }
-    // end of explicit light sampling
+
+    double x, y, z;
+    light_listt[curr_light]->randomPoint(&x, &y, &z);
+    pToLight.d.x = x - p->x;
+    pToLight.d.y = y - p->y;
+    pToLight.d.z = z - p->z;
+    pToLight.d.w = 1;
+
+    double light_lambda;
+    Object *obstruction = NULL;
+    struct point lightp;
+    struct point nls;
+    double La, Lb;
+
+    findFirstHit(scene, &pToLight, &light_lambda, obj, &obstruction,
+                 &lightp, &nls, &La, &Lb);
+
+    // printf("source: %s, obstruction: %s\n", obj->label,
+    // obstruction->label);
+    *explt = light_listt[curr_light];
+    if (obstruction == light_listt[curr_light] && dot(&pToLight.d, &nls) < 0) {
+        // printf("total weight: %f\n", total_weight);
+        double A = total_weight * light_listt[curr_light]->pt.LSweight;
+        double dxd = pToLight.d.x * pToLight.d.x +
+                     pToLight.d.y * pToLight.d.y +
+                     pToLight.d.z * pToLight.d.z;
+        normalize(&pToLight.d);
+        double n_dot_l = fabs(dot(n, &pToLight.d));
+        double nls_dot_l = fabs(dot(&nls, &pToLight.d));
+        double w = MIN(1, (A * n_dot_l * nls_dot_l) / (dxd));
+
+        struct color light_col;
+        // set light color
+        textureMap(light_listt[curr_light], La, Lb, &light_col);
+
+        ray->pt.expl_col += ray->pt.ray_col * light_col * w;
+    }
 }
 
 void pathTraceMain(int argc, char *argv[]) {
@@ -289,7 +286,7 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os,
     Object *explt = explicit_l;
 
     if (depth > scene->pt_max_depth)  // Max recursion depth reached. Return black (no
-                              // light coming into pixel from this path).
+                                      // light coming into pixel from this path).
     {
         *col = ray->pt.expl_col;  // These are accumulators, initialized at 0.
                                   // Whenever we find a source of light these
@@ -330,13 +327,12 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os,
     ray->pt.ray_col *= objcol;
 
     // if hit light source
-    if (obj->isLightSource) {
+    if (obj->isLightSource && dot(&ray->d, &n) < 0) {
         *col = ray->pt.ray_col + ray->pt.expl_col;
-        if (ray->pt.isLightRay == 0) {
-            if (explt == obj) {  // the ray cast is the same as explicit
-                *col = ray->pt.expl_col;
-            }
+        if (explt == obj) {  // the ray cast is the same as explicit
+            *col = ray->pt.expl_col;
         }
+
         return;
     }
 

@@ -3,12 +3,13 @@
 #include <algorithm>
 #include <iostream>
 #include <queue>
+#include <stack>
 
 #include "ray.h"
 
 //debug
 double num_intersection_tests;
-double num_intersect_calls;
+double num_bvh_searches;
 
 int num_buckets = 20;
 struct bucket {
@@ -16,20 +17,7 @@ struct bucket {
     Bounds bound;
 };
 
-Axis BVH_Node::longestAxis() const {
-    double x = max_x() - min_x();
-    double y = max_y() - min_y();
-    double z = max_z() - min_z();
-    if (x > y && x > z) {
-        return Axis::X;
-    } else if (y > z) {
-        return Axis::Y;
-    } else {
-        return Axis::Z;
-    }
-}
-
-inline void union_bounds(BVH_Node *a, BVH_Node *b, BoundingBox *union_box) {
+inline void union_bounds(Primitive *a, Primitive *b, BoundingBox *union_box) {
     //assigns the bounds of union_box to fit a and b
     union_box->b_min_x = MIN(a->min_x(), b->min_x());
     union_box->b_min_y = MIN(a->min_y(), b->min_y());
@@ -37,25 +25,6 @@ inline void union_bounds(BVH_Node *a, BVH_Node *b, BoundingBox *union_box) {
     union_box->b_max_x = MAX(a->max_x(), b->max_x());
     union_box->b_max_y = MAX(a->max_y(), b->max_y());
     union_box->b_max_z = MAX(a->max_z(), b->max_z());
-}
-
-void union_bounds(Bounds &a, point &b, Bounds &union_box) {
-    union_box.min.x = MIN(a.min.x, b.x);
-    union_box.min.y = MIN(a.min.y, b.y);
-    union_box.min.z = MIN(a.min.z, b.z);
-    union_box.max.x = MAX(a.max.x, b.x);
-    union_box.max.y = MAX(a.max.y, b.y);
-    union_box.max.z = MAX(a.max.z, b.z);
-}
-
-void union_bounds(Bounds &a, Bounds &b, Bounds &union_box) {
-    //assigns the bounds of union_box to fit a and b
-    union_box.min.x = MIN(a.min.x, b.min.x);
-    union_box.min.y = MIN(a.min.y, b.min.y);
-    union_box.min.z = MIN(a.min.z, b.min.z);
-    union_box.max.x = MAX(a.max.x, b.max.x);
-    union_box.max.y = MAX(a.max.y, b.max.y);
-    union_box.max.z = MAX(a.max.z, b.max.z);
 }
 
 Axis Bounds::longestAxis() const {
@@ -92,22 +61,20 @@ double BoundingBox::max_x() const { return b_max_x; }
 double BoundingBox::max_y() const { return b_max_y; }
 double BoundingBox::max_z() const { return b_max_z; }
 
-BVH_Node *BoundingBox::intersect(struct ray *ray, double *lambda,
-                                 point *bary_coords) {
+double BoundingBox::intersect(struct ray *ray, double lambda) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical box.
-
-    // debug :
-    num_intersection_tests++;
 
     if ((b_min_x < ray->p0.x && ray->p0.x < b_max_x) &&
         (b_min_y < ray->p0.y && ray->p0.y < b_max_y) &&
         (b_min_z < ray->p0.z && ray->p0.z < b_max_z)) {
-        *lambda = THR;
-        return NULL;
+        //ray starts inside the bounding box
+        return THR;
     }
 
     point p;
+
+    lambda = INFINITY;
 
     // current intersection lambda
     double b_lambda;
@@ -118,69 +85,69 @@ BVH_Node *BoundingBox::intersect(struct ray *ray, double *lambda,
         rayPosition(ray, b_lambda, &p);
         if ((b_min_y < p.y && p.y < b_max_y) &&
             (b_min_z < p.z && p.z < b_max_z)) {
-            *lambda = b_lambda;
+            lambda = b_lambda;
         }
     }
 
     // y-z plane box face at max_x
     b_lambda = (b_max_x - ray->p0.x) / ray->d.x;
-    if (THR < b_lambda && b_lambda < *lambda) {
+    if (THR < b_lambda && b_lambda < lambda) {
         rayPosition(ray, b_lambda, &p);
         if ((b_min_y < p.y && p.y < b_max_y) &&
             (b_min_z < p.z && p.z < b_max_z)) {
-            *lambda = b_lambda;
+            lambda = b_lambda;
         }
     }
 
     // x-z plane box face at min_y
     b_lambda = (b_min_y - ray->p0.y) / ray->d.y;
-    if (THR < b_lambda && b_lambda < *lambda) {
+    if (THR < b_lambda && b_lambda < lambda) {
         rayPosition(ray, b_lambda, &p);
         if ((b_min_x < p.x && p.x < b_max_x) &&
             (b_min_z < p.z && p.z < b_max_z)) {
-            *lambda = b_lambda;
+            lambda = b_lambda;
         }
     }
 
     // x-z plane box face at max_y
     b_lambda = (b_max_y - ray->p0.y) / ray->d.y;
-    if (THR < b_lambda && b_lambda < *lambda) {
+    if (THR < b_lambda && b_lambda < lambda) {
         rayPosition(ray, b_lambda, &p);
         if ((b_min_x < p.x && p.x < b_max_x) &&
             (b_min_z < p.z && p.z < b_max_z)) {
-            *lambda = b_lambda;
+            lambda = b_lambda;
         }
     }
 
     // x-y plane box face at min_z
     b_lambda = (b_min_z - ray->p0.z) / ray->d.z;
-    if (THR < b_lambda && b_lambda < *lambda) {
+    if (THR < b_lambda && b_lambda < lambda) {
         rayPosition(ray, b_lambda, &p);
         if ((b_min_x < p.x && p.x < b_max_x) &&
             (b_min_y < p.y && p.y < b_max_y)) {
-            *lambda = b_lambda;
+            lambda = b_lambda;
         }
     }
 
     // x-y plane box face at max_z
     b_lambda = (b_max_z - ray->p0.z) / ray->d.z;
-    if (THR < b_lambda && b_lambda < *lambda) {
+    if (THR < b_lambda && b_lambda < lambda) {
         rayPosition(ray, b_lambda, &p);
         if ((b_min_x < p.x && p.x < b_max_x) &&
             (b_min_y < p.y && p.y < b_max_y)) {
-            *lambda = b_lambda;
+            lambda = b_lambda;
         }
     }
 
-    return NULL;
+    return lambda;
 }
 
-bool BoundingBox::isFace() { return false; }
+bool BoundingBox::isprim() { return false; }
 
-BVH_Node *midsplit(PrimitiveData prims[], int start, int end) {
+Primitive *midsplit(PrimitiveData prims[], int start, int end) {
     int num_prims = end - start;
     if (num_prims == 1) {
-        return prims[start].primitive;
+        return prims[start].mprimitive;
     }
 
     BoundingBox *b_box = new BoundingBox;
@@ -214,7 +181,7 @@ BVH_Node *midsplit(PrimitiveData prims[], int start, int end) {
     return b_box;
 }
 
-BVH_Node *SAH_split(PrimitiveData prims[], int start, int end) {
+Primitive *SAH_split(PrimitiveData prims[], int start, int end) {
     int num_prims = end - start;
     if (num_prims <= 4) {
         return midsplit(prims, start, end);
@@ -302,60 +269,112 @@ void BVH::midsplit_build(PrimitiveData prims[], int num_prims) {
 
 void BVH::set_search_method(SearchMethod search_method) {
     if (search_method == SearchMethod::BFS) {
-        search_ptr = &BVH::bfs_pqueue_search;
+        search_ptr = &BVH::bfs;
     } else if (search_method == SearchMethod::DFS) {
-        search_ptr = &BVH::dfs_search;
+        search_ptr = &BVH::dfs;
     }
 }
 
-BVH_Node *BVH::bfs_pqueue_search(struct ray *ray) {
-    //std::cout << "pqueue search\n";
+Primitive *BVH::bfs(struct ray *ray) {
     double lambda = INFINITY;
-    point bary_coords;
-    BVH_Node *closest_prim = NULL;
+    Primitive *closest_prim = NULL;
 
-    std::priority_queue<PQ_Node, std::vector<PQ_Node>, std::greater<PQ_Node>> bvh_queue;
+    std::priority_queue<Search_Node, std::vector<Search_Node>, std::greater<Search_Node>> bvh_queue;
 
-    root->intersect(ray, &lambda, &bary_coords);
+    lambda = root->intersect(ray, lambda);
     if (lambda < INFINITY) {
         bvh_queue.emplace(lambda, root);
 
+        //std::cout << "root:" << lambda << "\n";
+
         // debug :
-        num_intersect_calls++;
+        num_bvh_searches++;
+        num_intersection_tests++;
     }
 
-    BVH_Node *currentNode;
+    Primitive *currentNode;
     BoundingBox *currentBox;
     while (!bvh_queue.empty()) {
         currentNode = bvh_queue.top().node;
         bvh_queue.pop();
 
-        if (currentNode->isFace()) {
+        if (currentNode->isprim()) {
             closest_prim = currentNode;
             break;
         }
 
+        // debug :
+        num_intersection_tests += 2;
+
         currentBox = ((BoundingBox *)currentNode);
 
         lambda = INFINITY;
-        currentBox->c1->intersect(ray, &lambda, &bary_coords);
+        lambda = currentBox->c1->intersect(ray, lambda);
         if (lambda < INFINITY) {
+            if (lambda < THR) std::cout << ((Object *)currentBox->c1)->label << " " << lambda << "\n";
             bvh_queue.emplace(lambda, currentBox->c1);
         }
 
         lambda = INFINITY;
-        currentBox->c2->intersect(ray, &lambda, &bary_coords);
+        lambda = currentBox->c2->intersect(ray, lambda);
         if (lambda < INFINITY) {
+            if (lambda < THR) std::cout << ((Object *)currentBox->c2)->label << " " << lambda << "\n";
             bvh_queue.emplace(lambda, currentBox->c2);
         }
     }
     return closest_prim;
 }
 
-BVH_Node *BVH::dfs_search(struct ray *ray) {
-    //todo
-    std::cerr << "DFS search not implemented!!!\n";
-    return NULL;
+Primitive *BVH::dfs(struct ray *ray) {
+    double lambda = INFINITY, l1, l2;
+    Primitive *closest_prim = NULL;
+
+    std::stack<Search_Node> bvh_stack;
+
+    l1 = root->intersect(ray, l1);
+    if (l1 < INFINITY) {
+        bvh_stack.emplace(l1, root);
+
+        // debug :
+        num_bvh_searches++;
+        num_intersection_tests++;
+    }
+
+    Primitive *currentNode;
+    BoundingBox *currentBox;
+    while (!bvh_stack.empty()) {
+        currentNode = bvh_stack.top().node;
+        l1 = bvh_stack.top().lambda;
+        bvh_stack.pop();
+
+        if (l1 < lambda) {
+            if (currentNode->isprim()) {
+                closest_prim = currentNode;
+                lambda = l1;
+            } else {
+                // debug :
+                num_intersection_tests += 2;
+
+                currentBox = ((BoundingBox *)currentNode);
+
+                l1 = INFINITY;
+                l1 = currentBox->c1->intersect(ray, l1);
+
+                l2 = INFINITY;
+                l2 = currentBox->c2->intersect(ray, l2);
+
+                if (l1 < l2) {
+                    if (l2 < lambda) bvh_stack.emplace(l2, currentBox->c2);
+                    if (l1 < lambda) bvh_stack.emplace(l1, currentBox->c1);
+                } else {
+                    if (l1 < lambda) bvh_stack.emplace(l1, currentBox->c1);
+                    if (l2 < lambda) bvh_stack.emplace(l2, currentBox->c2);
+                }
+            }
+        }
+    }
+
+    return closest_prim;
 }
 
 int comp_face_max_x(const void *a, const void *b) {
@@ -374,4 +393,32 @@ int comp_face_max_z(const void *a, const void *b) {
     PrimitiveData *pa = (PrimitiveData *)a, *pb = (PrimitiveData *)b;
     double result = pa->bound.max.z - pb->bound.max.z;
     return result > 0;
+}
+
+void printNode(Primitive *node, int space) {
+    if (node->isprim()) {
+        for (int i = 0; i < space; i++) {
+            std::cout << "               ";
+        }
+        point min = point(node->min_x(), node->min_y(), node->min_z());
+        point max = point(node->max_x(), node->max_y(), node->max_z());
+        std::cout << ((Object *)node)->label << " " << min << " " << max << "\n";
+        return;
+    }
+
+    printNode(((BoundingBox *)node)->c1, space + 1);
+
+    for (int i = 0; i < space; i++) {
+        std::cout << "                   ";
+    }
+    point min = point(node->min_x(), node->min_y(), node->min_z());
+    point max = point(node->max_x(), node->max_y(), node->max_z());
+    std::cout << min << " " << max << "\n";
+
+    printNode(((BoundingBox *)node)->c2, space + 1);
+}
+
+void BVH::print() {
+    if (root != NULL)
+        printNode(root, 0);
 }

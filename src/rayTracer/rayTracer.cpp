@@ -12,9 +12,8 @@
 #include "../utils/mappings.h"
 #include "../utils/objects.h"
 #include "../utils/ray.h"
-#include "../utils/utils.h"
 #include "../utils/timer.h"
-
+#include "../utils/utils.h"
 
 //#define DEBUG
 
@@ -94,21 +93,20 @@ void rayTraceMain(int argc, char *argv[]) {
     color background = 0;
 
     std::cout << "Rendering...\n";
-    
+
     //debug :
     num_intersection_tests = 0;
-    num_intersect_calls = 0;
+    num_bvh_searches = 0;
     Timer raytracing_timer("Raytracing");
     raytracing_timer.start();
 
     double start_j = 0, end_j = scene->sx, start_i = 0, end_i = scene->sx;
 #ifdef DEBUG
-    start_i = 447, start_j = 552;
+    start_i = 831, start_j = 815;
     end_i = start_i + 1, end_j = start_j + 1;
 #endif
 
-    for (int j = start_j; j < end_j;
-         j++) {  // For each of the pixels in the image
+    for (int j = start_j; j < end_j; j++) {  // For each of the pixels in the image
         for (int i = start_i; i < end_i; i++) {
 #ifdef DEBUG
             printf("-------pixel: (%d %d)-------\n", i, j);
@@ -136,7 +134,7 @@ void rayTraceMain(int argc, char *argv[]) {
 
     //debug :
     raytracing_timer.print_elapsed_time(std::cerr);
-    std::cerr << "Average number of intersection tests: " << num_intersection_tests/num_intersect_calls << "\n";
+    std::cerr << "Average number of intersection tests: " << num_intersection_tests / num_bvh_searches << "\n";
 }
 
 void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {

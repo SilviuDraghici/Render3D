@@ -1,14 +1,14 @@
 - migrate code to c++ for operator overloading - done
 - break source up into smaller files - done
 - merge Raytracer and Pathtracer - done
-- turn object struct into an Object class
+- turn object struct into an Object class - done
 - rewrite Paco's code
 - implement texture mapping for meshes
 - add support for meshes with non-triangular polygons
-- implement acceleration using BVH or Octrees (or both)
+- implement acceleration using BVH or Octrees (or both) - done
 - implement bi-directional PathTracing
 - move buildscene data from code to markup sheet (or maybe json)
-- add camera info to buildscene
+- add camera info to buildscene - done
 - implement ray-marching for:
   - volumetrics
   - sub-surface scattering

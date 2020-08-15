@@ -13,7 +13,7 @@ rm -rf frames/*
 for i in `seq -w 1 239`
 do
     echo_err "Frame $i"
-    ./Render3D 0 $RES 200 zz.ppm $i
+    ./Render3D 0 $RES 100 zz.ppm $i
     mv zz.ppm frames/$i.ppm
     echo_err
 done

@@ -29,7 +29,35 @@ struct PT_properties {
                       // weight (volume)
 };
 
-class Object {
+class Bounds {
+   public:
+    point min, max;
+    Bounds(){
+        min.x = min.y = min.z = INFINITY;
+        max.x = max.y = max.z = -INFINITY;
+    }
+    Axis longestAxis() const;
+    double offset(const point &p, Axis dim) const;
+    double surface_area() const;
+};
+
+void union_bounds(Bounds &a, point &b, Bounds &union_box);
+void union_bounds(Bounds &a, Bounds &b, Bounds &union_box);
+
+class Primitive {
+   public:
+    virtual double intersect(struct ray *r, double lambda) = 0;
+    virtual bool isprim() = 0;
+    virtual double min_x() const = 0;
+    virtual double min_y() const = 0;
+    virtual double min_z() const = 0;
+    virtual double max_x() const = 0;
+    virtual double max_y() const = 0;
+    virtual double max_z() const = 0;
+    virtual Axis longestAxis() const;
+};
+
+class Object : public Primitive{
    public:
     char label[20];  // for debugging
 
@@ -54,6 +82,8 @@ class Object {
                         // should be lit.
     int isLightSource;  // Flag to indicate if this is an area light source
 
+    Bounds w_bound; // the bounds for this object in world coordinates
+
     Object(double r, double g, double b);
     void set_color(double r, double g, double b);
     void set_rayTrace_properties(double ambient, double diffuse,
@@ -62,12 +92,24 @@ class Object {
     void set_pathTrace_properties(double diffuse, double reflect,
                                   double refract);
 
+    virtual void set_canonical_bounds();
+    void invert_and_bound(); // calculates inverse matrix and sets w_bound
+
     virtual void intersect(struct ray *r, double *lambda, struct point *p,
                            struct point *n, double *a, double *b) = 0;
 
     virtual void surfaceCoordinates(double a, double b, double *x, double *y,
                                     double *z);
     virtual void randomPoint(double *x, double *y, double *z);
+
+    double intersect(struct ray *r, double lambda);
+    bool isprim();
+    double min_x() const;
+    double min_y() const;
+    double min_z() const;
+    double max_x() const;
+    double max_y() const;
+    double max_z() const;
 
     Object *next = NULL;
 };
@@ -77,6 +119,7 @@ class Plane : public Object {
     Plane(double r, double g, double b);
     void intersect(struct ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
+    void set_canonical_bounds();
     void surfaceCoordinates(double a, double b, double *x, double *y,
                             double *z);
     void randomPoint(double *x, double *y, double *z);
@@ -87,6 +130,7 @@ class Sphere : public Object {
     using Object::Object;
     void intersect(struct ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
+    void set_canonical_bounds();
     void surfaceCoordinates(double a, double b, double *x, double *y,
                             double *z);
     void randomPoint(double *x, double *y, double *z);
@@ -119,7 +163,6 @@ class Polygon : public Object {
     Polygon(double r, double g, double b);
     void intersect(struct ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
-
     void setNumPoints(int num);
     void addPoint(point point);
     void addPoint(double x, double y, double z);
@@ -138,8 +181,6 @@ struct pointLS {
     struct point p0;       // Light source location
     struct pointLS *next;  // Pointer to next light in the scene
 };
-
-void insertObject(Object *o, Object **list);
 
 void normalTransform(struct point *n_orig, struct point *n_transformed,
                      Object *obj);

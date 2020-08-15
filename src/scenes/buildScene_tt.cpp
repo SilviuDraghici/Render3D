@@ -8,12 +8,13 @@ struct textureNode *t_list = NULL;
 
 const char *checkers = "scenes/checkers.ppm";
 
-//const char *mesh_file = "scenes/triangular_prism.obj";
-//const char *mesh_file = "scenes/tea_pot.obj";
-//const char *mesh_file = "scenes/tea_pot_N.obj";
-const char *mesh_file = "scenes/wineglass.obj";
-//const char *mesh_file = "scenes/bunny.obj";
-//const char *mesh_file = "scenes/hand.obj";
+//const char *mesh_file = "scenes/triangular_prism_8.obj";
+//const char *mesh_file = "scenes/tea_pot_992.obj";
+//const char *mesh_file = "scenes/tea_pot_N_992.obj";
+const char *mesh_file = "scenes/wineglass_13k.obj";
+//const char *mesh_file = "scenes/bunny_69k.obj";
+//const char *mesh_file = "scenes/hand_134k.obj";
+//const char *mesh_file = "scenes/lucy_1M.obj";
 
 
 //dragon meshes
@@ -21,7 +22,6 @@ const char *mesh_file = "scenes/wineglass.obj";
 //const char *mesh_file = "scenes/dragon_108k.obj";
 //const char *mesh_file = "scenes/dragon_435k.obj";
 //const char *mesh_file = "scenes/dragon_871k.obj";
-
 
 drand48();
 drand48();
@@ -34,7 +34,7 @@ scene->cam_gaze = scene->cam_gaze_point - scene->cam_pos;
 //scene->cam_up = point(0, 1, 0);
 scene->cam_focal = -3;
 
-scene->rt_max_depth = 1;
+scene->rt_max_depth = 5;
 scene->pt_max_depth = 100;
 
 o = new Mesh(1.0, 1.0, 1.0);
@@ -62,7 +62,6 @@ o = new Plane(.75, .75, .75);
 
 bool draw_box = 1;//scene->path_tracing_mode;
 if (draw_box){
-
 
     // Left
     o = new Plane(.75, .25, .25);
@@ -143,24 +142,11 @@ o->refl_sig = 0.0;
 o->r_index = 1.54;
 strcpy(o->label, "Top Light");
 //o->T *= Sc(0.5, 2.5, 1);
-o->T *= RotX(-PI / 4);
-o->T *= RotY(PI / 4);
+o->T *= RotX(PI / 4);
+o->T *= RotY(-PI * 3 / 4 + scene->frame * PI / 120);
 o->T *= Tr(p.x*1.01, p.y*1.01, p.z*1.01);
 invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
 o->isLightSource = 1;
-o->pt.LSweight *= 4;  // <- scale weight by scale
-insertObject(o, &(scene->object_list));
-
-o = new Plane(0.0, 0.0, 0.0);
-o->set_pathTrace_properties(1.0, 0.0, 0.0);
-o->refl_sig = 0.0;
-o->r_index = 1.54;
-strcpy(o->label, "Top Light");
-o->T *= Sc(1.3, 1.3, 1.3);
-o->T *= RotX(-PI / 4);
-o->T *= RotY(PI / 4);
-o->T *= Tr(p.x*1.02, p.y*1.02, p.z*1.02);
-invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
 o->pt.LSweight *= 4;  // <- scale weight by scale
 insertObject(o, &(scene->object_list));
 

@@ -7,8 +7,6 @@
 
 #include "ray.h"
 
-//#define BB BoundingBox_Visible
-
 //#define DEBUG
 
 TriangleFace::TriangleFace() {}
@@ -34,13 +32,10 @@ double TriangleFace::max_x() const{ return MAX(p1.x, MAX(p2.x, p3.x)); }
 double TriangleFace::max_y() const{ return MAX(p1.y, MAX(p2.y, p3.y)); }
 double TriangleFace::max_z() const{ return MAX(p1.z, MAX(p2.z, p3.z)); }
 
-BVH_Node *TriangleFace::intersect(struct ray *ray, double *lambda,
+void TriangleFace::intersect(struct ray *ray, double *lambda,
                                   point *bary_coords) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified triangle.
-
-    // debug :
-    num_intersection_tests++;
 
     point e12 = p2 - p1;
     point e23 = p3 - p2;
@@ -55,7 +50,7 @@ BVH_Node *TriangleFace::intersect(struct ray *ray, double *lambda,
     double t_lambda = r_dot_n / d_dot_n;
 
     if (t_lambda < THR)  //|| *lambda < t_lambda)
-        return NULL;     // intersection with plane is negative
+        return;     // intersection with plane is negative
 
     double u, v, w;
 
@@ -65,29 +60,73 @@ BVH_Node *TriangleFace::intersect(struct ray *ray, double *lambda,
     point v1i = pi - p1;
     point crossp = cross(&e12, &v1i);
     u = dot(&crossp, &normal);
-    if (u < 0) return NULL;  // outside first edge
+    if (u < 0) return;  // outside first edge
 
     // e23 has already been calculated
     point v2i = pi - p2;
     crossp = cross(&e23, &v2i);
     v = dot(&crossp, &normal);
-    if (v < 0) return NULL;  // outside second edge
+    if (v < 0) return;  // outside second edge
 
     point e31 = p1 - p3;
     point v3i = pi - p3;
     crossp = cross(&e31, &v3i);
     w = dot(&crossp, &normal);
-    if (w < 0) return NULL;  // outside third edge
+    if (w < 0) return;  // outside third edge
 
     // intersection is within triangle
     bary_coords->z = u / denom;
     bary_coords->x = v / denom;
     bary_coords->y = w / denom;
     *lambda = t_lambda;
-    return this;
+    return;
 }
 
-bool TriangleFace::isFace() { return true; }
+double TriangleFace::intersect(struct ray *ray, double lambda) {
+    // Computes and returns the value of 'lambda' at the intersection
+    // between the specified ray and the specified triangle.
+
+    point e12 = p2 - p1;
+    point e23 = p3 - p2;
+
+    point normal = cross(&e12, &e23);
+
+    // ray plane intersection calculation
+    point pi, r = p1 - ray->p0;
+    double d_dot_n = dot(&ray->d, &normal);
+    double r_dot_n = dot(&r, &normal);
+    double t_lambda = r_dot_n / d_dot_n;
+
+    if (t_lambda < THR || lambda < t_lambda)
+        return INFINITY;     // intersection with plane is negative 
+                             // or larger than current lambda
+
+    double u, v, w;
+
+    rayPosition(ray, t_lambda, &pi);
+
+    // e12 has already been calculated
+    point v1i = pi - p1;
+    point crossp = cross(&e12, &v1i);
+    u = dot(&crossp, &normal);
+    if (u < 0) return INFINITY;  // outside first edge
+
+    // e23 has already been calculated
+    point v2i = pi - p2;
+    crossp = cross(&e23, &v2i);
+    v = dot(&crossp, &normal);
+    if (v < 0) return INFINITY;  // outside second edge
+
+    point e31 = p1 - p3;
+    point v3i = pi - p3;
+    crossp = cross(&e31, &v3i);
+    w = dot(&crossp, &normal);
+    if (w < 0) return INFINITY;  // outside third edge
+
+    return t_lambda;
+}
+
+bool TriangleFace::isprim() { return true; }
 
 point TriangleFace::normal(point *bary_coords) {
     point e12 = p2 - p1;
@@ -121,186 +160,8 @@ void BoundingBox::setBounds(double min_x, double max_x, double min_y,
     this->b_min_z = min_z, this->b_max_z = max_z;
 }
 
-BoundingBox_Visible::BoundingBox_Visible() {
-    col = color(drand48(), drand48(), drand48());
-}
-
-color BoundingBox_Visible::getCol() { return col; }
-
-BVH_Node *BoundingBox_Visible::intersect(struct ray *ray, double *lambda,
-                                         point *bary_coords) {
-    // Computes and returns the value of 'lambda' at the intersection
-    // between the specified ray and the specified canonical box.
-
-    // debug :
-    num_intersection_tests++;
-
-    point p;
-    color col = getCol();
-    bary_coords->x = col.R;
-    bary_coords->y = col.G;
-    bary_coords->z = col.B;
-    // current intersection lambda
-    double b_lambda;
-    double a, b;
-    // y-z plane box face at min_x
-    b_lambda = (b_min_x - ray->p0.x) / ray->d.x;
-    rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (b_min_y < p.y && p.y < b_max_y) &&
-        (b_min_z < p.z && p.z < b_max_z)) {
-        a = (p.y - b_min_y) / (b_max_y - b_min_y);
-        b = (p.z - b_min_z) / (b_max_z - b_min_z);
-
-        if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
-            (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
-            *lambda = b_lambda;
-            bary_coords->w = -1;
-#if 0
-                printf("hit box %f\n", *lambda);
-#endif
-            return NULL;
-        }
-        *lambda = b_lambda;
-    }
-
-    // y-z plane box face at max_x
-    b_lambda = (b_max_x - ray->p0.x) / ray->d.x;
-    rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (b_min_y < p.y && p.y < b_max_y) &&
-        (b_min_z < p.z && p.z < b_max_z)) {
-        a = (p.y - b_min_y) / (b_max_y - b_min_y);
-        b = (p.z - b_min_z) / (b_max_z - b_min_z);
-        if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
-            (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
-            *lambda = b_lambda;
-            bary_coords->w = -1;
-#if 0
-                printf("hit box %f\n", *lambda);
-#endif
-            return NULL;
-        }
-        if (b_lambda < *lambda) {
-            *lambda = b_lambda;
-        }
-    }
-
-    // x-z plane box face at min_y
-    b_lambda = (b_min_y - ray->p0.y) / ray->d.y;
-    rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (b_min_x < p.x && p.x < b_max_x) &&
-        (b_min_z < p.z && p.z < b_max_z)) {
-        a = (p.x - b_min_x) / (b_max_x - b_min_x);
-        b = (p.z - b_min_z) / (b_max_z - b_min_z);
-        if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
-            (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
-            *lambda = b_lambda;
-            bary_coords->w = -1;
-#if 0
-                printf("hit box %f\n", *lambda);
-#endif
-            return NULL;
-        }
-        if (b_lambda < *lambda) {
-            *lambda = b_lambda;
-        }
-    }
-
-    // x-z plane box face at max_y
-    b_lambda = (b_max_y - ray->p0.y) / ray->d.y;
-    rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (b_min_x < p.x && p.x < b_max_x) &&
-        (b_min_z < p.z && p.z < b_max_z)) {
-        a = (p.x - b_min_x) / (b_max_x - b_min_x);
-        b = (p.z - b_min_z) / (b_max_z - b_min_z);
-        if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
-            (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
-            *lambda = b_lambda;
-            bary_coords->w = -1;
-#if 0
-               printf("hit box %f\n", *lambda);
-#endif
-            return NULL;
-        }
-        if (b_lambda < *lambda) {
-            *lambda = b_lambda;
-        }
-    }
-
-    // x-y plane box face at min_z
-    b_lambda = (b_min_z - ray->p0.z) / ray->d.z;
-    rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (b_min_x < p.x && p.x < b_max_x) &&
-        (b_min_y < p.y && p.y < b_max_y)) {
-        a = (p.x - b_min_x) / (b_max_x - b_min_x);
-        b = (p.y - b_min_y) / (b_max_y - b_min_y);
-        if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
-            (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
-            *lambda = b_lambda;
-            bary_coords->w = -1;
-#if 0
-                printf("hit box %f\n", *lambda);
-#endif
-            return NULL;
-        }
-        if (b_lambda < *lambda) {
-            *lambda = b_lambda;
-        }
-    }
-
-    // x-y plane box face at max_z
-    b_lambda = (b_max_z - ray->p0.z) / ray->d.z;
-    rayPosition(ray, b_lambda, &p);
-    if (THR < b_lambda && (b_min_x < p.x && p.x < b_max_x) &&
-        (b_min_y < p.y && p.y < b_max_y)) {
-        a = (p.x - b_min_x) / (b_max_x - b_min_x);
-        b = (p.y - b_min_y) / (b_max_y - b_min_y);
-        if ((0 <= a && a <= 0 + width || 1 - width <= a && a <= 1) ||
-            (0 <= b && b <= 0 + width || 1 - width <= b && b <= 1)) {
-            *lambda = b_lambda;
-            bary_coords->w = -1;
-#if 0
-                printf("hit box %f\n", *lambda);
-#endif
-            return NULL;
-        }
-        if (b_lambda < *lambda) {
-            *lambda = b_lambda;
-        }
-    }
-
-    if (*lambda < INFINITY) {
-        *lambda = INFINITY;
-        BVH_Node *c1_result = c1->intersect(ray, lambda, bary_coords);
-
-        if (c2 == NULL || bary_coords->w == -1) {
-            return c1_result;
-        } else {
-            double c_lambda = INFINITY;
-            point c_bary_coords;
-            BVH_Node *c2_result = c2->intersect(ray, &c_lambda, &c_bary_coords);
-#if 0 
-                printf("hit box %f %f \n", *lambda, c_lambda);
-#endif
-            if (c_lambda < *lambda || c_bary_coords.w == -1) {
-                *lambda = c_lambda;
-                *bary_coords = c_bary_coords;
-                return c2_result;
-            } else {
-#if 0
-                printf("else %f %f\n", *lambda, bary_coords->w);
-#endif
-                return c1_result;
-            }
-        }
-    }
-
-    return NULL;
-}
-
 void Mesh::setMesh(const char *filename) {
     frontAndBack = 0;
-
-    box = new BB;
 
     std::string line;
     std::ifstream mesh_obj(filename);
@@ -373,7 +234,7 @@ void Mesh::setMesh(const char *filename) {
         getline(mesh_obj, line);
         sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
         x = (x - avg_x) / scale, y = (y - avg_y) / scale,
-        z = (z - avg_z) / scale;
+        z = -(z - avg_z) / scale;
         vertices[i] = point(x, y, z);
     }
 
@@ -393,7 +254,7 @@ void Mesh::setMesh(const char *filename) {
             getline(mesh_obj, line);
             // std::cout << line << "\n";
             sscanf(line.c_str(), "vn %lf %lf %lf", &x, &y, &z);
-            normals[i] = point(x, y, z);
+            normals[i] = point(x, y, -z);
         }
     }
 
@@ -422,7 +283,7 @@ void Mesh::setMesh(const char *filename) {
             sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3);
             if (num_normals > 1) {
                 faces[i] = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
-                ((TriangleFace_N *)faces[i].primitive)->setNormals(normals[p1], normals[p2], normals[p3]);
+                ((TriangleFace_N *)faces[i].mprimitive)->setNormals(normals[p1], normals[p2], normals[p3]);
             } else {
                 faces[i] = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
             }
@@ -436,7 +297,7 @@ void Mesh::setMesh(const char *filename) {
                    &p3, &n3);
             if (num_normals > 1) {
                 faces[i] = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
-                ((TriangleFace_N *)faces[i].primitive)->setNormals(normals[n1], normals[n2], normals[n3]);
+                ((TriangleFace_N *)faces[i].mprimitive)->setNormals(normals[n1], normals[n2], normals[n3]);
             } else {
                 faces[i] = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
             }
@@ -444,6 +305,7 @@ void Mesh::setMesh(const char *filename) {
     }
 
     bvh.set_build_method(BuildMethod::SAH);
+    bvh.set_search_method(SearchMethod::BFS);
     bvh.build(faces, num_faces);
 
     mesh_obj.close();
@@ -453,10 +315,18 @@ void Mesh::setMesh(const char *filename) {
     free(faces);
 }
 
+void Mesh::set_canonical_bounds(){
+    w_bound.min.x = bvh.root->min_x();
+    w_bound.min.y = bvh.root->min_y();
+    w_bound.min.z = bvh.root->min_z();
+    w_bound.max.x = bvh.root->max_x();
+    w_bound.max.y = bvh.root->max_y();
+    w_bound.max.z = bvh.root->max_z();
+}
+
 void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
                      struct point *n, double *a, double *b) {
     *lambda = INFINITY;
-
 
     struct ray ray_transformed;
     rayTransform(ray, &ray_transformed, this);
@@ -472,7 +342,5 @@ void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
         normalTransform(n, n, this);
         normalize(n);
         rayPosition(ray, *lambda, p);
-    } else {
-        *lambda = -1;
     }
 }

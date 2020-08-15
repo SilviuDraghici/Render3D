@@ -167,7 +167,7 @@ void invert(double *T, double *Tinv) {
     }
 }
 
-void printmatrix(struct matrix matrix) {
+void printmatrix(struct matrix &matrix) {
     fprintf(stderr, "Matrix contains:\n");
     fprintf(stderr, "%f %f %f %f\n", matrix.T[0][0], matrix.T[0][1], matrix.T[0][2], matrix.T[0][3]);
     fprintf(stderr, "%f %f %f %f\n", matrix.T[1][0], matrix.T[1][1], matrix.T[1][2], matrix.T[1][3]);

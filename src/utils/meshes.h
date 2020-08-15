@@ -5,7 +5,7 @@
 #include "objects.h"
 #include "BVH.h"
 
-class TriangleFace : public BVH_Node {
+class TriangleFace : public Primitive {
    protected:
     point p1, p2, p3;
 
@@ -15,8 +15,9 @@ class TriangleFace : public BVH_Node {
     TriangleFace(point p1, point p2, point p3);
     TriangleFace(double x1, double y1, double z1, double x2, double y2,
                  double z2, double x3, double y3, double z3);
-    BVH_Node *intersect(struct ray *r, double *lambda, point *bary_coords);
-    bool isFace();
+    double intersect(struct ray *r, double lambda);
+    void intersect(struct ray *r, double *lambda, point *bary_coords);
+    bool isprim();
     double min_x() const;
     double min_y() const;
     double min_z() const;
@@ -37,16 +38,6 @@ class TriangleFace_N : public TriangleFace {
     point normal(point *bary_coords);
 };
 
-class BoundingBox_Visible : public BoundingBox {
-    double width = 0.02;
-
-   public:
-    color col;
-    BoundingBox_Visible();
-    color getCol();
-    BVH_Node *intersect(struct ray *r, double *lambda, point *bary_coords);
-};
-
 class Mesh : public Object {
     // used for reading in Mesh
     int num_vertices = 0;
@@ -61,11 +52,11 @@ class Mesh : public Object {
     point bary_coords;
 
     BVH bvh;
-    BoundingBox *box = NULL;
 
    public:
     using Object::Object;
     void setMesh(const char *filename);
+    void set_canonical_bounds();
     void intersect(struct ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
 };

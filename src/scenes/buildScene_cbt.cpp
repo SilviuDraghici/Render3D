@@ -15,16 +15,11 @@ const char *checkers = "scenes/checkers.ppm";
 //const char *mesh_file = "scenes/hand_134k.obj";
 const char *mesh_file = "scenes/lucy_1M.obj";
 
-
 //dragon meshes
 //const char *mesh_file = "scenes/dragon_030k.obj";
 //const char *mesh_file = "scenes/dragon_108k.obj";
 //const char *mesh_file = "scenes/dragon_435k.obj";
 //const char *mesh_file = "scenes/dragon_871k.obj";
-
-drand48();
-drand48();
-drand48();
 
 // Cornell box
 scene->cam_pos = point(0, 0, -15);
@@ -36,24 +31,75 @@ scene->cam_focal = -3;
 scene->rt_max_depth = 1;
 scene->pt_max_depth = 20;
 
-o = new Mesh(74/255.0, 255/255.0, 249/255.0);
+o = new Mesh(74 / 255.0, 255 / 255.0, 249 / 255.0);
 ((Mesh *)o)->setMesh(mesh_file);
-strcpy(o->label, "Mesh test");
+strcpy(o->label, "mesh test");
+o->set_pathTrace_properties(1.0, 0.0, 0.0);
+o->r_index = 1.54;
+o->T *= Sc(10.0);
+o->T *= RotX(scene->frame * PI / 120);
+o->T *= RotZ(scene->frame * PI / 120);
+//o->T *= RotX(-PI / 2);
+//o->T *= Tr(4, 0, 0);
+o->invert_and_bound();
+insertObject(o, scene);
+
+/*
+o = new Sphere(74 / 255.0, 255 / 255.0, 249 / 255.0);
+//((Mesh *)o)->setMesh(mesh_file);
+strcpy(o->label, "left");
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.54;
 o->T *= RotX(scene->frame * PI / 120);
 o->T *= RotZ(scene->frame * PI / 120);
 //o->T *= RotX(-PI / 2);
-o->T *= Sc(10.0);
-o->T *= Tr(0, 0, 5.5);
-invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-insertObject(o, &(scene->object_list));
+//o->T *= Sc(10.0);
+o->T *= Tr(-4, 0, 0);
+o->invert_and_bound();
+insertObject(o, scene);
+*/
+
+
+int num_spheres = 100;
+for (int i = 0; i < num_spheres; i++) {
+    o = new Sphere(1, 1, 0);
+    strcpy(o->label, ("yellow " + std::to_string(i)).c_str());
+    o->set_rayTrace_properties(.05, .95, .35, .35, 1, 6);
+    o->T *= Sc(0.1);
+    o->T *= Tr(0, 0, 5.5);
+    o->T *= RotY(i * 2 * PI / num_spheres);
+    o->invert_and_bound();
+    insertObject(o, scene);
+}
+
+for (int i = 0; i < num_spheres; i++) {
+    o = new Sphere(1, 0, 1);
+    strcpy(o->label, ("purple " + std::to_string(i)).c_str());
+    o->set_rayTrace_properties(.05, .95, .35, .35, 1, 6);
+    o->T *= Sc(0.1);
+    o->T *= Tr(0, 0, 6.5);
+    o->T *= RotY(i * 2 * PI / num_spheres);
+    o->T *= RotX(PI / 4);
+    o->invert_and_bound();
+    insertObject(o, scene);
+}
+
+for (int i = 0; i < num_spheres; i++) {
+    o = new Sphere(0, 1, 1);
+    strcpy(o->label, ("cyan " + std::to_string(i)).c_str());
+    o->set_rayTrace_properties(.05, .95, .35, .35, 1, 6);
+    o->T *= Sc(0.1);
+    o->T *= Tr(0, 0, 7.5);
+    o->T *= RotY(i * 2 * PI / num_spheres);
+    o->T *= RotX(-PI / 4);
+    o->invert_and_bound();
+    insertObject(o, scene);
+}
 
 bool draw_box = scene->path_tracing_mode;
-if (draw_box){
-
-    o->set_color(1,1,1);
-    o->set_pathTrace_properties(0.0, 0.0, 1.0);
+if (draw_box || true) {
+    //o->set_color(1,1,1);
+    //o->set_pathTrace_properties(0.0, 0.0, 1.0);
 
     // Left
     o = new Plane(.75, .25, .25);
@@ -61,10 +107,10 @@ if (draw_box){
     o->r_index = 1.4;
     strcpy(o->label, "Left Wall");
     o->T *= RotY(PI / 2);
-    o->T *= Sc(25);
-    o->T *= Tr(-10, 0, 5);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->T *= Sc(10);
+    o->T *= Tr(-10, 0, 0);
+    o->invert_and_bound();
+    insertObject(o, scene);
 
     // Right
     o = new Plane(.25, .25, .75);
@@ -73,9 +119,9 @@ if (draw_box){
     strcpy(o->label, "Right Wall");
     o->T *= RotY(PI / 2);
     o->T *= Sc(25);
-    o->T *= Tr(10, 0, 5);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->T *= Tr(10, 0, 0);
+    o->invert_and_bound();
+    insertObject(o, scene);
 
     // Back
     o = new Plane(.75, .75, .75);
@@ -85,9 +131,9 @@ if (draw_box){
     loadTexture(o, checkers, 1, &t_list);
     //o->T *= RotateZ(o, PI/4);
     o->T *= Sc(10);
-    o->T *= Tr(0, 0, 15);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->T *= Tr(0, 0, 10);
+    o->invert_and_bound();
+    insertObject(o, scene);
 
     // Front
     o = new Plane(.3, 1, .3);
@@ -97,8 +143,8 @@ if (draw_box){
     //o->T *= RotateZ(o, PI/4);
     o->T *= Sc(10);
     o->T *= Tr(0, 0, -15.1);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->invert_and_bound();
+    insertObject(o, scene);
 
     // Bottom
     o = new Plane(.75, .75, .75);
@@ -107,9 +153,9 @@ if (draw_box){
     strcpy(o->label, "Bottom Wall");
     o->T *= RotX(PI / 2);
     o->T *= Sc(25);
-    o->T *= Tr(0, -10, 5);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->T *= Tr(0, -10, 0);
+    o->invert_and_bound();
+    insertObject(o, scene);
 
     // Top
     o = new Plane(.75, .75, .75);
@@ -118,9 +164,9 @@ if (draw_box){
     strcpy(o->label, "Top Wall");
     o->T *= RotX(-PI / 2);
     o->T *= Sc(25);
-    o->T *= Tr(0, 10, 5);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->T *= Tr(0, 10, 0);
+    o->invert_and_bound();
+    insertObject(o, scene);
 }
 
 // Planar light source at top
@@ -131,22 +177,18 @@ o->r_index = 1.54;
 strcpy(o->label, "Top Light");
 o->T *= Sc(0.5, 2.5, 1);
 o->T *= RotX(PI / 2);
-o->T *= Tr(0, 9.995, 5);
-invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
+o->T *= Tr(0, 9.995, 0);
+o->invert_and_bound();
 o->isLightSource = 1;
 o->pt.LSweight *= 4;  // <- scale weight by scale
-insertObject(o, &(scene->object_list));
+insertObject(o, scene);
 
 p.x = 0;
 p.y = 9.9;
-p.z = 5;
+p.z = 0;
 p.w = 1;
 l = newPLS(&p, .95, .95, .95);
 insertPLS(l, &(scene->rt_point_light_list));
 
-p.x = 0;
-p.y = 0;
-p.z = -15;
-p.w = 1;
-l = newPLS(&p, .95, .95, .95);
+l = newPLS(&scene->cam_pos, .95, .95, .95);
 insertPLS(l, &(scene->rt_point_light_list));

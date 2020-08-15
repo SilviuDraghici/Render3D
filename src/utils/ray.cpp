@@ -84,8 +84,10 @@ void findFirstHit(Scene *scene, struct ray *ray, double *lambda, Object *Os, Obj
     struct point curr_p, curr_n;
     *lambda = INFINITY;
 
+    /*
     while (curr_obj != NULL) {
         curr_obj->intersect(ray, &curr_l, &curr_p, &curr_n, &curr_a, &curr_b);
+
         if (THR < curr_l && curr_l < *lambda) {
             *lambda = curr_l;
             *obj = curr_obj;
@@ -96,4 +98,19 @@ void findFirstHit(Scene *scene, struct ray *ray, double *lambda, Object *Os, Obj
         }
         curr_obj = curr_obj->next;
     }
+    return;
+    */
+    
+    curr_obj = (Object *)scene->bvh->search(ray);
+    if (curr_obj != NULL) {
+        curr_obj->intersect(ray, &curr_l, &curr_p, &curr_n, &curr_a, &curr_b);
+        *lambda = curr_l;
+        *obj = curr_obj;
+        *p = curr_p;
+        *n = curr_n;
+        *a = curr_a;
+        *b = curr_b;
+        //std::cout << curr_obj->label << " " << *lambda <<"\n";
+    }
+    
 }

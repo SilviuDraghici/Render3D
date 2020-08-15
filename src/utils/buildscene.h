@@ -4,6 +4,8 @@
 #include "objects.h"
 #include "meshes.h"
 
+//int min_for_bvh = 10;
+
 typedef struct scene_struct {
     //general settings:
     int sx = 1024, sy = 1024;
@@ -32,7 +34,10 @@ typedef struct scene_struct {
 
 
     //variables for the scene itself
+    int num_objects = 0;
     Object *object_list = NULL;
+
+    BVH *bvh = NULL;
 
     //this is for the ray tracer
     struct pointLS *rt_point_light_list = NULL;
@@ -42,5 +47,6 @@ typedef struct scene_struct {
 } Scene;
 
 void buildScene(Scene *scene);
+void insertObject(Object *o, Scene *scene);
 
 #endif

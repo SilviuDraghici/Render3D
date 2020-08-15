@@ -45,7 +45,7 @@ struct point {
         }
     }
 
-    double operator[](Axis axis) const{
+    double operator[](Axis axis) const {
         switch (axis) {
             case Axis::X: {
                 return x;
@@ -152,6 +152,20 @@ struct matrix {
         return pr;
     }
 };
+
+inline struct point operator*(const point &p, const matrix &m) {
+    printf("left point mult\n");
+    struct point pr;
+    pr.x = (p.x * m.T[0][0] ) + (p.y * m.T[1][0]) + (p.x * m.T[2][0]) +
+           (p.w * m.T[3][0] );
+    pr.y = (p.x * m.T[0][1] ) + (p.y * m.T[1][1]) + (p.x * m.T[2][1]) +
+           (p.w * m.T[3][1] );
+    pr.z = (p.x * m.T[0][2] ) + (p.y * m.T[1][2]) + (p.x * m.T[2][2]) +
+           (p.w * m.T[3][2] );
+    return pr;
+}
+
+std::ostream &operator<<(std::ostream &strm, const struct matrix &m);
 
 struct matrix I();
 
