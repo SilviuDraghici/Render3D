@@ -1,5 +1,5 @@
 CFLAGS = -O3 -g -lm -fopenmp
-UOBJ = timer.o utils.o affineTransforms.o imageProcessor.o objects.o BVH.o meshes.o mappings.o ray.o camera.o buildscene.o rayTracer.o pathTracer.o Render3D.o
+UOBJ = timer.o utils.o affineTransforms.o imageProcessor.o objects.o BVH.o meshes.o L-Systems.o mappings.o ray.o camera.o buildscene.o rayTracer.o pathTracer.o Render3D.o
 UTILS = utils/
 RAY = rayTracer/
 PTH = pathTracer/
@@ -53,6 +53,11 @@ meshes.o: ${UTILS}meshes.cpp ${UTILS}meshes.h ${UTILS}color.h ${UTILS}mappings.h
 	g++ ${CFLAGS} -c $^
 	@echo
 
+L-Systems.o: ${UTILS}L-Systems.cpp ${UTILS}L-Systems.h ${UTILS}color.h ${UTILS}mappings.h ${UTILS}ray.h ${UTILS}utils.h ${UTILS}objects.h ${UTILS}BVH.h
+	@echo Building L-Systems
+	g++ ${CFLAGS} -c $^
+	@echo
+
 mappings.o: ${UTILS}mappings.cpp ${UTILS}mappings.h 
 	@echo Building Mapping Funtions
 	g++ ${CFLAGS} -c $^
@@ -68,7 +73,7 @@ camera.o: ${UTILS}camera.cpp ${UTILS}camera.h
 	g++ ${CFLAGS} -c $^
 	@echo
 
-buildscene.o: ${UTILS}buildscene.cpp ${UTILS}buildscene.h ${UTILS}ray.h ${UTILS}affineTransforms.h ${UTILS}objects.h ${UTILS}meshes.h ${UTILS}utils.h ${SCENES}
+buildscene.o: ${UTILS}buildscene.cpp ${UTILS}buildscene.h ${UTILS}ray.h ${UTILS}affineTransforms.h ${UTILS}objects.h ${UTILS}meshes.h ${UTILS}L-Systems.h ${UTILS}utils.h ${SCENES}
 	@echo Building buildscene
 	g++ ${CFLAGS} -c ${UTILS}buildscene.cpp ${UTILS}buildscene.h ${UTILS}ray.h ${UTILS}affineTransforms.h ${UTILS}objects.h ${UTILS}meshes.h ${UTILS}utils.h
 	@echo

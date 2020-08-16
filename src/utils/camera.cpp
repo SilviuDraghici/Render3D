@@ -116,7 +116,7 @@ void setPixelStep(Scene *scene, struct view *cam, double sx, double sy) {
     scene->dv = -cam->wsize / (sx - 1);
 }
 
-void getRayFromPixel(Scene *scene, struct ray *ray, struct view *cam, double i, double j) {
+void getRayFromPixel(Scene *scene, struct Ray *ray, struct view *cam, double i, double j) {
     struct point pc;
     pc.x = cam->wl + i * scene->du;
     pc.y = cam->wt + j * scene->dv;

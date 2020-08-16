@@ -61,7 +61,7 @@ double BoundingBox::max_x() const { return b_max_x; }
 double BoundingBox::max_y() const { return b_max_y; }
 double BoundingBox::max_z() const { return b_max_z; }
 
-double BoundingBox::intersect(struct ray *ray, double lambda) {
+double BoundingBox::intersect(struct Ray *ray, double lambda) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical box.
 
@@ -275,7 +275,7 @@ void BVH::set_search_method(SearchMethod search_method) {
     }
 }
 
-Primitive *BVH::bfs(struct ray *ray) {
+Primitive *BVH::bfs(struct Ray *ray) {
     double lambda = INFINITY;
     Primitive *closest_prim = NULL;
 
@@ -325,7 +325,7 @@ Primitive *BVH::bfs(struct ray *ray) {
     return closest_prim;
 }
 
-Primitive *BVH::dfs(struct ray *ray) {
+Primitive *BVH::dfs(struct Ray *ray) {
     double lambda = INFINITY, l1, l2;
     Primitive *closest_prim = NULL;
 

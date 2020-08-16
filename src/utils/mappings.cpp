@@ -6,7 +6,7 @@
 
 struct textureNode *texture_list;
 
-inline void uvMap(struct image *img, double u, double v, struct color *col) {
+inline void uvMap(struct image *img, double u, double v, color *col) {
     u = MIN(1, MAX(0, u));
     v = MIN(1, MAX(0, v));
     u = u * (img->sx - 1);
@@ -84,7 +84,7 @@ void loadTexture(Object *o, const char *filename, int type, struct textureNode *
     }  // end if (o != NULL)
 }
 
-void textureMap(Object *obj, double a, double b, struct color *col) {
+void textureMap(Object *obj, double a, double b, color *col) {
     /*
   Function to determine the colour of a textured object at
   the normalized texture coordinates (a,b).
@@ -110,7 +110,7 @@ void textureMap(Object *obj, double a, double b, struct color *col) {
 void normalMap(Object *obj, double a, double b, struct point *n) {
     if (obj->normalMap != NULL) {
         //printf("normal mapping \n");
-        struct color delta;
+        color delta;
         uvMap(obj->normalMap, a, b, &delta);
         n->x -= (2 * delta.R - 1);
         n->y -= (2 * delta.G - 1);

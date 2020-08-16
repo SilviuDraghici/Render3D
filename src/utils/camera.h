@@ -17,8 +17,8 @@ struct view {
     double wl;          // Left edge in camera coordinates
     double wt;          // Top edge in camera coordinates
     double wsize;       // Window size in distance units (not pixels!)
-    struct matrix W2C;  // World2Camera conversion matrix
-    struct matrix C2W;  // Camera2World conversion matrix
+    matrix W2C;  // World2Camera conversion matrix
+    matrix C2W;  // Camera2World conversion matrix
 };
 
 extern struct point cam_pos;
@@ -30,5 +30,5 @@ extern double du, dv;
 
 struct view *setupView(struct point *e, struct point *g, struct point *up, double f, double wl, double wt, double wsize);
 void setPixelStep(Scene *scene, struct view *cam, double sx, double sy);
-void getRayFromPixel(Scene *scene, struct ray *ray, struct view *cam, double i, double j);
+void getRayFromPixel(Scene *scene, struct Ray *ray, struct view *cam, double i, double j);
 #endif

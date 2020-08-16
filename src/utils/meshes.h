@@ -15,8 +15,8 @@ class TriangleFace : public Primitive {
     TriangleFace(point p1, point p2, point p3);
     TriangleFace(double x1, double y1, double z1, double x2, double y2,
                  double z2, double x3, double y3, double z3);
-    double intersect(struct ray *r, double lambda);
-    void intersect(struct ray *r, double *lambda, point *bary_coords);
+    double intersect(struct Ray *r, double lambda);
+    void intersect(struct Ray *r, double *lambda, point *bary_coords);
     bool isprim();
     double min_x() const;
     double min_y() const;
@@ -57,7 +57,7 @@ class Mesh : public Object {
     using Object::Object;
     void setMesh(const char *filename);
     void set_canonical_bounds();
-    void intersect(struct ray *r, double *lambda, struct point *p,
+    void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
 };
 

@@ -46,7 +46,7 @@ void union_bounds(Bounds &a, Bounds &b, Bounds &union_box);
 
 class Primitive {
    public:
-    virtual double intersect(struct ray *r, double lambda) = 0;
+    virtual double intersect(struct Ray *r, double lambda) = 0;
     virtual bool isprim() = 0;
     virtual double min_x() const = 0;
     virtual double min_y() const = 0;
@@ -65,9 +65,9 @@ class Object : public Primitive{
         rt;  // Object's albedos for Phong model (for ray tracing)
     struct PT_properties pt;  // Object's surface properties for Path tracing
 
-    struct color col;    // Object's colour in RGB
-    struct matrix T;     // T holds the transformation applied to this object.
-    struct matrix Tinv;  // Tinv holds the inverse transformation
+    color col;    // Object's colour in RGB
+    matrix T;     // T holds the transformation applied to this object.
+    matrix Tinv;  // Tinv holds the inverse transformation
 
     struct image
         *texImg;  // Pointer to structure holding the texture for this object
@@ -85,6 +85,7 @@ class Object : public Primitive{
     Bounds w_bound; // the bounds for this object in world coordinates
 
     Object(double r, double g, double b);
+    Object(color &c);
     void set_color(double r, double g, double b);
     void set_rayTrace_properties(double ambient, double diffuse,
                                  double specular, double global, double alpha,
@@ -95,14 +96,14 @@ class Object : public Primitive{
     virtual void set_canonical_bounds();
     void invert_and_bound(); // calculates inverse matrix and sets w_bound
 
-    virtual void intersect(struct ray *r, double *lambda, struct point *p,
+    virtual void intersect(struct Ray *r, double *lambda, struct point *p,
                            struct point *n, double *a, double *b) = 0;
 
     virtual void surfaceCoordinates(double a, double b, double *x, double *y,
                                     double *z);
     virtual void randomPoint(double *x, double *y, double *z);
 
-    double intersect(struct ray *r, double lambda);
+    double intersect(struct Ray *r, double lambda);
     bool isprim();
     double min_x() const;
     double min_y() const;
@@ -117,7 +118,7 @@ class Object : public Primitive{
 class Plane : public Object {
    public:
     Plane(double r, double g, double b);
-    void intersect(struct ray *r, double *lambda, struct point *p,
+    void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
     void set_canonical_bounds();
     void surfaceCoordinates(double a, double b, double *x, double *y,
@@ -128,7 +129,18 @@ class Plane : public Object {
 class Sphere : public Object {
    public:
     using Object::Object;
-    void intersect(struct ray *r, double *lambda, struct point *p,
+    void intersect(struct Ray *r, double *lambda, struct point *p,
+                   struct point *n, double *a, double *b);
+    void set_canonical_bounds();
+    void surfaceCoordinates(double a, double b, double *x, double *y,
+                            double *z);
+    void randomPoint(double *x, double *y, double *z);
+};
+
+class Cylinder : public Object {
+   public:
+    using Object::Object;
+    void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
     void set_canonical_bounds();
     void surfaceCoordinates(double a, double b, double *x, double *y,
@@ -139,14 +151,14 @@ class Sphere : public Object {
 class Box : public Object {
    public:
     using Object::Object;
-    void intersect(struct ray *r, double *lambda, struct point *p,
+    void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
 };
 
 class Triangle : public Object {
    public:
     Triangle(double r, double g, double b);
-    void intersect(struct ray *r, double *lambda, struct point *p,
+    void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
 
     void setPoints(double x1, double y1, double z1, double x2, double y2,
@@ -161,7 +173,7 @@ class Triangle : public Object {
 class Polygon : public Object {
    public:
     Polygon(double r, double g, double b);
-    void intersect(struct ray *r, double *lambda, struct point *p,
+    void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
     void setNumPoints(int num);
     void addPoint(point point);
@@ -177,7 +189,7 @@ class Polygon : public Object {
 
 /* The structure below defines a point light source */
 struct pointLS {
-    struct color col;      // Light source colour
+    color col;      // Light source colour
     struct point p0;       // Light source location
     struct pointLS *next;  // Pointer to next light in the scene
 };

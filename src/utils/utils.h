@@ -153,7 +153,7 @@ struct matrix {
     }
 };
 
-inline struct point operator*(const point &p, const matrix &m) {
+inline point operator*(const point &p, const matrix &m) {
     printf("left point mult\n");
     struct point pr;
     pr.x = (p.x * m.T[0][0] ) + (p.y * m.T[1][0]) + (p.x * m.T[2][0]) +
@@ -165,16 +165,16 @@ inline struct point operator*(const point &p, const matrix &m) {
     return pr;
 }
 
-std::ostream &operator<<(std::ostream &strm, const struct matrix &m);
+std::ostream &operator<<(std::ostream &strm, const matrix &m);
 
-struct matrix I();
+matrix I();
 
 double dot(struct point *u, struct point *v);
 struct point cross(struct point *u, struct point *v);
 
 void normalize(struct point *v);
 
-void solveQuadratic(struct ray *ray, double *l1, double *l2);
+void solveQuadratic(struct Ray *ray, double *l1, double *l2);
 
 void hemiSphereCoordinates(struct point *n, struct point *d);
 

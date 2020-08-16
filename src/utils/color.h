@@ -67,6 +67,10 @@ struct color {
     color operator+(const color &a) const {
         return color(R + a.R, G + a.G, B + a.B);
     }
+
+    color inverse(){
+        return color(1.0 - R, 1.0 - G, 1.0 - B);
+    }
 };
 
 #endif

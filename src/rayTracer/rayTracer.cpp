@@ -72,7 +72,7 @@ void rayTraceMain(int argc, char *argv[]) {
     buildscene_timer.end();
     buildscene_timer.print_elapsed_time(std::cerr);
 
-    struct view *cam;  // Camera and view for this scene
+    view *cam;  // Camera and view for this scene
     cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up),
                     scene->cam_focal, -2, 2, 4);
 
@@ -87,7 +87,7 @@ void rayTraceMain(int argc, char *argv[]) {
 
     setPixelStep(scene, cam, scene->sx, scene->sx);
 
-    struct ray ray;
+    Ray ray;
     double depth;
     color col;
     color background = 0;
@@ -137,7 +137,7 @@ void rayTraceMain(int argc, char *argv[]) {
     std::cerr << "Average number of intersection tests: " << num_intersection_tests / num_bvh_searches << "\n";
 }
 
-void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
+void rayTrace(Ray *ray, int depth, color *col, Object *Os) {
     // Trace one ray through the scene.
     //
     // Parameters:
@@ -155,9 +155,9 @@ void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
     double lambda;       // Lambda at intersection
     double a = 0, b;     // Texture coordinates
     Object *obj = NULL;  // Pointer to object at intersection
-    struct point p;      // Intersection point
-    struct point n;      // Normal at intersection
-    struct color I;      // Colour returned by shading function
+    point p;      // Intersection point
+    point n;      // Normal at intersection
+    color I;      // Colour returned by shading function
 
     if (depth > scene->rt_max_depth)  // Max recursion depth reached. Return
                                       // invalid colour.
@@ -179,8 +179,8 @@ void rayTrace(struct ray *ray, int depth, struct color *col, Object *Os) {
     rtShade(obj, &p, &n, ray, depth, a, b, col);
 }
 
-void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray,
-             int depth, double a, double b, struct color *col) {
+void rtShade(Object *obj, point *p, point *n, Ray *ray,
+             int depth, double a, double b, color *col) {
     // This function implements the shading model as described in lecture. It
     // takes
     // - A pointer to the first object intersected by the ray (to get the colour
@@ -197,8 +197,8 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray,
     // - The colour for this ray (using the col pointer)
     //
 
-    struct color tmp_col;  // Accumulator for colour components
-    struct color objcol;   // Colour for the object in R G and B
+    color tmp_col;  // Accumulator for colour components
+    color objcol;   // Colour for the object in R G and B
     double alpha;
 
     // This will hold the colour as we process all the components of
@@ -216,29 +216,29 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray,
     alphaMap(obj, a, b, &alpha, obj->rt.alpha);
 
     // vector from intersection point to camera
-    struct point c;
+    point c;
     c = -ray->d;
     normalize(&c);
 
     double ra = obj->rt.ambient, rd = obj->rt.diffuse, rs = obj->rt.specular,
            rg = obj->rt.global;
 
-    struct color ambient;
+    color ambient;
     ambient = objcol * ra * alpha;
 
-    struct color diffuse;
+    color diffuse;
 
-    struct color specular;
+    color specular;
 
-    struct color refract = 0;
+    color refract = 0;
 
-    struct color global;
+    color global;
 
-    struct pointLS *light = scene->rt_point_light_list;
+    pointLS *light = scene->rt_point_light_list;
 
     while (light != NULL) {
         // ray from intersection point to light source
-        struct ray pToLight;
+        Ray pToLight;
         // pToLight.p0 = *p - n * THR;
         pToLight.p0 = *p;
 
@@ -246,7 +246,7 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray,
         double light_lambda;
         // we don't care about these details of the hit
         Object *dummyobj = NULL;
-        struct point dummyp;
+        point dummyp;
         double dummya;
 
         findFirstHit(scene, &pToLight, &light_lambda, obj, &dummyobj, &dummyp,
@@ -254,7 +254,7 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray,
 
         if (!(THR < light_lambda && light_lambda < 1)) {
             // vector from intersection point to light
-            struct point s;
+            point s;
             s = light->p0 - *p;
             normalize(&s);
 
@@ -265,7 +265,7 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray,
             diffuse += objcol * rd * light->col * n_dot_s * alpha;
 
             // perfect light ray reflection
-            struct ray light_reflection;
+            Ray light_reflection;
             normalize(&pToLight.d);
             pToLight.d = -pToLight.d;
             rayReflect(&pToLight, p, n, &light_reflection);
@@ -280,8 +280,8 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray,
 
     if (alpha < 1) {
         // dvec = r * bvec + (r*c − srt(1 - r*r*(1-c*c))) * nvec
-        struct point norm = *n;
-        struct ray refractRay;
+        point norm = *n;
+        Ray refractRay;
         double s, R_Shlick;
         rayRefract(ray, obj, p, &norm, &refractRay, &s, &R_Shlick);
         if (s > 0) {
@@ -297,7 +297,7 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray,
     }
 
     // perfect camera ray reflection
-    struct ray cam_reflection;
+    Ray cam_reflection;
     rayReflect(ray, p, n, &cam_reflection);
 
     if (obj->refl_sig > 0) {
@@ -317,11 +317,11 @@ void rtShade(Object *obj, struct point *p, struct point *n, struct ray *ray,
     return;
 }
 
-void rt_brandished_trace(struct ray *ray, Object *obj, struct color *col,
+void rt_brandished_trace(Ray *ray, Object *obj, color *col,
                          int depth) {
-    struct ray brandished_ray;
-    memcpy(&brandished_ray, ray, sizeof(struct ray));
-    struct color brandished_color = 0;
+    Ray brandished_ray;
+    memcpy(&brandished_ray, ray, sizeof(Ray));
+    color brandished_color = 0;
 
     double num_samples = 10;
     for (int i = 0; i < num_samples; i++) {

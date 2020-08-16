@@ -10,7 +10,7 @@ std::ostream &operator<<(std::ostream &strm, const struct point &a) {
     return strm << "(" << a.x << ", " << a.y << ", " << a.z << ", " << a.w << ")";
 }
 
-std::ostream &operator<<(std::ostream &strm, const struct matrix &m){
+std::ostream &operator<<(std::ostream &strm, const matrix &m){
     int wid = 0;
     for(int i = 0; i < 4; i++){
         for(int j = 0; j < 4; j++){
@@ -36,8 +36,8 @@ std::ostream &operator<<(std::ostream &strm, const struct matrix &m){
     return strm;
 }
 
-struct matrix I() {
-    struct matrix i;
+matrix I() {
+    matrix i;
     memset(&i.T[0][0], 0, 16 * sizeof(double));
     i.T[0][0] = 1;
     i.T[1][1] = 1;
@@ -81,7 +81,7 @@ void normalize(struct point *v) {
     v->z *= l;
 }
 
-void solveQuadratic(struct ray *ray, double *l1, double *l2) {
+void solveQuadratic(struct Ray *ray, double *l1, double *l2) {
     struct point a_sub_c;
     double A, B, C, D;
     a_sub_c = ray->p0;

@@ -62,6 +62,22 @@ Object::Object(double r = 1, double g = 1, double b = 1) {
     next = NULL;
 }
 
+Object::Object(color &c){
+    col = c;
+    rt.alpha = 1;
+    rt.shinyness = 2;
+    pt.LSweight = 1;
+    r_index = 1;
+    refl_sig = 0;
+    texImg = NULL;
+    normalMap = NULL;
+    alphaMap = NULL;
+    frontAndBack = 0;
+    isLightSource = 0;
+    T = I();
+    next = NULL;
+}
+
 void Object::set_color(double r, double g, double b) {
     col.R = r;
     col.G = g;
@@ -130,7 +146,7 @@ void Object::randomPoint(double *x, double *y, double *z) {
     fprintf(stderr, "Object::randomPoint\n");
 }
 
-double Object::intersect(struct ray *r, double lambda) {
+double Object::intersect(struct Ray *r, double lambda) {
     lambda = INFINITY;
     double dummy_doub;
     point dummy_point;
@@ -148,15 +164,15 @@ void Object::invert_and_bound() {
 
     //convert canonical bounds to world coordinates
     point a, b, c, d, e, f, g, h;
-    a = T * point(w_bound.min.x, w_bound.min.y , w_bound.min.z);
-    b = T * point(w_bound.min.x, w_bound.min.y , w_bound.max.z);
-    c = T * point(w_bound.min.x, w_bound.max.y , w_bound.min.z);
-    d = T * point(w_bound.min.x, w_bound.max.y , w_bound.max.z);
-    
-    e = T * point(w_bound.max.x, w_bound.max.y , w_bound.max.z);
-    f = T * point(w_bound.max.x, w_bound.max.y , w_bound.min.z);
-    g = T * point(w_bound.max.x, w_bound.min.y , w_bound.max.z);
-    h = T * point(w_bound.max.x, w_bound.min.y , w_bound.min.z);
+    a = T * point(w_bound.min.x, w_bound.min.y, w_bound.min.z);
+    b = T * point(w_bound.min.x, w_bound.min.y, w_bound.max.z);
+    c = T * point(w_bound.min.x, w_bound.max.y, w_bound.min.z);
+    d = T * point(w_bound.min.x, w_bound.max.y, w_bound.max.z);
+
+    e = T * point(w_bound.max.x, w_bound.max.y, w_bound.max.z);
+    f = T * point(w_bound.max.x, w_bound.max.y, w_bound.min.z);
+    g = T * point(w_bound.max.x, w_bound.min.y, w_bound.max.z);
+    h = T * point(w_bound.max.x, w_bound.min.y, w_bound.min.z);
 
     //printmatrix(T);
     //std::cout << "\n" << T << "\n";
@@ -169,7 +185,6 @@ void Object::invert_and_bound() {
     w_bound.max.x = MAX(MAX(MAX(MAX(a.x, b.x), c.x), d.x), MAX(MAX(MAX(e.x, f.x), g.x), h.x));
     w_bound.max.y = MAX(MAX(MAX(MAX(a.y, b.y), c.y), d.y), MAX(MAX(MAX(e.y, f.y), g.y), h.y));
     w_bound.max.z = MAX(MAX(MAX(MAX(a.z, b.z), c.z), d.z), MAX(MAX(MAX(e.z, f.z), g.z), h.z));
-
 }
 
 bool Object::isprim() {
@@ -189,12 +204,12 @@ Plane::Plane(double r = 1, double g = 1, double b = 1) : Object(r, g, b) {
     frontAndBack = 1;
 }
 
-void Plane::intersect(struct ray *ray, double *lambda, struct point *p,
+void Plane::intersect(struct Ray *ray, double *lambda, struct point *p,
                       struct point *n, double *a, double *b) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical plane.
 
-    struct ray ray_transformed;
+    struct Ray ray_transformed;
     rayTransform(ray, &ray_transformed, this);
     *lambda = INFINITY;
     struct point norm;
@@ -264,12 +279,12 @@ void Plane::randomPoint(double *x, double *y, double *z) {
     surfaceCoordinates(a, b, x, y, z);
 }
 
-void Sphere::intersect(struct ray *ray, double *lambda, struct point *p,
+void Sphere::intersect(struct Ray *ray, double *lambda, struct point *p,
                        struct point *n, double *a, double *b) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical sphere.
 
-    struct ray ray_transformed;
+    struct Ray ray_transformed;
     double l1 = -1, l2 = -1;
     rayTransform(ray, &ray_transformed, this);
     solveQuadratic(&ray_transformed, &l1, &l2);
@@ -341,7 +356,126 @@ void Sphere::randomPoint(double *x, double *y, double *z) {
     surfaceCoordinates(a, b, x, y, z);
 }
 
-void Box::intersect(struct ray *ray, double *lambda, struct point *p,
+void Cylinder::intersect(struct Ray *r, double *lambda, struct point *p,
+                         struct point *n, double *a, double *b) {
+    struct Ray ray_transformed;
+    struct Ray ray_copy;
+    double l1 = -1, l2 = -1;
+    rayTransform(r, &ray_transformed, this);
+    *lambda = INFINITY;
+    rayTransform(r, &ray_copy, this);
+    ray_copy.d.z = 0;
+    ray_copy.p0.z = 0;
+    (*a) = 0;
+    (*b) = 0;
+    solveQuadratic(&ray_copy, &l1, &l2);
+    // Check if the z component of the intersection point falls within the range
+    if (l1 > THR && fabs(l1 * ray_transformed.d.z + ray_transformed.p0.z) <= 1) {
+        *lambda = l1;
+        rayPosition(&ray_transformed, *lambda, p);
+        *a = atan2(p->x, p->y) / (2 * PI);
+        *b = (1 + p->z) / 2;
+        n->x = 2 * p->x;
+        n->y = 2 * p->y;
+        n->z = 0;
+    }
+
+    // Check if the z component of the intersection point falls within the range
+    if (l2 > THR && fabs(l2 * ray_transformed.d.z + ray_transformed.p0.z) <= 1 && (l2 < l1 || *lambda == -1)) {
+        *lambda = l2;
+        rayPosition(&ray_transformed, *lambda, p);
+        n->x = p->x;
+        n->y = p->y;
+        n->z = 0;
+    }
+
+    struct point p1, cap_n, cap_p;
+    cap_n.x = 0;
+    cap_n.y = 0;
+    cap_n.z = -1;
+
+    double l;
+    double d_dot_n;
+    d_dot_n = dot(&(ray_transformed.d), &cap_n);
+    if (d_dot_n != 0) {
+        p1.x = -ray_transformed.p0.x;
+        p1.y = -ray_transformed.p0.y;
+        p1.z = -1 - ray_transformed.p0.z;
+
+        l = dot(&(p1), &cap_n) / d_dot_n;
+
+        rayPosition(&ray_transformed, l, &cap_p);
+        // check if the cap intersection is within the cylinder boundaries
+#ifdef DEBUG
+        printf("l: %f, lambda: %f, x^2 + y^2: %f\n", l, *lambda, cap_p.px * cap_p.px + cap_p.py * cap_p.py);
+#endif
+
+        if (l > THR && cap_p.x * cap_p.x + cap_p.y * cap_p.y <= 1) {
+            if ((*lambda != INFINITY && l < *lambda) || *lambda == INFINITY) {
+                *lambda = l;
+                memcpy(n, &cap_n, sizeof(struct point));
+            }
+        }
+    }
+
+    cap_n.x = 0;
+    cap_n.y = 0;
+    cap_n.z = 1;
+
+    d_dot_n = dot(&(ray_transformed.d), &cap_n);
+    if (d_dot_n != 0) {
+        p1.x = -ray_transformed.p0.x;
+        p1.y = -ray_transformed.p0.y;
+        p1.z = 1 - ray_transformed.p0.z;
+
+        l = dot(&(p1), &cap_n) / d_dot_n;
+        rayPosition(&ray_transformed, l, &cap_p);
+#ifdef DEBUG
+        printf("l: %f, lambda: %f, x^2 + y^2: %f\n", l, *lambda, cap_p.px * cap_p.px + cap_p.py * cap_p.py);
+#endif
+
+        if (l > THR && cap_p.x * cap_p.x + cap_p.y * cap_p.y <= 1) {
+            if ((*lambda != INFINITY && l < *lambda) || *lambda == INFINITY) {
+                *lambda = l;
+                memcpy(n, &cap_n, sizeof(struct point));
+            }
+        }
+    }
+
+#ifdef DEBUG
+    printf("lambda: %f\n", *lambda);
+#endif
+
+    if (*lambda != INFINITY) {
+        normalTransform(n, n, this);
+        rayPosition(r, *lambda, p);
+    }
+}
+
+void Cylinder::set_canonical_bounds() {
+    w_bound.min = point(-1, -1, -1);
+    w_bound.max = point(1, 1, 1);
+}
+
+void Cylinder::surfaceCoordinates(double a, double b, double *x, double *y, double *z) {
+    struct point p;
+    p.x = sin(a);
+    p.y = cos(a);
+    p.z = b * 2;
+    p.w = 1;
+    p = T * p;
+    *x = p.x;
+    *y = p.y;
+    *z = p.z;
+}
+
+void Cylinder::randomPoint(double *x, double *y, double *z) {
+    double a = drand48() * PI * 2;
+    double b = drand48();
+    surfaceCoordinates(a, b, x, y, z);
+}
+
+void Box::intersect(struct Ray *ray, double *lambda, struct point *p,
                     struct point *n, double *a, double *b) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical box.
@@ -352,7 +486,7 @@ void Box::intersect(struct ray *ray, double *lambda, struct point *p,
     double b_lambda;
 
     // use the objects inverse transform to get a ray in the cannonical space
-    struct ray ray_transformed;
+    struct Ray ray_transformed;
     rayTransform(ray, &ray_transformed, this);
 
     // y-z plane box face at x = -0.5
@@ -440,7 +574,7 @@ Triangle::Triangle(double r = 1, double g = 1, double b = 1) : Object(r, g, b) {
     p3.x = 0.0, p3.y = 1.0;
 }
 
-void Triangle::intersect(struct ray *ray, double *lambda, struct point *p,
+void Triangle::intersect(struct Ray *ray, double *lambda, struct point *p,
                          struct point *n, double *a, double *b) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified triangle.
@@ -449,7 +583,7 @@ void Triangle::intersect(struct ray *ray, double *lambda, struct point *p,
     *lambda = -1;
 
     // use the objects inverse transform to get a ray in the cannonical space
-    struct ray ray_transformed;
+    struct Ray ray_transformed;
     rayTransform(ray, &ray_transformed, this);
 
     point e12 = p2 - p1;
@@ -512,7 +646,7 @@ Polygon::Polygon(double r = 1, double g = 1, double b = 1) : Object(r, g, b) {
     calculate_edge_vectors();
 }
 
-void Polygon::intersect(struct ray *ray, double *lambda, struct point *pi,
+void Polygon::intersect(struct Ray *ray, double *lambda, struct point *pi,
                         struct point *n, double *a, double *b) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified polygon.
@@ -521,7 +655,7 @@ void Polygon::intersect(struct ray *ray, double *lambda, struct point *pi,
     *lambda = -1;
 
     // use the objects inverse transform to get a ray in the cannonical space
-    struct ray ray_transformed;
+    struct Ray ray_transformed;
     rayTransform(ray, &ray_transformed, this);
 
     point e12 = p[1] - p[0];

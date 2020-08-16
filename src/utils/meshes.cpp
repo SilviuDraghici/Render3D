@@ -32,7 +32,7 @@ double TriangleFace::max_x() const{ return MAX(p1.x, MAX(p2.x, p3.x)); }
 double TriangleFace::max_y() const{ return MAX(p1.y, MAX(p2.y, p3.y)); }
 double TriangleFace::max_z() const{ return MAX(p1.z, MAX(p2.z, p3.z)); }
 
-void TriangleFace::intersect(struct ray *ray, double *lambda,
+void TriangleFace::intersect(struct Ray *ray, double *lambda,
                                   point *bary_coords) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified triangle.
@@ -82,7 +82,7 @@ void TriangleFace::intersect(struct ray *ray, double *lambda,
     return;
 }
 
-double TriangleFace::intersect(struct ray *ray, double lambda) {
+double TriangleFace::intersect(struct Ray *ray, double lambda) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified triangle.
 
@@ -324,11 +324,11 @@ void Mesh::set_canonical_bounds(){
     w_bound.max.z = bvh.root->max_z();
 }
 
-void Mesh::intersect(struct ray *ray, double *lambda, struct point *p,
+void Mesh::intersect(struct Ray *ray, double *lambda, struct point *p,
                      struct point *n, double *a, double *b) {
     *lambda = INFINITY;
 
-    struct ray ray_transformed;
+    struct Ray ray_transformed;
     rayTransform(ray, &ray_transformed, this);
 
     TriangleFace *closest_face;

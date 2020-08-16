@@ -3,12 +3,12 @@
 #include "affineTransforms.h"
 #include "objects.h"
 
-void rayTransform(struct ray *ray_orig, struct ray *ray_transformed, Object *obj) {
+void rayTransform(Ray *ray_orig, Ray *ray_transformed, Object *obj) {
     // Transforms a ray using the inverse transform for the specified object. This is so that we can
     // use the intersection test for the canonical object. Note that this has to be done carefully!
 
     //copy original ray to new ray
-    memcpy(ray_transformed, ray_orig, sizeof(struct ray));
+    memcpy(ray_transformed, ray_orig, sizeof(Ray));
 
     //inverse tranform ray origin
     ray_transformed->p0 = obj->Tinv * ray_transformed->p0;
@@ -19,17 +19,17 @@ void rayTransform(struct ray *ray_orig, struct ray *ray_transformed, Object *obj
     ray_transformed->d.w = 1;
 }
 
-void rayPosition(struct ray *ray, double lambda, struct point *pos) {
+void rayPosition(Ray *ray, double lambda, point *pos) {
     // Compute and return 3D position corresponding to a given lambda
     // for the ray.
     *pos = ray->p0 + (ray->d * lambda);
 }
 
-void rayReflect(struct ray *ray_orig, struct point *p, struct point *n, struct ray *ray_reflected) {
+void rayReflect(Ray *ray_orig, point *p, point *n, Ray *ray_reflected) {
     //this function assumes n is unit length!
 
     //reflection starts at point of intersection
-    memcpy(&(ray_reflected->p0), p, sizeof(struct point));
+    memcpy(&(ray_reflected->p0), p, sizeof(point));
 
     //r=d−2(d⋅n)n
     double ddotn = dot(&(ray_orig->d), n);
@@ -37,7 +37,7 @@ void rayReflect(struct ray *ray_orig, struct point *p, struct point *n, struct r
     //normalize(&ray_reflected->d);
 }
 
-void rayRefract(struct ray *ray_orig, Object *obj, struct point *p, struct point *n, struct ray *ray_refracted, double *s, double *R_Shlick) {
+void rayRefract(Ray *ray_orig, Object *obj, point *p, point *n, Ray *ray_refracted, double *s, double *R_Shlick) {
     double r_index = obj->r_index;
     double r, n1 = 1, n2 = 1, theta = -1;
     double c = dot(n, &(ray_orig->d));
@@ -53,7 +53,7 @@ void rayRefract(struct ray *ray_orig, Object *obj, struct point *p, struct point
     r = n1 / n2;
     //theta = c;
 
-    memcpy(ray_refracted, ray_orig, sizeof(struct ray));
+    memcpy(ray_refracted, ray_orig, sizeof(Ray));
     ray_refracted->p0 = *p - *n * THR;
     *s = 1 - (r * r) * (1 - (c * c));
 
@@ -64,7 +64,7 @@ void rayRefract(struct ray *ray_orig, Object *obj, struct point *p, struct point
     ray_refracted->d = ray_orig->d * r + *n * (r * c - sqrt(*s));
 }
 
-void findFirstHit(Scene *scene, struct ray *ray, double *lambda, Object *Os, Object **obj, struct point *p, struct point *n, double *a, double *b) {
+void findFirstHit(Scene *scene, Ray *ray, double *lambda, Object *Os, Object **obj, point *p, point *n, double *a, double *b) {
     // Find the closest intersection between the ray and any objects in the scene.
     // Inputs:
     //   *ray    -  A pointer to the ray being traced
@@ -81,7 +81,7 @@ void findFirstHit(Scene *scene, struct ray *ray, double *lambda, Object *Os, Obj
 
     Object *curr_obj = scene->object_list;
     double curr_l, curr_a, curr_b;
-    struct point curr_p, curr_n;
+    point curr_p, curr_n;
     *lambda = INFINITY;
 
     /*

@@ -15,7 +15,7 @@ extern struct textureNode *texture_list;
 
 void loadTexture(Object *o, const char *filename, int type, struct textureNode **t_list);
 
-void textureMap(Object *obj, double a, double b, struct color *col);
+void textureMap(Object *obj, double a, double b, color *col);
 void normalMap(Object *obj, double a, double b, struct point *n);
 
 void alphaMap(Object *obj, double a, double b, double *set_alpha, double obj_alpha);

@@ -5,6 +5,7 @@
 #include "color.h"
 #include "mappings.h"
 #include "objects.h"
+#include "L-Systems.h"
 #include "utils.h"
 
 void buildScene(Scene *scene) {

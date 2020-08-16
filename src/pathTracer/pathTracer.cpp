@@ -28,10 +28,10 @@ Object **light_listt;
 int num_lights;
 int curr_light;
 
-inline void explicit_light_sample(struct ray *ray, Object *obj, struct point *p,
-                                  struct point *n, Object **explt) {
+inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
+                                  point *n, Object **explt) {
     // ray from intersection point to light source
-    struct ray pToLight;
+    Ray pToLight;
     pToLight.p0 = *p;
 
     double prob = 0;
@@ -53,8 +53,8 @@ inline void explicit_light_sample(struct ray *ray, Object *obj, struct point *p,
 
     double light_lambda;
     Object *obstruction = NULL;
-    struct point lightp;
-    struct point nls;
+    point lightp;
+    point nls;
     double La, Lb;
 
     findFirstHit(scene, &pToLight, &light_lambda, obj, &obstruction,
@@ -74,7 +74,7 @@ inline void explicit_light_sample(struct ray *ray, Object *obj, struct point *p,
         double nls_dot_l = fabs(dot(&nls, &pToLight.d));
         double w = MIN(1, (A * n_dot_l * nls_dot_l) / (dxd));
 
-        struct color light_col;
+        color light_col;
         // set light color
         textureMap(light_listt[curr_light], La, Lb, &light_col);
 
@@ -83,7 +83,7 @@ inline void explicit_light_sample(struct ray *ray, Object *obj, struct point *p,
 }
 
 void pathTraceMain(int argc, char *argv[]) {
-    struct color col;  // Return color for pixels
+    color col;  // Return color for pixels
 
     if (argc < 5) {
         fprintf(stderr, "PathTracer: Can not parse input parameters\n");
@@ -169,7 +169,7 @@ void pathTraceMain(int argc, char *argv[]) {
     }
     curr_light = 0;
 
-    struct view *cam;  // Camera and view for this scene
+    view *cam;  // Camera and view for this scene
     cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up),
                     scene->cam_focal, -2, 2, 4);
 
@@ -192,7 +192,7 @@ void pathTraceMain(int argc, char *argv[]) {
     t1 = time(NULL);
 
     fprintf(stderr, "Rendering...\n");
-    struct ray ray;
+    Ray ray;
     int k, j, i;
     double is, js;
 
@@ -255,7 +255,7 @@ void pathTraceMain(int argc, char *argv[]) {
             (double)NUM_RAYS / (double)difftime(t2, t1));
 }
 
-void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os,
+void PathTrace(Ray *ray, int depth, color *col, Object *Os,
                Object *explicit_l) {
     // Trace one light path through the scene.
     //
@@ -274,10 +274,10 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os,
     double lambda;       // Lambda at intersection
     double a, b;         // Texture coordinates
     Object *obj = NULL;  // Pointer to object at intersection
-    struct point p;      // Intersection point
-    struct point n;      // Normal at intersection
-    struct point d;
-    struct color objcol;  // Colour for the object in R G and B
+    point p;      // Intersection point
+    point n;      // Normal at intersection
+    point d;
+    color objcol;  // Colour for the object in R G and B
     double diffuse, reflect, refract;
     double R_Shlick = 1;
     double dice;  // Handy to keep a random value
@@ -344,7 +344,7 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os,
         n.z *= -1;
     }
 
-    memcpy(&ray->p0, &p, sizeof(struct point));
+    memcpy(&ray->p0, &p, sizeof(point));
 
     dice = drand48();
     if (dice <= diffuse) {  // diffuse
@@ -356,7 +356,7 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os,
 
     } else if (dice <= diffuse + reflect) {  // reflective
         explt = NULL;
-        struct ray ray_reflected;
+        Ray ray_reflected;
         rayReflect(ray, &p, &n, &ray_reflected);
         // burnished reflection
         ray->d.x = rand_normal_dist(ray_reflected.d.x, obj->refl_sig);
@@ -365,7 +365,7 @@ void PathTrace(struct ray *ray, int depth, struct color *col, Object *Os,
         normalize(&ray->d);
     } else {  // refractive
         explt = NULL;
-        struct ray refractRay;
+        Ray refractRay;
         double s, R_Shlick;
         rayRefract(ray, obj, &p, &n, &refractRay, &s, &R_Shlick);
         if (s > 0 && drand48() < (1 - R_Shlick)) { /*keep refraction*/

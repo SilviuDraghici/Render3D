@@ -42,10 +42,10 @@ class BVH {
     BVH_build build_ptr = &BVH::SAH_build;
 
     //search methods
-    Primitive *bfs(struct ray *ray);
-    Primitive *dfs(struct ray *ray);
+    Primitive *bfs(struct Ray *ray);
+    Primitive *dfs(struct Ray *ray);
 
-    typedef Primitive *(BVH::*BVH_search)(struct ray *ray);
+    typedef Primitive *(BVH::*BVH_search)(struct Ray *ray);
     BVH_search search_ptr = &BVH::bfs;
 
    public:
@@ -58,7 +58,7 @@ class BVH {
     }
 
     void set_search_method(SearchMethod search_method);
-    inline Primitive *search(struct ray *ray) {
+    inline Primitive *search(struct Ray *ray) {
         // search for the first hit primitve in the BVH using the
         // selected search method
         return (this->*search_ptr)(ray);
@@ -83,7 +83,7 @@ class BoundingBox : public Primitive {
     double max_x() const;
     double max_y() const;
     double max_z() const;
-    double intersect(struct ray *r, double lambda);
+    double intersect(struct Ray *r, double lambda);
     bool isprim();
 };
 

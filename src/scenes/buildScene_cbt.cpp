@@ -42,7 +42,7 @@ o->T *= RotZ(scene->frame * PI / 120);
 //o->T *= RotX(-PI / 2);
 //o->T *= Tr(4, 0, 0);
 o->invert_and_bound();
-insertObject(o, scene);
+scene->insertObject(o);
 
 /*
 o = new Sphere(74 / 255.0, 255 / 255.0, 249 / 255.0);
@@ -59,17 +59,24 @@ o->invert_and_bound();
 insertObject(o, scene);
 */
 
+matrix m = I();
+m *= Sc(0.4);
+m *= RotX(- PI/4);
+m *= Tr(-1.8, 1, -1.2);
+color pc = color(0.019842, 0.378377, 0.678877);
+new_flower(scene, &pc, m);
 
 int num_spheres = 100;
 for (int i = 0; i < num_spheres; i++) {
-    o = new Sphere(1, 1, 0);
+    o = new Cylinder(1, 1, 0);
     strcpy(o->label, ("yellow " + std::to_string(i)).c_str());
     o->set_rayTrace_properties(.05, .95, .35, .35, 1, 6);
+    o->T *= RotX(i * 2 * PI / num_spheres);
     o->T *= Sc(0.1);
     o->T *= Tr(0, 0, 5.5);
     o->T *= RotY(i * 2 * PI / num_spheres);
     o->invert_and_bound();
-    insertObject(o, scene);
+    scene->insertObject(o);
 }
 
 for (int i = 0; i < num_spheres; i++) {
@@ -81,7 +88,7 @@ for (int i = 0; i < num_spheres; i++) {
     o->T *= RotY(i * 2 * PI / num_spheres);
     o->T *= RotX(PI / 4);
     o->invert_and_bound();
-    insertObject(o, scene);
+    scene->insertObject(o);
 }
 
 for (int i = 0; i < num_spheres; i++) {
@@ -93,7 +100,7 @@ for (int i = 0; i < num_spheres; i++) {
     o->T *= RotY(i * 2 * PI / num_spheres);
     o->T *= RotX(-PI / 4);
     o->invert_and_bound();
-    insertObject(o, scene);
+    scene->insertObject(o);
 }
 
 bool draw_box = scene->path_tracing_mode;
@@ -110,7 +117,7 @@ if (draw_box || true) {
     o->T *= Sc(10);
     o->T *= Tr(-10, 0, 0);
     o->invert_and_bound();
-    insertObject(o, scene);
+    scene->insertObject(o);
 
     // Right
     o = new Plane(.25, .25, .75);
@@ -121,7 +128,7 @@ if (draw_box || true) {
     o->T *= Sc(25);
     o->T *= Tr(10, 0, 0);
     o->invert_and_bound();
-    insertObject(o, scene);
+    scene->insertObject(o);
 
     // Back
     o = new Plane(.75, .75, .75);
@@ -133,7 +140,7 @@ if (draw_box || true) {
     o->T *= Sc(10);
     o->T *= Tr(0, 0, 10);
     o->invert_and_bound();
-    insertObject(o, scene);
+    scene->insertObject(o);
 
     // Front
     o = new Plane(.3, 1, .3);
@@ -144,7 +151,7 @@ if (draw_box || true) {
     o->T *= Sc(10);
     o->T *= Tr(0, 0, -15.1);
     o->invert_and_bound();
-    insertObject(o, scene);
+    scene->insertObject(o);
 
     // Bottom
     o = new Plane(.75, .75, .75);
@@ -155,7 +162,7 @@ if (draw_box || true) {
     o->T *= Sc(25);
     o->T *= Tr(0, -10, 0);
     o->invert_and_bound();
-    insertObject(o, scene);
+    scene->insertObject(o);
 
     // Top
     o = new Plane(.75, .75, .75);
@@ -166,7 +173,7 @@ if (draw_box || true) {
     o->T *= Sc(25);
     o->T *= Tr(0, 10, 0);
     o->invert_and_bound();
-    insertObject(o, scene);
+    scene->insertObject(o);
 }
 
 // Planar light source at top
@@ -181,7 +188,7 @@ o->T *= Tr(0, 9.995, 0);
 o->invert_and_bound();
 o->isLightSource = 1;
 o->pt.LSweight *= 4;  // <- scale weight by scale
-insertObject(o, scene);
+scene->insertObject(o);
 
 p.x = 0;
 p.y = 9.9;
