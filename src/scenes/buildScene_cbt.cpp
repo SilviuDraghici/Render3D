@@ -64,7 +64,8 @@ m *= Sc(0.4);
 m *= RotX(- PI/4);
 m *= Tr(-1.8, 1, -1.2);
 color pc = color(0.019842, 0.378377, 0.678877);
-new_flower(scene, &pc, m);
+//new_Flower(scene, m, &pc);
+new_FlTree(scene, m, &pc, 0, 4, PI/2, 4);
 
 int num_spheres = 100;
 for (int i = 0; i < num_spheres; i++) {
