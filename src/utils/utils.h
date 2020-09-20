@@ -156,12 +156,12 @@ struct matrix {
 inline point operator*(const point &p, const matrix &m) {
     printf("left point mult\n");
     struct point pr;
-    pr.x = (p.x * m.T[0][0] ) + (p.y * m.T[1][0]) + (p.x * m.T[2][0]) +
-           (p.w * m.T[3][0] );
-    pr.y = (p.x * m.T[0][1] ) + (p.y * m.T[1][1]) + (p.x * m.T[2][1]) +
-           (p.w * m.T[3][1] );
-    pr.z = (p.x * m.T[0][2] ) + (p.y * m.T[1][2]) + (p.x * m.T[2][2]) +
-           (p.w * m.T[3][2] );
+    pr.x = (p.x * m.T[0][0]) + (p.y * m.T[1][0]) + (p.x * m.T[2][0]) +
+           (p.w * m.T[3][0]);
+    pr.y = (p.x * m.T[0][1]) + (p.y * m.T[1][1]) + (p.x * m.T[2][1]) +
+           (p.w * m.T[3][1]);
+    pr.z = (p.x * m.T[0][2]) + (p.y * m.T[1][2]) + (p.x * m.T[2][2]) +
+           (p.w * m.T[3][2]);
     return pr;
 }
 
@@ -179,4 +179,19 @@ void solveQuadratic(struct Ray *ray, double *l1, double *l2);
 void hemiSphereCoordinates(struct point *n, struct point *d);
 
 double rand_normal_dist(double mu, double sigma);
+
+inline double xor128(void) {
+    //https://en.wikipedia.org/wiki/Xorshift
+    static int x = 123456789;
+    static int y = 362436069;
+    static int z = 521288629;
+    static int w = 88675123;
+    int t;
+    t = x ^ (x << 11);
+    x = y;
+    y = z;
+    z = w;
+    return (w = w ^ (w >> 19) ^ (t ^ (t >> 8))) / 2147483647.0;
+}
+
 #endif

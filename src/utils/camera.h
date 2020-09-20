@@ -25,7 +25,7 @@ extern struct point cam_pos;
 extern struct point cam_up;
 extern struct point cam_gaze;
 extern struct point cam_gaze_point;
-extern double cam_focal;  // should be negative
+extern double cam_focal; // should be negative
 extern double du, dv;
 
 struct view *setupView(struct point *e, struct point *g, struct point *up, double f, double wl, double wt, double wsize);

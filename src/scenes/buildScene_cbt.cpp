@@ -1,9 +1,7 @@
 
 Object *o;
-struct point p;
-struct pointLS *l;
-
-struct textureNode *t_list = NULL;
+point p;
+PointLS *l;
 
 const char *checkers = "scenes/checkers.ppm";
 
@@ -13,7 +11,7 @@ const char *checkers = "scenes/checkers.ppm";
 //const char *mesh_file = "scenes/wineglass_13k.obj";
 //const char *mesh_file = "scenes/bunny_69k.obj";
 //const char *mesh_file = "scenes/hand_134k.obj";
-const char *mesh_file = "scenes/lucy_1M.obj";
+const char *mesh_file = "lucy_1M.obj";
 
 //dragon meshes
 //const char *mesh_file = "scenes/dragon_030k.obj";
@@ -43,6 +41,7 @@ o->T *= RotZ(scene->frame * PI / 120);
 //o->T *= Tr(4, 0, 0);
 o->invert_and_bound();
 scene->insertObject(o);
+
 
 /*
 o = new Sphere(74 / 255.0, 255 / 255.0, 249 / 255.0);
@@ -136,7 +135,7 @@ if (draw_box || true) {
     o->set_pathTrace_properties(1.0, 0.0, 0.0);
     o->r_index = 1.4;
     strcpy(o->label, "Back Wall");
-    loadTexture(o, checkers, 1, &t_list);
+    loadTexture(o, checkers, 1, scene);
     //o->T *= RotateZ(o, PI/4);
     o->T *= Sc(10);
     o->T *= Tr(0, 0, 10);
@@ -195,8 +194,8 @@ p.x = 0;
 p.y = 9.9;
 p.z = 0;
 p.w = 1;
-l = newPLS(&p, .95, .95, .95);
+l = new PointLS(p, .95, .95, .95);
 insertPLS(l, &(scene->rt_point_light_list));
 
-l = newPLS(&scene->cam_pos, .95, .95, .95);
+l = new PointLS(scene->cam_pos, .95, .95, .95);
 insertPLS(l, &(scene->rt_point_light_list));

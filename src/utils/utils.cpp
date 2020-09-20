@@ -102,8 +102,8 @@ void solveQuadratic(struct Ray *ray, double *l1, double *l2) {
 
 void hemiSphereCoordinates(struct point *n, struct point *d) {
     // returns a random vector from the hemisphere around n
-    double a = drand48() * 2 * PI;
-    double b = drand48() * 2 - 1;
+    double a = xor128() * 2 * PI;
+    double b = xor128() * 2 - 1;
     b = acos(b);
 
     d->x = cos(a) * sin(b);
@@ -111,8 +111,8 @@ void hemiSphereCoordinates(struct point *n, struct point *d) {
     d->z = cos(b);
     d->w = 1;
     while (dot(n, d) < 0) {
-        a = drand48() * 2 * PI;
-        b = drand48() * 2 - 1;
+        a = xor128() * 2 * PI;
+        b = xor128() * 2 - 1;
         b = acos(b);
         d->x = cos(a) * sin(b);
         d->y = sin(a) * sin(b);
@@ -132,8 +132,8 @@ double rand_normal_dist(double mu, double sigma) {
     }
 
     do {
-        U1 = -1 + drand48() * 2;
-        U2 = -1 + drand48() * 2;
+        U1 = -1 + xor128() * 2;
+        U2 = -1 + xor128() * 2;
         W = pow(U1, 2) + pow(U2, 2);
     } while (W >= 1 || W == 0);
 

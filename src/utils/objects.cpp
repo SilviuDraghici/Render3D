@@ -274,8 +274,8 @@ void Plane::randomPoint(double *x, double *y, double *z) {
     // plane Sapling should be uniform, meaning there should be an equal chance
     // of getting any spot on the plane
 
-    double a = drand48();
-    double b = drand48();
+    double a = xor128();
+    double b = xor128();
     surfaceCoordinates(a, b, x, y, z);
 }
 
@@ -350,8 +350,8 @@ void Sphere::randomPoint(double *x, double *y, double *z) {
     // plane Sapling should be uniform, meaning there should be an equal change
     // of gedtting any spot on the plane
 
-    double a = drand48() * 2 * PI;
-    double b = drand48() * 2 - 1;
+    double a = xor128() * 2 * PI;
+    double b = xor128() * 2 - 1;
     b = acos(b);
     surfaceCoordinates(a, b, x, y, z);
 }
@@ -470,8 +470,8 @@ void Cylinder::surfaceCoordinates(double a, double b, double *x, double *y, doub
 }
 
 void Cylinder::randomPoint(double *x, double *y, double *z) {
-    double a = drand48() * PI * 2;
-    double b = drand48();
+    double a = xor128() * PI * 2;
+    double b = xor128();
     surfaceCoordinates(a, b, x, y, z);
 }
 
@@ -742,29 +742,7 @@ void normalTransform(struct point *n, struct point *n_transformed,
     normalize(n_transformed);
 }
 
-struct pointLS *newPLS(struct point *p0, double r, double g, double b) {
-    // Allocate a new point light sourse structure. Initialize the light
-    // source to the specified RGB colour
-    // Note that this is a point light source in that it is a single point
-    // in space, if you also want a uniform direction for light over the
-    // scene (a so-called directional light) you need to place the
-    // light source really far away.
-
-    struct pointLS *ls = (struct pointLS *)calloc(1, sizeof(struct pointLS));
-    if (!ls)
-        fprintf(stderr, "Out of memory allocating light source!\n");
-    else {
-        memcpy(&ls->p0, p0,
-               sizeof(struct point));  // Copy light source location
-
-        ls->col.R = r;  // Store light source colour and
-        ls->col.G = g;  // intensity
-        ls->col.B = b;
-    }
-    return (ls);
-}
-
-void insertPLS(struct pointLS *l, struct pointLS **list) {
+void insertPLS(PointLS *l, PointLS **list) {
     if (l == NULL) return;
     // Inserts a light source into the list of light sources
     if (*(list) == NULL) {

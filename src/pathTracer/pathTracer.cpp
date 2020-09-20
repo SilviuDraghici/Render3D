@@ -35,7 +35,7 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
     pToLight.p0 = *p;
 
     double prob = 0;
-    double dice = drand48();
+    double dice = xor128();
     for (int i = 0; i < num_lights; i++) {
         prob += light_listt[i]->pt.LSweight;
         if (dice < prob) {
@@ -84,7 +84,7 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
 
 void pathTraceMain(int argc, char *argv[]) {
     color col;  // Return color for pixels
-
+    fprintf(stderr, "PathTracing\n");
     if (argc < 5) {
         fprintf(stderr, "PathTracer: Can not parse input parameters\n");
         fprintf(stderr, "USAGE: Render3D 1 size num_samples output_name\n");
@@ -189,14 +189,14 @@ void pathTraceMain(int argc, char *argv[]) {
     NUM_RAYS = 0;
 
     time_t t1, t2;
-    t1 = time(NULL);
+    //t1 = time(NULL);
 
     fprintf(stderr, "Rendering...\n");
     Ray ray;
     int k, j, i;
     double is, js;
 
-    t1 = time(NULL);
+    //t1 = time(NULL);
 
     for (k = 1; k <= scene->pt_num_samples; k++) {
         fprintf(stderr, "\r%d/%d", k, scene->pt_num_samples);
@@ -209,8 +209,8 @@ void pathTraceMain(int argc, char *argv[]) {
                 col = 0;
 
                 // Random sample within the pixel's area
-                is = i + drand48() - 0.5;
-                js = j + drand48() - 0.5;
+                is = i + xor128() - 0.5;
+                js = j + xor128() - 0.5;
 
                 getRayFromPixel(scene, &ray, cam, is, js);
 
@@ -241,18 +241,20 @@ void pathTraceMain(int argc, char *argv[]) {
 
     }  // End for k
 
-    t2 = time(NULL);
+    //t2 = time(NULL);
 
     // Output rendered image
     if (k % samples_per_update != 1) {
         dataOutput(rgbIm, scene->sx, output_name);
     }
 
+    free(cam);
+
     fprintf(stderr, "\nPath Tracing Done!\n");
 
     fprintf(stderr, "Total number of rays created: %ld\n", NUM_RAYS);
-    fprintf(stderr, "Rays per second: %.0f\n",
-            (double)NUM_RAYS / (double)difftime(t2, t1));
+    //fprintf(stderr, "Rays per second: %.0f\n",
+    //        (double)NUM_RAYS / (double)difftime(t2, t1));
 }
 
 void PathTrace(Ray *ray, int depth, color *col, Object *Os,
@@ -346,7 +348,7 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
 
     memcpy(&ray->p0, &p, sizeof(point));
 
-    dice = drand48();
+    dice = xor128();
     if (dice <= diffuse) {  // diffuse
         // ******************** Importance sampling ************************
         cosWeightedSample(&n, &d);
@@ -368,17 +370,17 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
         Ray refractRay;
         double s, R_Shlick;
         rayRefract(ray, obj, &p, &n, &refractRay, &s, &R_Shlick);
-        if (s > 0 && drand48() < (1 - R_Shlick)) { /*keep refraction*/
+        if (s > 0 && xor128() < (1 - R_Shlick)) { /*keep refraction*/
         } else {
             // refract the ray because of total internal reflection (s <= 0)
-            // or dice role resulted in accumulating relected portion (drand48()
+            // or dice role resulted in accumulating relected portion (xor128()
             // > (1 - R_Shlick))
             rayReflect(ray, &p, &n, &refractRay);
         }
         ray->d = refractRay.d;
     }
 
-    dice = drand48();
+    dice = xor128();
     max_col = MAX(MAX(ray->pt.ray_col.R, ray->pt.ray_col.G),
                   MAX(ray->pt.ray_col.R, ray->pt.ray_col.B));
     if (sqrt(dice) < max_col) {

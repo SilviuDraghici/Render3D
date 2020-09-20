@@ -4,7 +4,20 @@
 #include "BVH.h"
 #include "utils.h"
 
-struct Scene {
+struct textureNode {
+    char name[1024];
+    int type;
+    image *im;
+    textureNode *next;
+    ~textureNode(){
+        free(im->rgbdata);
+        free(im);
+        delete(next);
+    }
+};
+
+class Scene {
+    public:
     //general settings:
     int sx = 1024, sy = 1024;
 
@@ -22,10 +35,10 @@ struct Scene {
     int rt_antialiasing = 0;
 
     //variables for the camera capturing the scene
-    struct point cam_pos;
-    struct point cam_up;
-    struct point cam_gaze;
-    struct point cam_gaze_point;
+    point cam_pos;
+    point cam_up;
+    point cam_gaze;
+    point cam_gaze_point;
     double cam_focal;  // should be negative
 
     double du, dv;
@@ -37,7 +50,9 @@ struct Scene {
     BVH *bvh = NULL;
 
     //this is for the ray tracer
-    struct pointLS *rt_point_light_list = NULL;
+    PointLS *rt_point_light_list = NULL;
+
+    textureNode *texture_list = NULL;
 
     //this can be used for creating animations
     int frame = 0;
@@ -53,6 +68,12 @@ struct Scene {
             o->next = object_list->next;
             object_list->next = o;
         }
+    }
+
+    ~Scene(){
+        delete(rt_point_light_list);
+        delete(bvh);
+        delete(texture_list);
     }
 };
 

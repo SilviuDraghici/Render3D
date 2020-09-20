@@ -4,8 +4,6 @@
 #include "objects.h"
 #include "utils.h"
 
-struct textureNode *texture_list;
-
 inline void uvMap(struct image *img, double u, double v, color *col) {
     u = MIN(1, MAX(0, u));
     v = MIN(1, MAX(0, v));
@@ -25,19 +23,19 @@ inline void uvMap(struct image *img, double u, double v, color *col) {
     //printf("r: %f g: %f b: %f\n", *R, *G, *B);
 }
 
-void loadTexture(Object *o, const char *filename, int type, struct textureNode **t_list) {
+void loadTexture(Object *o, const char *filename, int type, Scene * scene) {
     // Load a texture or normal map image from file and assign it to the
     // specified object.
     // type:   1  ->  Texture map  (RGB, .ppm)
     //         2  ->  Normal map   (RGB, .ppm)
     //         3  ->  Alpha map    (grayscale, .pgm)
     // Stores loaded images in a linked list to avoid replication
-    struct image *im;
-    struct textureNode *p;
+    image *im;
+    textureNode *p;
 
     if (o != NULL) {
         // Check current linked list
-        p = *(t_list);
+        p = scene->texture_list;
         while (p != NULL) {
             if (strcmp(&p->name[0], filename) == 0) {
                 // Found image already on the list
@@ -60,17 +58,17 @@ void loadTexture(Object *o, const char *filename, int type, struct textureNode *
 
         // Insert it into the texture list
         if (im != NULL) {
-            p = (struct textureNode *)calloc(1, sizeof(struct textureNode));
+            p = new textureNode;
             strcpy(&p->name[0], filename);
             p->type = type;
             p->im = im;
             p->next = NULL;
             // Insert into linked list
-            if ((*(t_list)) == NULL)
-                *(t_list) = p;
+            if (scene->texture_list == NULL)
+                scene->texture_list = p;
             else {
-                p->next = (*(t_list))->next;
-                (*(t_list))->next = p;
+                p->next = scene->texture_list->next;
+                scene->texture_list->next = p;
             }
             // Assign to object
             if (type == 1)

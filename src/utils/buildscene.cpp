@@ -28,6 +28,7 @@ void buildScene(Scene *scene) {
     //point min = point(scene->bvh->root->min_x(), scene->bvh->root->min_y(), scene->bvh->root->min_z());
     //point max = point(scene->bvh->root->max_x(), scene->bvh->root->max_y(), scene->bvh->root->max_z());
     //std::cout << "b bound:"<< min << " " << max << "\n";
+    free(prims);
 }
 
 void insertObject(Object *o, Scene *scene) {

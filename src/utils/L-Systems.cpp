@@ -10,9 +10,9 @@ void new_Flower(Scene *scene, matrix &hierarchyMat, color *petalCol) {
 
     if (petalCol == NULL) {
         //printf("making color\n");
-        f.R = drand48();
-        f.G = drand48();
-        f.B = drand48();
+        f.R = xor128();
+        f.G = xor128();
+        f.B = xor128();
         petalCol = &f;
     }
     //printf("flower.R = %f, flower.G = %f, flower.B = %f;\n", petalCol->R,petalCol->G, petalCol->B);
@@ -72,7 +72,7 @@ void new_Branch(Scene *scene, matrix &hierarchyMat, color *col, double numBranch
     }
 
     matrix newTransforms;
-    double angle = drand48() * 2 * maxRotation;
+    double angle = xor128() * 2 * maxRotation;
     double dice;
     color f;
 
@@ -86,7 +86,7 @@ void new_Branch(Scene *scene, matrix &hierarchyMat, color *col, double numBranch
         newTransforms *= Tr(0, yscale / 2 + 0.5, 0);
         newTransforms *= hierarchyMat;
 
-        dice = drand48();
+        dice = xor128();
         if (dice <= b_to_f) {  //new flower
             new_Flower(scene, newTransforms, col);
         } else {
@@ -112,7 +112,7 @@ void new_FlTree(Scene *scene, matrix &hierarchyMat, color *col, double distFromC
     }
 
     matrix newTransforms;
-    double angle = drand48() * 2 * maxRotation;
+    double angle = xor128() * 2 * maxRotation;
     for (int i = 0; i < numBranches; i++) {
         newTransforms = I();
         newTransforms *= Sc(0.8);

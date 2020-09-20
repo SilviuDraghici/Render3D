@@ -46,6 +46,7 @@ void union_bounds(Bounds &a, Bounds &b, Bounds &union_box);
 
 class Primitive {
    public:
+    virtual ~Primitive(){};
     virtual double intersect(struct Ray *r, double lambda) = 0;
     virtual bool isprim() = 0;
     virtual double min_x() const = 0;
@@ -61,18 +62,17 @@ class Object : public Primitive{
    public:
     char label[20];  // for debugging
 
-    struct RT_properties
+    RT_properties
         rt;  // Object's albedos for Phong model (for ray tracing)
-    struct PT_properties pt;  // Object's surface properties for Path tracing
+    PT_properties pt;  // Object's surface properties for Path tracing
 
     color col;    // Object's colour in RGB
     matrix T;     // T holds the transformation applied to this object.
     matrix Tinv;  // Tinv holds the inverse transformation
 
-    struct image
-        *texImg;  // Pointer to structure holding the texture for this object
-    struct image *normalMap;  // Normal map for this object
-    struct image *alphaMap;   // Alpha map for the object
+    image *texImg;  // Pointer to structure holding the texture for this object
+    image *normalMap;  // Normal map for this object
+    image *alphaMap;   // Alpha map for the object
 
     // Material properties
     double refl_sig;
@@ -188,15 +188,25 @@ class Polygon : public Object {
 };
 
 /* The structure below defines a point light source */
-struct pointLS {
+class PointLS {
+    public:
     color col;      // Light source colour
-    struct point p0;       // Light source location
-    struct pointLS *next;  // Pointer to next light in the scene
+    point p0;       // Light source location
+    PointLS *next = NULL;  // Pointer to next light in the scene
+    PointLS(const point &p, double r, double g, double b){
+        p0 = p;
+        col.R = r;
+        col.G = g;
+        col.B = b;
+    }
+    ~PointLS(){
+        delete next;
+    }
 };
 
 void normalTransform(struct point *n_orig, struct point *n_transformed,
                      Object *obj);
 
 struct pointLS *newPLS(struct point *p0, double r, double g, double b);
-void insertPLS(struct pointLS *l, struct pointLS **list);
+void insertPLS(PointLS *l, PointLS **list);
 #endif

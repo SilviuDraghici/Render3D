@@ -47,7 +47,7 @@ struct image *readPPMimage(const char *filename) {
     int tmpi;
     char *tmpc;
 
-    im = (struct image *)calloc(1, sizeof(struct image));
+    im = (image *)calloc(1, sizeof(image));
     if (im != NULL) {
         im->rgbdata = NULL;
         f = fopen(filename, "rb+");

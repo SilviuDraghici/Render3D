@@ -191,9 +191,9 @@ void cosWeightedSample(struct point *n, struct point *d) {
     struct point nz;
 
     // Random sample on hemisphere with cosine-weighted distribution
-    u1 = drand48();
+    u1 = xor128();
     r = sqrt(u1);
-    theta = 2 * PI * drand48();
+    theta = 2 * PI * xor128();
     nz.x = r * cos(theta);
     nz.y = r * sin(theta);
     nz.z = sqrt(1.0 - (nz.x * nz.x) - (nz.y * nz.y));

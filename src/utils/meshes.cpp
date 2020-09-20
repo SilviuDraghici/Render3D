@@ -25,15 +25,15 @@ TriangleFace::TriangleFace(double x1, double y1, double z1, double x2,
     p3.x = x3, p3.y = y3, p3.z = z3;
 }
 
-double TriangleFace::min_x() const{ return MIN(p1.x, MIN(p2.x, p3.x)); }
-double TriangleFace::min_y() const{ return MIN(p1.y, MIN(p2.y, p3.y)); }
-double TriangleFace::min_z() const{ return MIN(p1.z, MIN(p2.z, p3.z)); }
-double TriangleFace::max_x() const{ return MAX(p1.x, MAX(p2.x, p3.x)); }
-double TriangleFace::max_y() const{ return MAX(p1.y, MAX(p2.y, p3.y)); }
-double TriangleFace::max_z() const{ return MAX(p1.z, MAX(p2.z, p3.z)); }
+double TriangleFace::min_x() const { return MIN(p1.x, MIN(p2.x, p3.x)); }
+double TriangleFace::min_y() const { return MIN(p1.y, MIN(p2.y, p3.y)); }
+double TriangleFace::min_z() const { return MIN(p1.z, MIN(p2.z, p3.z)); }
+double TriangleFace::max_x() const { return MAX(p1.x, MAX(p2.x, p3.x)); }
+double TriangleFace::max_y() const { return MAX(p1.y, MAX(p2.y, p3.y)); }
+double TriangleFace::max_z() const { return MAX(p1.z, MAX(p2.z, p3.z)); }
 
 void TriangleFace::intersect(struct Ray *ray, double *lambda,
-                                  point *bary_coords) {
+                             point *bary_coords) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified triangle.
 
@@ -50,7 +50,7 @@ void TriangleFace::intersect(struct Ray *ray, double *lambda,
     double t_lambda = r_dot_n / d_dot_n;
 
     if (t_lambda < THR)  //|| *lambda < t_lambda)
-        return;     // intersection with plane is negative
+        return;          // intersection with plane is negative
 
     double u, v, w;
 
@@ -98,8 +98,8 @@ double TriangleFace::intersect(struct Ray *ray, double lambda) {
     double t_lambda = r_dot_n / d_dot_n;
 
     if (t_lambda < THR || lambda < t_lambda)
-        return INFINITY;     // intersection with plane is negative 
-                             // or larger than current lambda
+        return INFINITY;  // intersection with plane is negative
+                          // or larger than current lambda
 
     double u, v, w;
 
@@ -168,9 +168,11 @@ void Mesh::setMesh(const char *filename) {
 
     std::streampos first_vertex, first_normal, first_face;
 
-    num_vertices = 0, num_faces = 0;
+    num_vertices = 0, num_faces = 0, num_normals = 0;
 
+    int v = 1, vn = 1, f = 0;
     double x, y, z, scale;
+    int p1, p2, p3, n1, n2, n3;
     double min_x, max_x, avg_x, min_y, max_y, avg_y, min_z, max_z, avg_z;
     min_x = min_y = min_z = INFINITY;
     max_x = max_y = max_z = -INFINITY;
@@ -181,141 +183,94 @@ void Mesh::setMesh(const char *filename) {
         return;
     }
 
-    // scrub through comments
-    while (getline(mesh_obj, line) && line.rfind("#", 0) == 0) {
-        // sscanf(line.c_str(), "# Vertices: %d", &num_vertices);
-        sscanf(line.c_str(), "# Faces: %d", &num_faces);
-    }
+    while (getline(mesh_obj, line)) {
+        if (line.rfind("v ", 0) == 0) {
+            //count vertices and update average location
+            num_vertices++;
+            sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
+            avg_x += x, avg_y += y, avg_z += z;
+            if (x < min_x) {
+                min_x = x;
+            }
+            if (max_x < x) {
+                max_x = x;
+            }
 
-    first_vertex = (int)mesh_obj.tellg() - (line.size() + 1);
-    mesh_obj.seekg(first_vertex);
+            if (y < min_y) {
+                min_y = y;
+            }
+            if (max_y < y) {
+                max_y = y;
+            }
 
-    // count the number of vertices
-    while (getline(mesh_obj, line) && line.rfind("v ", 0) == 0) {
-        num_vertices++;
-        sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
-        avg_x += x, avg_y += y, avg_z += z;
-        if (x < min_x) {
-            min_x = x;
-        }
-        if (max_x < x) {
-            max_x = x;
-        }
-
-        if (y < min_y) {
-            min_y = y;
-        }
-        if (max_y < y) {
-            max_y = y;
-        }
-
-        if (z < min_z) {
-            min_z = z;
-        }
-        if (max_z < z) {
-            max_z = z;
-        }
-    }
-
-    // calculate average diatance from 0 so that mesh can be centered
-    avg_x /= num_vertices, avg_y /= num_vertices, avg_z /= num_vertices;
-    // calculate max dimension so mesh can be scaled down to 1x1x1 ish
-    scale =
-        MAX(abs(max_x - min_x), MAX(abs(max_y - min_y), abs(max_z - min_z)));
-
-    num_vertices += 1;  // << overcount by 1
-    vertices = (point *)malloc(num_vertices * sizeof(point));
-
-    // read vertices into array
-    mesh_obj.seekg(first_vertex);
-
-    // start filling at 1 so face's lookup doesn't need to subtract 1
-    for (int i = 1; i < num_vertices; i++) {
-        getline(mesh_obj, line);
-        sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
-        x = (x - avg_x) / scale, y = (y - avg_y) / scale,
-        z = -(z - avg_z) / scale;
-        vertices[i] = point(x, y, z);
-    }
-
-    // save location of first normal
-    first_normal = mesh_obj.tellg();
-
-    // count number over vertex normals
-    num_normals = 1;  // overcount
-    while (getline(mesh_obj, line) && line.rfind("vn ", 0) == 0) {
-        // std::cout << line << "\n";
-        num_normals++;
-    }
-    if (num_normals > 1) {
-        normals = (point *)malloc(num_normals * sizeof(point));
-        mesh_obj.seekg(first_normal);
-        for (int i = 1; i < num_normals; i++) {
-            getline(mesh_obj, line);
-            // std::cout << line << "\n";
-            sscanf(line.c_str(), "vn %lf %lf %lf", &x, &y, &z);
-            normals[i] = point(x, y, -z);
-        }
-    }
-
-    // save location of first face
-    first_face = (int)mesh_obj.tellg();
-
-    if (num_faces == 0) {
-        // count number of faces
-        while (getline(mesh_obj, line) && line.rfind("f ", 0) == 0) {
+            if (z < min_z) {
+                min_z = z;
+            }
+            if (max_z < z) {
+                max_z = z;
+            }
+        } else if (line.rfind("vn ", 0) == 0) {
+            //count vertex normals
+            //std::cout << line << "\n";
+            num_normals++;
+        } else if (line.rfind("f ", 0) == 0) {
+            //count faces
             num_faces++;
         }
     }
 
-    faces = (PrimitiveData *)malloc(num_faces * sizeof(PrimitiveData));
-
+    //go to begining of file
     mesh_obj.clear();
-    mesh_obj.seekg(first_face);
+    mesh_obj.seekg(0);
 
-    int p1, p2, p3, n1, n2, n3;
-    getline(mesh_obj, line);
-    if (sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3) == 3) {
-        mesh_obj.seekg(first_face);
-        for (int i = 0; i < num_faces; i++) {
-            getline(mesh_obj, line);
-            // std::cout << line << "\n";
-            sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3);
-            if (num_normals > 1) {
-                faces[i] = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
-                ((TriangleFace_N *)faces[i].mprimitive)->setNormals(normals[p1], normals[p2], normals[p3]);
-            } else {
-                faces[i] = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
-            }
-        }
-    } else {
-        mesh_obj.seekg(first_face);
-        for (int i = 0; i < num_faces; i++) {
-            getline(mesh_obj, line);
-            // std::cout << line << "\n";
-            sscanf(line.c_str(), "f %d//%d %d//%d %d//%d", &p1, &n1, &p2, &n2,
-                   &p3, &n3);
-            if (num_normals > 1) {
-                faces[i] = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
-                ((TriangleFace_N *)faces[i].mprimitive)->setNormals(normals[n1], normals[n2], normals[n3]);
-            } else {
-                faces[i] = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
+    // calculate average distance from 0 so that mesh can be centered
+    avg_x /= num_vertices, avg_y /= num_vertices, avg_z /= num_vertices;
+    // calculate max dimension so mesh can be scaled down to 1x1x1 ish
+    scale = MAX(abs(max_x - min_x), MAX(abs(max_y - min_y), abs(max_z - min_z)));
+
+    num_vertices += 1;  // << overcount by 1
+    vertices = (point *)malloc(num_vertices * sizeof(point));
+
+    num_normals += 1;
+    if (num_normals > 1) {
+        normals = (point *)malloc(num_normals * sizeof(point));
+    }
+
+    faces = (PrimitiveData *)malloc(num_faces * sizeof(PrimitiveData));
+    while (getline(mesh_obj, line)) {
+        if (line.rfind("v ", 0) == 0) {
+            sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
+            x = (x - avg_x) / scale, y = (y - avg_y) / scale,
+            z = -(z - avg_z) / scale;
+            vertices[v] = point(x, y, z);
+            v++;
+        } else if(line.rfind("vn ", 0) == 0){
+            sscanf(line.c_str(), "vn %lf %lf %lf", &x, &y, &z);
+            normals[vn] = point(x, y, -z);
+            vn++;
+        } else if (line.rfind("f ", 0) == 0){
+            if (sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3) == 3){
+                faces[f] = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
+                f++;
+            } else if(sscanf(line.c_str(), "f %d//%d %d//%d %d//%d", &p1, &n1, &p2, &n2, &p3, &n3) == 6){
+                faces[f] = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
+                ((TriangleFace_N *)faces[f].mprimitive)->setNormals(normals[n1], normals[n2], normals[n3]);
+                f++;
             }
         }
     }
-
-    bvh.set_build_method(BuildMethod::SAH);
+    bvh.set_build_method(BuildMethod::MidSplit);
     bvh.set_search_method(SearchMethod::BFS);
     bvh.build(faces, num_faces);
 
     mesh_obj.close();
-    
+
     free(vertices);
     free(normals);
     free(faces);
 }
 
-void Mesh::set_canonical_bounds(){
+void Mesh::set_canonical_bounds() {
     w_bound.min.x = bvh.root->min_x();
     w_bound.min.y = bvh.root->min_y();
     w_bound.min.z = bvh.root->min_z();

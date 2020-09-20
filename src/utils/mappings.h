@@ -1,19 +1,12 @@
 #ifndef MAPPING_H
 #define MAPPING_H
 
+
 #include "color.h"
 #include "objects.h"
+#include "scene.h"
 
-struct textureNode {
-    char name[1024];
-    int type;
-    struct image *im;
-    struct textureNode *next;
-};
-
-extern struct textureNode *texture_list;
-
-void loadTexture(Object *o, const char *filename, int type, struct textureNode **t_list);
+void loadTexture(Object *o, const char *filename, int type, Scene *scene);
 
 void textureMap(Object *obj, double a, double b, color *col);
 void normalMap(Object *obj, double a, double b, struct point *n);

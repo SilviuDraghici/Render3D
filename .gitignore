@@ -9,7 +9,7 @@ out.ppm
 *.h.gch
 *.txt
 *.obj
-
+*.exe
 frames*
 *.avi
 *.gif

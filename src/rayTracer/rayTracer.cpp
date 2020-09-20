@@ -132,6 +132,8 @@ void rayTraceMain(int argc, char *argv[]) {
 
     std::cout << "Ray Tracing Done!\n";
 
+    free(cam);
+    
     //debug :
     raytracing_timer.print_elapsed_time(std::cerr);
     std::cerr << "Average number of intersection tests: " << num_intersection_tests / num_bvh_searches << "\n";
@@ -166,11 +168,6 @@ void rayTrace(Ray *ray, int depth, color *col, Object *Os) {
         return;
     }
     findFirstHit(scene, ray, &lambda, Os, &obj, &p, &n, &a, &b);
-    //std::cout << lambda << " a: " << a << "\n";
-    if (a == -1) {
-        *col = color(p.x, p.y, p.z);
-        return;
-    }
 
     if (lambda == -1 || obj == NULL) {
         *col = -1;
@@ -234,7 +231,7 @@ void rtShade(Object *obj, point *p, point *n, Ray *ray,
 
     color global;
 
-    pointLS *light = scene->rt_point_light_list;
+    PointLS *light = scene->rt_point_light_list;
 
     while (light != NULL) {
         // ray from intersection point to light source

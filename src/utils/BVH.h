@@ -33,7 +33,6 @@ struct PrimitiveData {
 };
 
 class BVH {
-
     //build methods
     void SAH_build(PrimitiveData prims[], int num_prims);
     void midsplit_build(PrimitiveData prims[], int num_prims);
@@ -49,6 +48,9 @@ class BVH {
     BVH_search search_ptr = &BVH::bfs;
 
    public:
+    ~BVH() {
+        delete (root);
+    }
     Primitive *root = NULL;
     void set_build_method(BuildMethod split_method);
     void print();
@@ -69,6 +71,10 @@ class BoundingBox : public Primitive {
     int depth;
 
    public:
+    ~BoundingBox(){
+        delete(c1);
+        delete(c2);
+    }
     Primitive *c1, *c2;
     double b_min_x, b_max_x;
     double b_min_y, b_max_y;
