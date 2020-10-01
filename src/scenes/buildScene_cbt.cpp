@@ -11,7 +11,7 @@ const char *checkers = "scenes/checkers.ppm";
 //const char *mesh_file = "scenes/wineglass_13k.obj";
 //const char *mesh_file = "scenes/bunny_69k.obj";
 //const char *mesh_file = "scenes/hand_134k.obj";
-const char *mesh_file = "lucy_1M.obj";
+const char *mesh_file = "scenes/lucy_1M.obj";
 
 //dragon meshes
 //const char *mesh_file = "scenes/dragon_030k.obj";
