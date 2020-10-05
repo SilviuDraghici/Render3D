@@ -15,10 +15,9 @@ Running
 
 TODO
 ---
-- Re-implement meshes
-- refactor with more c++ features
-- Use Vulkan to render on the gpu
-- develop system for passing in scenes
+- implement volumes
+- Use Cuda to render on the gpu
+- use Lua Scripting to handle buildscenes
 
 Sample Renders
 ---
@@ -26,13 +25,27 @@ Sample Renders
 1024x1024 Path traced Cornell Box. 50,000 samples.
 ![PT] 
 
-1024x1024 Ray traced Cornell Box. 
+1024x1024 Ray traced Cornell Box.
 ![RT]
 
+4096x4096 Path Traced Wineglass Mesh
+![WG]
 
+1024x1024 Video of Path Traced Wineglass Mesh
+![WGG]
+
+4096x4096 Pathtraced Sceene of 1M triangle Mesh \"Lucy\"
+Meant to make use of BVH's
+![LT]
 
 <!--- Images ---> 
 
 [PT]: https://github.com/SilviuDraghici/Render3D/raw/master/output/Cornell_Box_50k.png "This looks no better than at 20,000 samples. ¯\\_( ツ )_/¯ "
 
 [RT]: https://github.com/SilviuDraghici/Render3D/raw/master/output/Cornell_Box_rt.png "This is a little less feature-full"
+
+[WG]: https://github.com/SilviuDraghici/Render3D/raw/master/output/wineglass.png
+
+[WGG]: https://github.com/SilviuDraghici/Render3D/raw/master/output/wineglass.gif
+
+[LT]: https://github.com/SilviuDraghici/Render3D/raw/master/output/Lucy_brings_flowers.png "She is holding a simple L-system generated flower bouquet"
