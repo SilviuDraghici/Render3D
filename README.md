@@ -1,3 +1,5 @@
+# Render3D
+
 3D Render - A Ray Tacer and Path Tracer all-in-one
 ===
 This program can render scenes using either Ray tracing and the Phong illumination model or Path tracing.
@@ -34,7 +36,7 @@ Sample Renders
 1024x1024 Video of Path Traced Wineglass Mesh
 ![WGG]
 
-4096x4096 Pathtraced Sceene of 1M triangle Mesh \"Lucy\"
+4096x4096 Pathtraced Scene of 1M Triangle Mesh \"Lucy\"
 Meant to make use of BVH's
 ![LT]
 
