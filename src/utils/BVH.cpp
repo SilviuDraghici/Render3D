@@ -65,81 +65,40 @@ double BoundingBox::intersect(struct Ray *ray, double lambda) {
     // Computes and returns the value of 'lambda' at the intersection
     // between the specified ray and the specified canonical box.
 
-    if ((b_min_x < ray->p0.x && ray->p0.x < b_max_x) &&
-        (b_min_y < ray->p0.y && ray->p0.y < b_max_y) &&
-        (b_min_z < ray->p0.z && ray->p0.z < b_max_z)) {
-        //ray starts inside the bounding box
-        return THR;
-    }
+    double tmin = -INFINITY;
+    double tmax = INFINITY;
 
-    point p;
+    double _tmin;
+    double _tmax;
+    
+    // x axis slab
+    _tmin = (min_x() - ray->p0.x) / ray->d.x;
+    _tmax = (max_x() - ray->p0.x) / ray->d.x;
+    if (_tmin > _tmax) std::swap(_tmin, _tmax);
+    if (_tmin > tmin) tmin = _tmin;
+    if (_tmax < tmax) tmax = _tmax;
 
-    lambda = INFINITY;
+    // y axis slab
+    _tmin = (min_y() - ray->p0.y) / ray->d.y;
+    _tmax = (max_y() - ray->p0.y) / ray->d.y;
+    if (_tmin > _tmax) std::swap(_tmin, _tmax);
+    if (tmin > _tmax || _tmin > tmax) return INFINITY;
+    if (_tmin > tmin) tmin = _tmin;
+    if (_tmax < tmax) tmax = _tmax;
 
-    // current intersection lambda
-    double b_lambda;
+    // z axis slab
+    _tmin = (min_z() - ray->p0.z) / ray->d.z;
+    _tmax = (max_z() - ray->p0.z) / ray->d.z;
+    if (_tmin > _tmax) std::swap(_tmin, _tmax);
+    if (tmin > _tmax || _tmin > tmax) return INFINITY;
+    if (_tmin > tmin) tmin = _tmin;
+    if (_tmax < tmax) tmax = _tmax;
 
-    // y-z plane box face at min_x
-    b_lambda = (b_min_x - ray->p0.x) / ray->d.x;
-    if (THR < b_lambda) {
-        rayPosition(ray, b_lambda, &p);
-        if ((b_min_y < p.y && p.y < b_max_y) &&
-            (b_min_z < p.z && p.z < b_max_z)) {
-            lambda = b_lambda;
-        }
-    }
-
-    // y-z plane box face at max_x
-    b_lambda = (b_max_x - ray->p0.x) / ray->d.x;
-    if (THR < b_lambda && b_lambda < lambda) {
-        rayPosition(ray, b_lambda, &p);
-        if ((b_min_y < p.y && p.y < b_max_y) &&
-            (b_min_z < p.z && p.z < b_max_z)) {
-            lambda = b_lambda;
-        }
-    }
-
-    // x-z plane box face at min_y
-    b_lambda = (b_min_y - ray->p0.y) / ray->d.y;
-    if (THR < b_lambda && b_lambda < lambda) {
-        rayPosition(ray, b_lambda, &p);
-        if ((b_min_x < p.x && p.x < b_max_x) &&
-            (b_min_z < p.z && p.z < b_max_z)) {
-            lambda = b_lambda;
-        }
-    }
-
-    // x-z plane box face at max_y
-    b_lambda = (b_max_y - ray->p0.y) / ray->d.y;
-    if (THR < b_lambda && b_lambda < lambda) {
-        rayPosition(ray, b_lambda, &p);
-        if ((b_min_x < p.x && p.x < b_max_x) &&
-            (b_min_z < p.z && p.z < b_max_z)) {
-            lambda = b_lambda;
-        }
-    }
-
-    // x-y plane box face at min_z
-    b_lambda = (b_min_z - ray->p0.z) / ray->d.z;
-    if (THR < b_lambda && b_lambda < lambda) {
-        rayPosition(ray, b_lambda, &p);
-        if ((b_min_x < p.x && p.x < b_max_x) &&
-            (b_min_y < p.y && p.y < b_max_y)) {
-            lambda = b_lambda;
-        }
-    }
-
-    // x-y plane box face at max_z
-    b_lambda = (b_max_z - ray->p0.z) / ray->d.z;
-    if (THR < b_lambda && b_lambda < lambda) {
-        rayPosition(ray, b_lambda, &p);
-        if ((b_min_x < p.x && p.x < b_max_x) &&
-            (b_min_y < p.y && p.y < b_max_y)) {
-            lambda = b_lambda;
-        }
-    }
-
-    return lambda;
+    if (tmin > lambda) return INFINITY;
+    if (tmin < THR && tmax < THR) return INFINITY;
+    if (tmin < THR) tmin = THR;
+    
+    return tmin;
 }
 
 bool BoundingBox::isprim() { return false; }

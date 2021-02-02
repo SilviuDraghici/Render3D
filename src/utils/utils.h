@@ -43,6 +43,7 @@ struct point {
                 break;
             }
         }
+        return z;
     }
 
     double operator[](Axis axis) const {
@@ -60,6 +61,7 @@ struct point {
                 break;
             }
         }
+        return z;
     }
 
     point &operator=(const point &pt) {

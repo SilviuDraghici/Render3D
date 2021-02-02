@@ -2,7 +2,7 @@
 //table top
 Object *o;
 struct point p;
-struct pointLS *l;
+PointLS *l;
 
 struct textureNode *t_list = NULL;
 
@@ -47,8 +47,8 @@ o->T *= RotY(scene->frame * PI / 120);
 o->T *= RotX(scene->frame * PI / 120);
 o->T *= Sc(5.0);
 o->T *= Tr(0, 0, 0);
-invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-insertObject(o, &(scene->object_list));
+o->invert_and_bound();
+scene->insertObject(o);
 
 o = new Plane(.75, .75, .75);
     o->set_pathTrace_properties(0.7, 0.3, 0.0);
@@ -57,8 +57,8 @@ o = new Plane(.75, .75, .75);
     o->T *= RotX(PI / 2);
     o->T *= Sc(10,10,10);
     o->T *= Tr(0, -2.25, 0);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->invert_and_bound();
+    scene->insertObject(o);
 
 bool draw_box = 1;//scene->path_tracing_mode;
 if (draw_box){
@@ -71,8 +71,8 @@ if (draw_box){
     o->T *= RotY(PI / 2);
     o->T *= Sc(10);
     o->T *= Tr(-10, 0, 0);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->invert_and_bound();
+    scene->insertObject(o);
 
     // Right
     o = new Plane(.25, .25, .75);
@@ -82,20 +82,20 @@ if (draw_box){
     o->T *= RotY(PI / 2);
     o->T *= Sc(25);
     o->T *= Tr(10, 0, 0);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->invert_and_bound();
+    scene->insertObject(o);
 
     // Back
     o = new Plane(.75, .75, .75);
     o->set_pathTrace_properties(1.0, 0.0, 0.0);
     o->r_index = 1.4;
     strcpy(o->label, "Back Wall");
-    loadTexture(o, checkers, 1, &t_list);
+    loadTexture(o, checkers, 1, scene);
     //o->T *= RotateZ(o, PI/4);
     o->T *= Sc(10);
     o->T *= Tr(0, 0, 10);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->invert_and_bound();
+    scene->insertObject(o);
 
     // Front
     o = new Plane(.3, 1, .3);
@@ -105,8 +105,8 @@ if (draw_box){
     //o->T *= RotateZ(o, PI/4);
     o->T *= Sc(10);
     o->T *= Tr(0, 0, -15.1);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->invert_and_bound();
+    scene->insertObject(o);
 
     // Bottom
     o = new Plane(.75, .75, .75);
@@ -116,8 +116,8 @@ if (draw_box){
     o->T *= RotX(PI / 2);
     o->T *= Sc(25);
     o->T *= Tr(0, -10, 0);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->invert_and_bound();
+    scene->insertObject(o);
 
     // Top
     o = new Plane(.75, .75, .75);
@@ -127,8 +127,8 @@ if (draw_box){
     o->T *= RotX(-PI / 2);
     o->T *= Sc(25);
     o->T *= Tr(0, 10, 0);
-    invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
-    insertObject(o, &(scene->object_list));
+    o->invert_and_bound();
+    scene->insertObject(o);
 }
 
 p.x = 8;
@@ -145,18 +145,18 @@ strcpy(o->label, "Top Light");
 o->T *= RotX(PI / 4);
 o->T *= RotY(-PI * 3 / 4 + scene->frame * PI / 120);
 o->T *= Tr(p.x*1.01, p.y*1.01, p.z*1.01);
-invert(&o->T.T[0][0], &o->Tinv.T[0][0]);
 o->isLightSource = 1;
 o->pt.LSweight *= 4;  // <- scale weight by scale
-insertObject(o, &(scene->object_list));
+o->invert_and_bound();
+scene->insertObject(o);
 
 p.w = 1;
-l = newPLS(&p, .95, .95, .95);
+l = new PointLS(p, .95, .95, .95);
 insertPLS(l, &(scene->rt_point_light_list));
 
 p.x = 0;
 p.y = 0;
 p.z = -15;
 p.w = 1;
-l = newPLS(&p, .95, .95, .95);
+l = new PointLS(p, .95, .95, .95);
 insertPLS(l, &(scene->rt_point_light_list));
