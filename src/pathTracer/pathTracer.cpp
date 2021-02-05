@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "../utils/affinetransforms.h"
+#include "../utils/affineTransforms.h"
 #include "../utils/buildscene.h"
 #include "../utils/camera.h"
 #include "../utils/color.h"
