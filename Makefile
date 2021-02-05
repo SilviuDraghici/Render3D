@@ -14,14 +14,20 @@ LDLIBS   = -lm
 
 all: release
 
-# Add correct OMP flags for Linux/MacOS
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-	OPENMP += -fopenmp
-endif
-ifeq ($(UNAME_S),Darwin)
-	OPENMP += -Xpreprocessor -fopenmp
-	LDLIBS += -lomp
+# Add correct OMP flags for Windows/Linux/MacOS
+ifeq ($(OS),Windows_NT)
+    OBJ = build_Win/build
+else
+    UNAME_S := $(shell uname -s)
+	ifeq ($(UNAME_S),Linux)
+		OBJ = build_Lin/build
+		OPENMP += -fopenmp
+	endif
+	ifeq ($(UNAME_S),Darwin)
+		OBJ = build_Mac/build
+		OPENMP += -Xpreprocessor -fopenmp
+		LDLIBS += -lomp
+	endif
 endif
 
 # Build the executable
@@ -43,7 +49,7 @@ $(OBJ):
 debug: $(EXE)
 
 # Optimize in release mode
-release: CFLAGS += -O3 -ffast-math $(OPENMP) -ftree-vectorize -msse2 -mfpmath=sse -flto=full -march=native
+release: CFLAGS += -O3 -ffast-math $(OPENMP) -ftree-vectorize -msse2 -mfpmath=sse -flto -march=native
 release: LDLIBS += $(OPENMP)
 release: $(EXE)
 
