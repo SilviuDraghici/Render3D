@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-#include "affinetransforms.h"
+#include "affineTransforms.h"
 #include "color.h"
 #include "imageProcessor.h"
 
