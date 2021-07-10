@@ -9,6 +9,17 @@
 
 //#define DEBUG
 
+int count_vertices(std::string &face){
+    int n = 0;
+    for(int i = 1; i < face.size(); i++){
+        if(face[i] != ' ')
+            n++;
+        while( i < face.size() && face[i] != ' ')
+          i++;
+    }
+    return n;
+}
+
 TriangleFace::TriangleFace() {}
 
 TriangleFace::TriangleFace(point p1, point p2, point p3) {
@@ -166,13 +177,10 @@ void Mesh::setMesh(const char *filename) {
     std::string line;
     std::ifstream mesh_obj(filename);
 
-    std::streampos first_vertex, first_normal, first_face;
-
     num_vertices = 0, num_faces = 0, num_normals = 0;
 
-    int v = 1, vn = 1, f = 0;
+    int v = 1, vn = 1, f = 0, r=0;
     double x, y, z, scale;
-    int p1, p2, p3, n1, n2, n3;
     double min_x, max_x, avg_x, min_y, max_y, avg_y, min_z, max_z, avg_z;
     min_x = min_y = min_z = INFINITY;
     max_x = max_y = max_z = -INFINITY;
@@ -215,9 +223,18 @@ void Mesh::setMesh(const char *filename) {
             num_normals++;
         } else if (line.rfind("f ", 0) == 0) {
             //count faces
-            num_faces++;
+            num_faces += count_vertices(line) - 2;
+            if (count_vertices(line) > 3){
+                //std::cout << "rectangle!\n";
+                r++;
+            }
         }
     }
+
+    //std::cout << "num rectangles: " << r << "\n";
+    //std::cout << "num vertices: " << num_vertices << "\n";
+    //std::cout << "num normals: " << num_normals << "\n";
+    //std::cout << "num faces: " << num_faces << "\n";
 
     //go to begining of file
     mesh_obj.clear();
@@ -237,6 +254,9 @@ void Mesh::setMesh(const char *filename) {
     }
 
     faces = (PrimitiveData *)malloc(num_faces * sizeof(PrimitiveData));
+    int num_vertices;
+    int start_index = 2, end_index;
+    std::string face_string, first_vertex;
     while (getline(mesh_obj, line)) {
         if (line.rfind("v ", 0) == 0) {
             sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
@@ -249,15 +269,31 @@ void Mesh::setMesh(const char *filename) {
             normals[vn] = point(x, y, -z);
             vn++;
         } else if (line.rfind("f ", 0) == 0){
-            if (sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3) == 3){
-                faces[f] = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
-                f++;
-            } else if(sscanf(line.c_str(), "f %d//%d %d//%d %d//%d", &p1, &n1, &p2, &n2, &p3, &n3) == 6){
-                faces[f] = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
-                ((TriangleFace_N *)faces[f].mprimitive)->setNormals(normals[n1], normals[n2], normals[n3]);
+            num_vertices = count_vertices(line);
+            //the following code if for splitting polygons into triangles 
+            start_index = line.find_first_not_of(" ", 1);//begining of first vertex
+            end_index = line.find(" ", start_index);//end of first vertex
+            first_vertex.assign(line, 0, end_index);// all triangles will share the first vertex
+            //printf("\nline: [%s]\n", line.c_str());
+            //printf("fver: [%s]\n", first_vertex.c_str());
+            
+            for(int i = 0; i < num_vertices - 2; i++){
+                face_string = first_vertex;
+                for(int j=0; j<2; j++){
+                    start_index = line.find_first_not_of(" ", end_index);
+                    end_index = line.find(" ", start_index + 1);
+                    if(end_index == std::string::npos){
+                        end_index=line.length();
+                    }
+                    face_string += " " + line.substr(start_index, end_index-start_index);
+                }
+                end_index = start_index;//go back so the last vertex is repeated
+                //printf("flin: [%s]\n", face_string.c_str());
+                faces[f] = buildFace(face_string);
                 f++;
             }
         }
+        //if( f > 5) break;
     }
     bvh.set_build_method(BuildMethod::MidSplit);
     bvh.set_search_method(SearchMethod::BFS);
@@ -268,6 +304,21 @@ void Mesh::setMesh(const char *filename) {
     free(vertices);
     free(normals);
     free(faces);
+}
+
+TriangleFace* Mesh::buildFace(std::string& line){
+    int p1, p2, p3, t1, t2, t3, n1, n2, n3;
+    TriangleFace * face = NULL;
+    if (sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3) == 3){
+        face = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
+    } else if(sscanf(line.c_str(), "f %d//%d %d//%d %d//%d", &p1, &n1, &p2, &n2, &p3, &n3) == 6){
+        face = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
+        ((TriangleFace_N *)face)->setNormals(normals[n1], normals[n2], normals[n3]);
+    } else if(sscanf(line.c_str(), "f %d/%d/%d %d/%d/%d %d/%d/%d", &p1, &t1, &n1, &p2, &t2, &n2, &p3, &t3, &n3) == 9){
+        face = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
+        ((TriangleFace_N *)face)->setNormals(normals[n1], normals[n2], normals[n3]);
+    }
+    return face;
 }
 
 void Mesh::set_canonical_bounds() {

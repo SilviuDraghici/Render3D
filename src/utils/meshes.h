@@ -53,6 +53,8 @@ class Mesh : public Object {
 
     BVH bvh;
 
+    TriangleFace* buildFace(std::string& line);
+
    public:
     using Object::Object;
     void setMesh(const char *filename);

@@ -1,6 +1,6 @@
 #!/bin/bash
 NAME=${1:-out}
-RES=1024
+RES=512
 
 echo_err() { printf "%s\n" "$*" >&2; }
 
