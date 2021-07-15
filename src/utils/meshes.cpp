@@ -310,11 +310,16 @@ TriangleFace* Mesh::buildFace(std::string& line){
     int p1, p2, p3, t1, t2, t3, n1, n2, n3;
     TriangleFace * face = NULL;
     if (sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3) == 3){
+        adjust_indexes(p1, p2, p3, num_vertices);
         face = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
     } else if(sscanf(line.c_str(), "f %d//%d %d//%d %d//%d", &p1, &n1, &p2, &n2, &p3, &n3) == 6){
+        adjust_indexes(p1, p2, p3, num_vertices);
+        adjust_indexes(n1, n2, n3, num_normals);
         face = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
         ((TriangleFace_N *)face)->setNormals(normals[n1], normals[n2], normals[n3]);
     } else if(sscanf(line.c_str(), "f %d/%d/%d %d/%d/%d %d/%d/%d", &p1, &t1, &n1, &p2, &t2, &n2, &p3, &t3, &n3) == 9){
+        adjust_indexes(p1, p2, p3, num_vertices);
+        adjust_indexes(n1, n2, n3, num_normals);
         face = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
         ((TriangleFace_N *)face)->setNormals(normals[n1], normals[n2], normals[n3]);
     }
@@ -349,4 +354,10 @@ void Mesh::intersect(struct Ray *ray, double *lambda, struct point *p,
         normalize(n);
         rayPosition(ray, *lambda, p);
     }
+}
+
+void adjust_indexes(int& i1, int& i2, int& i3, int array_size){
+    if (i1 < 0) i1 = array_size + i1;
+    if (i2 < 0) i2 = array_size + i2;
+    if (i3 < 0) i3 = array_size + i3;
 }

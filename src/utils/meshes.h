@@ -5,6 +5,8 @@
 #include "objects.h"
 #include "BVH.h"
 
+void adjust_indexes(int& i1, int& i2, int& i3, int array_size);
+
 class TriangleFace : public Primitive {
    protected:
     point p1, p2, p3;
