@@ -172,6 +172,7 @@ void BoundingBox::setBounds(double min_x, double max_x, double min_y,
 }
 
 void Mesh::setMesh(const char *filename) {
+    //std::cout << "\nBuilding Mesh: " << this->label << "\n";
     frontAndBack = 0;
 
     std::string line;
@@ -179,7 +180,7 @@ void Mesh::setMesh(const char *filename) {
 
     num_vertices = 0, num_faces = 0, num_normals = 0;
 
-    int v = 1, vn = 1, f = 0, r=0;
+    int v = 1, vn = 1, f = 0;
     double x, y, z, scale;
     double min_x, max_x, avg_x, min_y, max_y, avg_y, min_z, max_z, avg_z;
     min_x = min_y = min_z = INFINITY;
@@ -192,6 +193,10 @@ void Mesh::setMesh(const char *filename) {
     }
 
     while (getline(mesh_obj, line)) {
+        if(line.find('\r') != std::string::npos){
+            //remove '\r' from windows format objs
+            line.erase(line.find('\r'));
+        }
         if (line.rfind("v ", 0) == 0) {
             //count vertices and update average location
             num_vertices++;
@@ -224,14 +229,9 @@ void Mesh::setMesh(const char *filename) {
         } else if (line.rfind("f ", 0) == 0) {
             //count faces
             num_faces += count_vertices(line) - 2;
-            if (count_vertices(line) > 3){
-                //std::cout << "rectangle!\n";
-                r++;
-            }
         }
     }
 
-    //std::cout << "num rectangles: " << r << "\n";
     //std::cout << "num vertices: " << num_vertices << "\n";
     //std::cout << "num normals: " << num_normals << "\n";
     //std::cout << "num faces: " << num_faces << "\n";
@@ -258,6 +258,10 @@ void Mesh::setMesh(const char *filename) {
     int start_index = 2, end_index;
     std::string face_string, first_vertex;
     while (getline(mesh_obj, line)) {
+        if(line.find('\r') != std::string::npos){
+            //remove '\r' from windows format objs
+            line.erase(line.find('\r'));
+        }
         if (line.rfind("v ", 0) == 0) {
             sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
             x = (x - avg_x) / scale, y = (y - avg_y) / scale,
@@ -278,6 +282,7 @@ void Mesh::setMesh(const char *filename) {
             //printf("fver: [%s]\n", first_vertex.c_str());
             
             for(int i = 0; i < num_vertices - 2; i++){
+                if(f > num_faces) std::cout << "num faces Exceded!\n";
                 face_string = first_vertex;
                 for(int j=0; j<2; j++){
                     start_index = line.find_first_not_of(" ", end_index);
@@ -304,9 +309,11 @@ void Mesh::setMesh(const char *filename) {
     free(vertices);
     free(normals);
     free(faces);
+    //std::cout<< "Build complete!\n";
 }
 
 TriangleFace* Mesh::buildFace(std::string& line){
+    //std::cout << "["<< line << "]\n";
     int p1, p2, p3, t1, t2, t3, n1, n2, n3;
     TriangleFace * face = NULL;
     if (sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3) == 3){

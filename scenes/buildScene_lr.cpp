@@ -21,8 +21,8 @@ scene->cam_focal = -3;
 
 
 o = new Mesh(74 / 255.0, 255 / 255.0, 249 / 255.0);
-((Mesh *)o)->setMesh(room_mesh);
 strcpy(o->label, "room mesh");
+((Mesh *)o)->setMesh(room_mesh);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.54;
 o->T *= Sc(40.0);
@@ -35,8 +35,8 @@ o->invert_and_bound();
 scene->insertObject(o);
 
 o = new Mesh(255 / 255.0, 74 / 255.0, 249 / 255.0);
-((Mesh *)o)->setMesh(cube_mesh);
 strcpy(o->label, "cube mesh");
+((Mesh *)o)->setMesh(cube_mesh);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.54;
 o->T *= Sc(1);
@@ -50,13 +50,13 @@ scene->insertObject(o);
 
 
 o = new Mesh(255 / 255.0, 249 / 255.0, 74 / 255.0);
-((Mesh *)o)->setMesh(cube_mesh);
 strcpy(o->label, "sphere mesh");
+((Mesh *)o)->setMesh(sphere_mesh);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.54;
 o->T *= Sc(1);
-//o->T *= RotX(scene->frame * PI / 120);
-//o->T *= RotY(scene->frame * PI / 120);
+o->T *= RotX(scene->frame * PI / 120);
+o->T *= RotY(scene->frame * PI / 120);
 o->T *= Tr(-2,0,1);
 //o->T *= RotX(-PI / 2);
 //o->T *= Tr(4, 0, 0);
