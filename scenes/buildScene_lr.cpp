@@ -5,7 +5,11 @@ PointLS *l;
 
 struct textureNode *t_list = NULL;
 
-// Cornell box with a living room inside
+//living room scene
+const char *checkers_texture = "scenes/checkers.ppm";
+const char *diamond_texture = "scenes/cube/diamond.ppm";
+const char *lava_texture = "scenes/cube/lava.ppm";
+const char *world_mask_texture = "scenes/sphere/world-mask.ppm";
 
 //const char *room_mesh = "scenes/living_room/tea_pot_N_992.obj";
 const char *room_mesh = "scenes/living_room/living_room.obj";
@@ -37,6 +41,7 @@ scene->insertObject(o);
 o = new Mesh(255 / 255.0, 74 / 255.0, 249 / 255.0);
 strcpy(o->label, "cube mesh");
 ((Mesh *)o)->setMesh(cube_mesh);
+loadTexture(o, checkers_texture, 1, scene);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.54;
 o->T *= Sc(1);
@@ -52,6 +57,7 @@ scene->insertObject(o);
 o = new Mesh(255 / 255.0, 249 / 255.0, 74 / 255.0);
 strcpy(o->label, "sphere mesh");
 ((Mesh *)o)->setMesh(sphere_mesh);
+loadTexture(o, world_mask_texture, 1, scene);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.54;
 o->T *= Sc(1);

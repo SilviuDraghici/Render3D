@@ -146,6 +146,8 @@ point TriangleFace::normal(point *bary_coords) {
     return cross(&e12, &e23);
 }
 
+void TriangleFace::texture_coordinates(double *a, double *b, point *bary_coords) {return;}
+
 std::ostream &operator<<(std::ostream &strm, const TriangleFace &a) {
     return strm << "p1: " << a.p1 << " p2: " << a.p2 << " p3: " << a.p3;
 }
@@ -157,6 +159,15 @@ void TriangleFace_N::setNormals(point n1, point n2, point n3) {
 point TriangleFace_N::normal(point *bary_coords) {
     // std::cout << "n1: " << n1 << " n2: " << n2 << " n3: " << n3 << "\n";
     return n1 * bary_coords->x + n2 * bary_coords->y + n3 * bary_coords->z;
+}
+
+void TriangleFace_T::set_texture_coordinates(double p1_u, double p1_v, double p2_u, double p2_v, double p3_u, double p3_v){
+    this->p1_u=p1_u, this->p1_v=p1_v,this->p2_u=p2_u, this->p2_v=p2_v, this->p3_u=p3_u, this->p3_v=p3_v;
+}
+
+void TriangleFace_T::texture_coordinates(double *a, double *b, point *bary_coords){
+    *a = p1_u * bary_coords->x + p2_u * bary_coords->y + p3_u * bary_coords->z;
+    *b = p1_v * bary_coords->x + p2_v * bary_coords->y + p3_v * bary_coords->z;
 }
 
 std::ostream &operator<<(std::ostream &strm, const TriangleFace_N &a) {
@@ -180,7 +191,7 @@ void Mesh::setMesh(const char *filename) {
 
     num_vertices = 0, num_faces = 0, num_normals = 0;
 
-    int v = 1, vn = 1, f = 0;
+    int v = 1, t = 1, vn = 1, f = 0;
     double x, y, z, scale;
     double min_x, max_x, avg_x, min_y, max_y, avg_y, min_z, max_z, avg_z;
     min_x = min_y = min_z = INFINITY;
@@ -226,7 +237,9 @@ void Mesh::setMesh(const char *filename) {
             //count vertex normals
             //std::cout << line << "\n";
             num_normals++;
-        } else if (line.rfind("f ", 0) == 0) {
+        } else if (line.rfind("vt ", 0) == 0){
+            num_texture_coords++;
+        }else if (line.rfind("f ", 0) == 0) {
             //count faces
             num_faces += count_vertices(line) - 2;
         }
@@ -248,6 +261,12 @@ void Mesh::setMesh(const char *filename) {
     num_vertices += 1;  // << overcount by 1
     vertices = (point *)malloc(num_vertices * sizeof(point));
 
+    num_texture_coords +=1;
+    if (num_texture_coords > 1) {
+        //note one texture coord is 2 doubles
+        texture_coords = (double *)malloc(num_texture_coords * 2 * sizeof(double));
+    }
+
     num_normals += 1;
     if (num_normals > 1) {
         normals = (point *)malloc(num_normals * sizeof(point));
@@ -268,7 +287,12 @@ void Mesh::setMesh(const char *filename) {
             z = -(z - avg_z) / scale;
             vertices[v] = point(x, y, z);
             v++;
-        } else if(line.rfind("vn ", 0) == 0){
+        } else if (line.rfind("vt ", 0) == 0){
+            sscanf(line.c_str(), "vt %lf %lf", &x, &y);
+            texture_coords[t *2] = x;
+            texture_coords[(t * 2) + 1] = y;
+            t++;
+        } else if (line.rfind("vn ", 0) == 0){
             sscanf(line.c_str(), "vn %lf %lf %lf", &x, &y, &z);
             normals[vn] = point(x, y, -z);
             vn++;
@@ -282,7 +306,7 @@ void Mesh::setMesh(const char *filename) {
             //printf("fver: [%s]\n", first_vertex.c_str());
             
             for(int i = 0; i < num_vertices - 2; i++){
-                if(f > num_faces) std::cout << "num faces Exceded!\n";
+                //if(f > num_faces) std::cout << "num faces Exceded!\n";
                 face_string = first_vertex;
                 for(int j=0; j<2; j++){
                     start_index = line.find_first_not_of(" ", end_index);
@@ -307,6 +331,7 @@ void Mesh::setMesh(const char *filename) {
     mesh_obj.close();
 
     free(vertices);
+    free(texture_coords);
     free(normals);
     free(faces);
     //std::cout<< "Build complete!\n";
@@ -315,22 +340,35 @@ void Mesh::setMesh(const char *filename) {
 TriangleFace* Mesh::buildFace(std::string& line){
     //std::cout << "["<< line << "]\n";
     int p1, p2, p3, t1, t2, t3, n1, n2, n3;
-    TriangleFace * face = NULL;
     if (sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3) == 3){
         adjust_indexes(p1, p2, p3, num_vertices);
-        face = new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
+        return new TriangleFace(vertices[p3], vertices[p2], vertices[p1]);
+    } else if(sscanf(line.c_str(), "f %d/%d %d/%d %d/%d", &p1, &t1, &p2, &t2, &p3, &t3) == 6){
+        adjust_indexes(p1, p2, p3, num_vertices);
+        adjust_indexes(t1, t2, t3, num_texture_coords);
+        TriangleFace_T *face = new TriangleFace_T(vertices[p1], vertices[p2], vertices[p3]);
+        face->set_texture_coordinates(texture_coords[t1 * 2],texture_coords[t1 * 2 + 1],
+                                      texture_coords[t2 * 2],texture_coords[t2 * 2 + 1],
+                                      texture_coords[t3 * 2],texture_coords[t3 * 2 + 1]);
+        return face;
     } else if(sscanf(line.c_str(), "f %d//%d %d//%d %d//%d", &p1, &n1, &p2, &n2, &p3, &n3) == 6){
         adjust_indexes(p1, p2, p3, num_vertices);
         adjust_indexes(n1, n2, n3, num_normals);
-        face = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
-        ((TriangleFace_N *)face)->setNormals(normals[n1], normals[n2], normals[n3]);
+        TriangleFace_N * face = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
+        face->setNormals(normals[n1], normals[n2], normals[n3]);
+        return face;
     } else if(sscanf(line.c_str(), "f %d/%d/%d %d/%d/%d %d/%d/%d", &p1, &t1, &n1, &p2, &t2, &n2, &p3, &t3, &n3) == 9){
         adjust_indexes(p1, p2, p3, num_vertices);
+        adjust_indexes(t1, t2, t3, num_texture_coords);
         adjust_indexes(n1, n2, n3, num_normals);
-        face = new TriangleFace_N(vertices[p1], vertices[p2], vertices[p3]);
-        ((TriangleFace_N *)face)->setNormals(normals[n1], normals[n2], normals[n3]);
+        TriangleFace_T_N *face = new TriangleFace_T_N(vertices[p1], vertices[p2], vertices[p3]);
+        face->setNormals(normals[n1], normals[n2], normals[n3]);
+        face->set_texture_coordinates(texture_coords[t1 * 2],texture_coords[t1 * 2 + 1],
+                                      texture_coords[t2 * 2],texture_coords[t2 * 2 + 1],
+                                      texture_coords[t3 * 2],texture_coords[t3 * 2 + 1]);
+        return face;
     }
-    return face;
+    return NULL;
 }
 
 void Mesh::set_canonical_bounds() {
@@ -359,6 +397,7 @@ void Mesh::intersect(struct Ray *ray, double *lambda, struct point *p,
         *n = closest_face->normal(&bary_coords);
         normalTransform(n, n, this);
         normalize(n);
+        closest_face->texture_coordinates(a, b, &bary_coords);
         rayPosition(ray, *lambda, p);
     }
 }

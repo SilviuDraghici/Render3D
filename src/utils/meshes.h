@@ -27,9 +27,10 @@ class TriangleFace : public Primitive {
     double max_y() const;
     double max_z() const;
     virtual point normal(point *bary_coords);
+    virtual void texture_coordinates(double *a, double *b, point *bary_coords);
 };
 
-class TriangleFace_N : public TriangleFace {
+class TriangleFace_N : virtual public TriangleFace {
     point n1, n2, n3;
 
    public:
@@ -40,10 +41,31 @@ class TriangleFace_N : public TriangleFace {
     point normal(point *bary_coords);
 };
 
+class TriangleFace_T : virtual public TriangleFace {
+    double p1_u, p1_v, p2_u, p2_v, p3_u, p3_v;
+
+   public:
+    friend std::ostream &operator<<(std::ostream &strm,
+                                    const TriangleFace_T &a);
+    using TriangleFace::TriangleFace;
+    void set_texture_coordinates(double p1_u, double p1_v, double p2_u, double p2_v, double p3_u, double p3_v);
+    void texture_coordinates(double *a, double *b, point *bary_coords);
+};
+
+class TriangleFace_T_N : public TriangleFace_T, public TriangleFace_N {
+   public:
+    friend std::ostream &operator<<(std::ostream &strm,
+                                    const TriangleFace_T_N &a);
+    using TriangleFace_T::TriangleFace_T;
+};
+
 class Mesh : public Object {
     // used for reading in Mesh
     int num_vertices = 0;
     point *vertices = NULL;
+
+    int num_texture_coords = 0;
+    double *texture_coords = NULL;
 
     int num_normals;
     point *normals = NULL;
@@ -65,4 +87,17 @@ class Mesh : public Object {
                    struct point *n, double *a, double *b);
 };
 
+//I will probably delete these
+class normalFunctor{
+  public:
+    virtual point operator()(point &bary_coords) = 0;
+};
+
+class FaceNormal : public normalFunctor {
+    point operator()(point &bary_coords);
+};
+
+class InterpolateNormal : public normalFunctor {
+    point operator()(point &bary_coords);
+};
 #endif
