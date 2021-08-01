@@ -1,16 +1,10 @@
-#include "meshes.h"
+#include "MeshFactory.h"
 
 #include <fstream>
 #include <iostream>
-#include <limits>
-#include <queue>
 #include <algorithm>
 
-#include "ray.h"
-
-//#define DEBUG
-
-int count_vertices(std::string &face){
+inline int count_vertices(std::string &face){
     int n = 0;
     for(int i = 1; i < face.size(); i++){
         if(face[i] != ' ')
@@ -21,171 +15,34 @@ int count_vertices(std::string &face){
     return n;
 }
 
-TriangleFace::TriangleFace() {}
+MeshFactory::MeshFactory(std::list<Object*>& o_l, std::list<textureNode*>& t_l):
+object_list(o_l), texture_list(t_l){}
 
-TriangleFace::TriangleFace(point p1, point p2, point p3) {
-    this->p1 = p1;
-    this->p2 = p2;
-    this->p3 = p3;
+MeshFactory::~MeshFactory(){
+
 }
 
-TriangleFace::TriangleFace(double x1, double y1, double z1, double x2,
-                           double y2, double z2, double x3, double y3,
-                           double z3) {
-    p1.x = x1, p1.y = y1, p1.z = z1;
-    p2.x = x2, p2.y = y2, p2.z = z2;
-    p3.x = x3, p3.y = y3, p3.z = z3;
+void MeshFactory::setDefaultColor(color& c){
+    default_color = c;
 }
 
-double TriangleFace::min_x() const { return MIN(p1.x, MIN(p2.x, p3.x)); }
-double TriangleFace::min_y() const { return MIN(p1.y, MIN(p2.y, p3.y)); }
-double TriangleFace::min_z() const { return MIN(p1.z, MIN(p2.z, p3.z)); }
-double TriangleFace::max_x() const { return MAX(p1.x, MAX(p2.x, p3.x)); }
-double TriangleFace::max_y() const { return MAX(p1.y, MAX(p2.y, p3.y)); }
-double TriangleFace::max_z() const { return MAX(p1.z, MAX(p2.z, p3.z)); }
-
-void TriangleFace::intersect(struct Ray *ray, double *lambda,
-                             point *bary_coords) {
-    // Computes and returns the value of 'lambda' at the intersection
-    // between the specified ray and the specified triangle.
-
-    point e12 = p2 - p1;
-    point e23 = p3 - p2;
-
-    point normal = cross(&e12, &e23);
-    double denom = dot(&normal, &normal);
-
-    // ray plane intersection calculation
-    point pi, r = p1 - ray->p0;
-    double d_dot_n = dot(&ray->d, &normal);
-    double r_dot_n = dot(&r, &normal);
-    double t_lambda = r_dot_n / d_dot_n;
-
-    if (t_lambda < THR)  //|| *lambda < t_lambda)
-        return;          // intersection with plane is negative
-
-    double u, v, w;
-
-    rayPosition(ray, t_lambda, &pi);
-
-    // e12 has already been calculated
-    point v1i = pi - p1;
-    point crossp = cross(&e12, &v1i);
-    u = dot(&crossp, &normal);
-    if (u < 0) return;  // outside first edge
-
-    // e23 has already been calculated
-    point v2i = pi - p2;
-    crossp = cross(&e23, &v2i);
-    v = dot(&crossp, &normal);
-    if (v < 0) return;  // outside second edge
-
-    point e31 = p1 - p3;
-    point v3i = pi - p3;
-    crossp = cross(&e31, &v3i);
-    w = dot(&crossp, &normal);
-    if (w < 0) return;  // outside third edge
-
-    // intersection is within triangle
-    bary_coords->z = u / denom;
-    bary_coords->x = v / denom;
-    bary_coords->y = w / denom;
-    *lambda = t_lambda;
-    return;
+void MeshFactory::setDefaultColor(double r, double g, double b){
+    default_color = color(r, g, b);
 }
 
-double TriangleFace::intersect(struct Ray *ray, double lambda) {
-    // Computes and returns the value of 'lambda' at the intersection
-    // between the specified ray and the specified triangle.
-
-    point e12 = p2 - p1;
-    point e23 = p3 - p2;
-
-    point normal = cross(&e12, &e23);
-
-    // ray plane intersection calculation
-    point pi, r = p1 - ray->p0;
-    double d_dot_n = dot(&ray->d, &normal);
-    double r_dot_n = dot(&r, &normal);
-    double t_lambda = r_dot_n / d_dot_n;
-
-    if (t_lambda < THR || lambda < t_lambda)
-        return INFINITY;  // intersection with plane is negative
-                          // or larger than current lambda
-
-    double u, v, w;
-
-    rayPosition(ray, t_lambda, &pi);
-
-    // e12 has already been calculated
-    point v1i = pi - p1;
-    point crossp = cross(&e12, &v1i);
-    u = dot(&crossp, &normal);
-    if (u < 0) return INFINITY;  // outside first edge
-
-    // e23 has already been calculated
-    point v2i = pi - p2;
-    crossp = cross(&e23, &v2i);
-    v = dot(&crossp, &normal);
-    if (v < 0) return INFINITY;  // outside second edge
-
-    point e31 = p1 - p3;
-    point v3i = pi - p3;
-    crossp = cross(&e31, &v3i);
-    w = dot(&crossp, &normal);
-    if (w < 0) return INFINITY;  // outside third edge
-
-    return t_lambda;
+void MeshFactory::setTransform(matrix& m){
+    transformation = m;
 }
 
-bool TriangleFace::isprim() { return true; }
-
-point TriangleFace::normal(point *bary_coords) {
-    point e12 = p2 - p1;
-    point e23 = p3 - p2;
-
-    return cross(&e12, &e23);
+void MeshFactory::setTransform(matrix m){
+    transformation = m;
 }
 
-void TriangleFace::texture_coordinates(double *a, double *b, point *bary_coords) {return;}
-
-std::ostream &operator<<(std::ostream &strm, const TriangleFace &a) {
-    return strm << "p1: " << a.p1 << " p2: " << a.p2 << " p3: " << a.p3;
-}
-
-void TriangleFace_N::setNormals(point n1, point n2, point n3) {
-    this->n1 = n1, this->n2 = n2, this->n3 = n3;
-}
-
-point TriangleFace_N::normal(point *bary_coords) {
-    // std::cout << "n1: " << n1 << " n2: " << n2 << " n3: " << n3 << "\n";
-    return n1 * bary_coords->x + n2 * bary_coords->y + n3 * bary_coords->z;
-}
-
-void TriangleFace_T::set_texture_coordinates(double p1_u, double p1_v, double p2_u, double p2_v, double p3_u, double p3_v){
-    this->p1_u=p1_u, this->p1_v=p1_v,this->p2_u=p2_u, this->p2_v=p2_v, this->p3_u=p3_u, this->p3_v=p3_v;
-}
-
-void TriangleFace_T::texture_coordinates(double *a, double *b, point *bary_coords){
-    *a = p1_u * bary_coords->x + p2_u * bary_coords->y + p3_u * bary_coords->z;
-    *b = p1_v * bary_coords->x + p2_v * bary_coords->y + p3_v * bary_coords->z;
-}
-
-std::ostream &operator<<(std::ostream &strm, const TriangleFace_N &a) {
-    return strm << "p1: " << a.p1 << " p2: " << a.p2 << " p3: " << a.p3
-                << "n1: " << a.n1 << " n2: " << a.n2 << " n3: " << a.n3;
-}
-
-void BoundingBox::setBounds(double min_x, double max_x, double min_y,
-                            double max_y, double min_z, double max_z) {
-    this->b_min_x = min_x, this->b_max_x = max_x;
-    this->b_min_y = min_y, this->b_max_y = max_y;
-    this->b_min_z = min_z, this->b_max_z = max_z;
-}
-
-void Mesh::setMesh(const std::string& filename) {
-    //std::cout << "\nBuilding Mesh: " << this->label << "\n";
-    frontAndBack = 0;
+void MeshFactory::buildMesh(const std::string& filename){
+    mesh = new Mesh(default_color);
+    mesh->T = transformation;
+    mesh->set_pathTrace_properties(1.0, 0.0, 0.0);
+    mesh->r_index = 1.54;
 
     int last_dir_sep = filename.find_last_of("/");
     if(last_dir_sep != std::string::npos){
@@ -346,9 +203,9 @@ void Mesh::setMesh(const std::string& filename) {
     } std::cout << "]\n";
 
 
-    bvh.set_build_method(BuildMethod::MidSplit);
-    bvh.set_search_method(SearchMethod::BFS);
-    bvh.build(faces, num_faces);
+    mesh->bvh.set_build_method(BuildMethod::MidSplit);
+    mesh->bvh.set_search_method(SearchMethod::BFS);
+    mesh->bvh.build(faces, num_faces);
 
     mesh_obj.close();
 
@@ -356,10 +213,12 @@ void Mesh::setMesh(const std::string& filename) {
     free(texture_coords);
     free(normals);
     free(faces);
-    //std::cout<< "Build complete!\n";
+
+    mesh->invert_and_bound();
+    object_list.push_front(mesh);
 }
 
-void Mesh::setMaterial(const std::string &mtllib_line){
+void MeshFactory::setMaterial(const std::string &mtllib_line){
     size_t start_index = mtllib_line.find_first_of(" ") + 1;
     std::string file_name = dir + mtllib_line.substr(start_index);
     
@@ -407,7 +266,7 @@ void Mesh::setMaterial(const std::string &mtllib_line){
     }
 }
 
-TriangleFace* Mesh::buildFace(std::string& line){
+TriangleFace* MeshFactory::buildFace(std::string& line){
     //std::cout << "["<< line << "]\n";
     int p1, p2, p3, t1, t2, t3, n1, n2, n3;
     if (sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3) == 3){
@@ -439,41 +298,4 @@ TriangleFace* Mesh::buildFace(std::string& line){
         return face;
     }
     return NULL;
-}
-
-void Mesh::set_canonical_bounds() {
-    w_bound.min.x = bvh.root->min_x();
-    w_bound.min.y = bvh.root->min_y();
-    w_bound.min.z = bvh.root->min_z();
-    w_bound.max.x = bvh.root->max_x();
-    w_bound.max.y = bvh.root->max_y();
-    w_bound.max.z = bvh.root->max_z();
-}
-
-void Mesh::intersect(struct Ray *ray, double *lambda, struct point *p,
-                     struct point *n, double *a, double *b) {
-    *lambda = INFINITY;
-
-    struct Ray ray_transformed;
-    rayTransform(ray, &ray_transformed, this);
-
-    TriangleFace *closest_face;
-    //((bvh).*(bvh.search))(ray);
-    closest_face = (TriangleFace *)bvh.search(&ray_transformed);
-
-    point bary_coords;
-    if (closest_face != NULL) {
-        closest_face->intersect(&ray_transformed, lambda, &bary_coords);
-        *n = closest_face->normal(&bary_coords);
-        normalTransform(n, n, this);
-        normalize(n);
-        closest_face->texture_coordinates(a, b, &bary_coords);
-        rayPosition(ray, *lambda, p);
-    }
-}
-
-void adjust_indexes(int& i1, int& i2, int& i3, int array_size){
-    if (i1 < 0) i1 = array_size + i1;
-    if (i2 < 0) i2 = array_size + i2;
-    if (i3 < 0) i3 = array_size + i3;
 }

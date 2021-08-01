@@ -111,8 +111,6 @@ class Object : public Primitive{
     double max_x() const;
     double max_y() const;
     double max_z() const;
-
-    Object *next = NULL;
 };
 
 class Plane : public Object {

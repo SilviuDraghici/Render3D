@@ -1,6 +1,8 @@
 #ifndef MESHES_H
 #define MESHES_H
 
+#include <list>
+
 #include "utils.h"
 #include "objects.h"
 #include "BVH.h"
@@ -75,13 +77,19 @@ class Mesh : public Object {
 
     point bary_coords;
 
-    BVH bvh;
+    
 
     TriangleFace* buildFace(std::string& line);
 
+    std::string dir;
+    std::list<std::string> mtl_file_list;
+    std::list<std::string> mtl_list;
+
    public:
+    BVH bvh;
     using Object::Object;
-    void setMesh(const char *filename);
+    void setMesh(const std::string& filename);
+    void setMaterial(const std::string& mtllib_line);
     void set_canonical_bounds();
     void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);

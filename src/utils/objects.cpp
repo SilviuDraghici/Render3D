@@ -59,7 +59,6 @@ Object::Object(double r = 1, double g = 1, double b = 1) {
     frontAndBack = 0;
     isLightSource = 0;
     T = I();
-    next = NULL;
 }
 
 Object::Object(color &c){
@@ -75,7 +74,6 @@ Object::Object(color &c){
     frontAndBack = 0;
     isLightSource = 0;
     T = I();
-    next = NULL;
 }
 
 void Object::set_color(double r, double g, double b) {

@@ -1,5 +1,7 @@
 #include "mappings.h"
 
+#include <algorithm>
+
 #include "imageProcessor.h"
 #include "objects.h"
 #include "utils.h"
@@ -23,7 +25,7 @@ inline void uvMap(struct image *img, double u, double v, color *col) {
     //printf("r: %f g: %f b: %f\n", *R, *G, *B);
 }
 
-void loadTexture(Object *o, const char *filename, int type, Scene * scene) {
+void loadTexture(Object *o, const std::string& filename, int type, Scene * scene) {
     // Load a texture or normal map image from file and assign it to the
     // specified object.
     // type:   1  ->  Texture map  (RGB, .ppm)
@@ -35,41 +37,32 @@ void loadTexture(Object *o, const char *filename, int type, Scene * scene) {
 
     if (o != NULL) {
         // Check current linked list
-        p = scene->texture_list;
-        while (p != NULL) {
-            if (strcmp(&p->name[0], filename) == 0) {
-                // Found image already on the list
-                if (type == 1)
-                    o->texImg = p->im;
-                else if (type == 2)
-                    o->normalMap = p->im;
-                else
-                    o->alphaMap = p->im;
-                return;
-            }
-            p = p->next;
+        p = *std::find(scene->texture_list.begin(),scene->texture_list.end(), filename);
+        if (p != *scene->texture_list.end()) {
+            // Found image already on the list
+            if (type == 1)
+                o->texImg = p->im;
+            else if (type == 2)
+                o->normalMap = p->im;
+            else
+                o->alphaMap = p->im;
+            return;
         }
 
         // Load this texture image
         if (type == 1 || type == 2)
-            im = readPPMimage(filename);
+            im = readPPMimage(filename.c_str());
         else if (type == 3)
-            im = readPGMimage(filename);
+            im = readPGMimage(filename.c_str());
 
         // Insert it into the texture list
         if (im != NULL) {
             p = new textureNode;
-            strcpy(&p->name[0], filename);
+            p->name = filename;
             p->type = type;
             p->im = im;
-            p->next = NULL;
             // Insert into linked list
-            if (scene->texture_list == NULL)
-                scene->texture_list = p;
-            else {
-                p->next = scene->texture_list->next;
-                scene->texture_list->next = p;
-            }
+            scene->texture_list.push_front(p);
             // Assign to object
             if (type == 1)
                 o->texImg = im;

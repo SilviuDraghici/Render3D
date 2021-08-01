@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <list>
+
 #include "../utils/affineTransforms.h"
 #include "../utils/buildscene.h"
 #include "../utils/camera.h"
@@ -148,24 +150,20 @@ void pathTraceMain(int argc, char *argv[]) {
     buildScene(scene);
     // count number of lights
     num_lights = 0;
-    Object *curr_obj = scene->object_list;
-    while (curr_obj != NULL) {
+    for(Object* const& curr_obj : scene->object_list){
         if (curr_obj->isLightSource) {
             num_lights++;
         }
-        curr_obj = curr_obj->next;
     }
 
     // create array of light pointers
     light_listt = (Object **)malloc(num_lights * sizeof(Object *));
     num_lights = 0;
-    curr_obj = scene->object_list;
-    while (curr_obj != NULL) {
+    for(Object* const& curr_obj : scene->object_list){
         if (curr_obj->isLightSource) {
             light_listt[num_lights] = curr_obj;
             num_lights++;
         }
-        curr_obj = curr_obj->next;
     }
     curr_light = 0;
 
@@ -391,20 +389,17 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
     }
 }
 
-void normalizeLightWeights(Object *object_list) {
+void normalizeLightWeights(std::list<Object *>& object_list) {
     // Update light source weights - will give you weights for each light source
     // that add up to 1
-    Object *obj = object_list;
     total_weight = 0;
-    while (obj != NULL) {
+    for(Object* const& obj : object_list){
         if (obj->isLightSource) total_weight += obj->pt.LSweight;
-        obj = obj->next;
     }
-    obj = object_list;
-    while (obj != NULL) {
+
+    for(Object* const& obj : object_list){
         if (obj->isLightSource) {
             obj->pt.LSweight /= total_weight;
         }
-        obj = obj->next;
     }
 }

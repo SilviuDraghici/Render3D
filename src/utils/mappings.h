@@ -6,7 +6,7 @@
 #include "objects.h"
 #include "scene.h"
 
-void loadTexture(Object *o, const char *filename, int type, Scene *scene);
+void loadTexture(Object *o, const std::string& filename, int type, Scene *scene);
 
 void textureMap(Object *obj, double a, double b, color *col);
 void normalMap(Object *obj, double a, double b, struct point *n);

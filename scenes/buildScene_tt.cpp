@@ -4,8 +4,6 @@ Object *o;
 struct point p;
 PointLS *l;
 
-struct textureNode *t_list = NULL;
-
 const char *checkers = "scenes/checkers.ppm";
 
 //const char *mesh_file = "scenes/triangular_prism_8.obj";
