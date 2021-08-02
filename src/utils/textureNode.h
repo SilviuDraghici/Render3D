@@ -8,7 +8,6 @@
 
 struct textureNode {
     std::string name;
-    int type;
     image *im;
     
     bool operator==(const std::string& name){

@@ -4,6 +4,8 @@
 #include <iostream>
 #include <algorithm>
 
+#include "mappings.h"
+
 inline int count_vertices(std::string &face){
     int n = 0;
     for(int i = 1; i < face.size(); i++){
@@ -30,10 +32,6 @@ void MeshFactory::setDefaultColor(double r, double g, double b){
     default_color = color(r, g, b);
 }
 
-void MeshFactory::setTransform(matrix& m){
-    transformation = m;
-}
-
 void MeshFactory::setTransform(matrix m){
     transformation = m;
 }
@@ -57,7 +55,7 @@ void MeshFactory::buildMesh(const std::string& filename){
     std::string line;
     std::ifstream mesh_obj(filename);
 
-    num_vertices = 0, num_faces = 0, num_normals = 0;
+    num_vertices = 0, num_texture_coords = 0, num_normals = 0, num_faces = 0;
 
     int v = 1, t = 1, vn = 1, f = 0;
     double x, y, z, scale;
@@ -197,10 +195,10 @@ void MeshFactory::buildMesh(const std::string& filename){
     }
 
     //print the materials in this object
-    std::cout << mtl_list.size() << " [";
-    for (auto const &i: mtl_list) {
-        std::cout << i << ", ";
-    } std::cout << "]\n";
+    //std::cout << mtl_list.size() << " [";
+    //for (auto const &i: mtl_list) {
+    //    std::cout << i << ", ";
+    //} std::cout << "]\n";
 
 
     mesh->bvh.set_build_method(BuildMethod::MidSplit);
@@ -259,8 +257,9 @@ void MeshFactory::setMaterial(const std::string &mtllib_line){
                 for (std::string::size_type i = 0; i < texture_name.size(); i++) {
                     texture_name[i] = (texture_name[i] == '\\') ? '/' : texture_name[i];
                 }
-                std::cout << "texture: " << texture_name << std::endl;
-                //loadTexture(this, texture_name, 1, scene);
+                std::cout << "texture: [" << texture_name << "]\n";
+                //load_texture(texture_name, 1, texture_list);
+                set_texture(mesh, texture_name, 1, texture_list);
             }
         }
     }

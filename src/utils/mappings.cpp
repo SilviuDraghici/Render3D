@@ -25,7 +25,7 @@ inline void uvMap(struct image *img, double u, double v, color *col) {
     //printf("r: %f g: %f b: %f\n", *R, *G, *B);
 }
 
-void loadTexture(Object *o, const std::string& filename, int type, Scene * scene) {
+void set_texture(Object *o, const std::string& filename, int type, std::list<textureNode*>& texture_list) {
     // Load a texture or normal map image from file and assign it to the
     // specified object.
     // type:   1  ->  Texture map  (RGB, .ppm)
@@ -33,46 +33,39 @@ void loadTexture(Object *o, const std::string& filename, int type, Scene * scene
     //         3  ->  Alpha map    (grayscale, .pgm)
     // Stores loaded images in a linked list to avoid replication
     image *im;
-    textureNode *p;
+    textureNode *texture_node = load_texture(filename, type, texture_list);
 
-    if (o != NULL) {
-        // Check current linked list
-        p = *std::find(scene->texture_list.begin(),scene->texture_list.end(), filename);
-        if (p != *scene->texture_list.end()) {
-            // Found image already on the list
-            if (type == 1)
-                o->texImg = p->im;
-            else if (type == 2)
-                o->normalMap = p->im;
-            else
-                o->alphaMap = p->im;
-            return;
-        }
+    // Found image already on the list
+    if (type == 1)
+        o->texImg = texture_node->im;
+    else if (type == 2)
+        o->normalMap = texture_node->im;
+    else
+        o->alphaMap = texture_node->im;
+}
 
-        // Load this texture image
-        if (type == 1 || type == 2)
-            im = readPPMimage(filename.c_str());
-        else if (type == 3)
-            im = readPGMimage(filename.c_str());
+textureNode* load_texture(const std::string& filename, int type, std::list<textureNode*>& texture_list){
+    image *im;
+    textureNode* texture_node = *std::find(texture_list.begin(), texture_list.end(), filename);;
+    if (texture_node != *texture_list.end()) {
+        // Found image already on the list
+        return texture_node;
+    }
+    // Load this texture image
+    if (type == 1 || type == 2)
+        im = readPPMimage(filename.c_str());
+    else if (type == 3)
+        im = readPGMimage(filename.c_str());
 
-        // Insert it into the texture list
-        if (im != NULL) {
-            p = new textureNode;
-            p->name = filename;
-            p->type = type;
-            p->im = im;
-            // Insert into linked list
-            scene->texture_list.push_front(p);
-            // Assign to object
-            if (type == 1)
-                o->texImg = im;
-            else if (type == 2)
-                o->normalMap = im;
-            else
-                o->alphaMap = im;
-        }
-
-    }  // end if (o != NULL)
+    // Insert it into the texture list
+    if (im != NULL) {
+        texture_node = new textureNode;
+        texture_node->name = filename;
+        texture_node->im = im;
+        // Insert into linked list
+        texture_list.push_front(texture_node);
+    }
+    return texture_node;
 }
 
 void textureMap(Object *obj, double a, double b, color *col) {

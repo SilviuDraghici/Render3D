@@ -1,12 +1,15 @@
 #ifndef MAPPING_H
 #define MAPPING_H
 
+#include <list>
 
 #include "color.h"
 #include "objects.h"
 #include "scene.h"
 
-void loadTexture(Object *o, const std::string& filename, int type, Scene *scene);
+
+textureNode* load_texture(const std::string& filename, int type, std::list<textureNode*>& texture_list);
+void set_texture(Object *o, const std::string& filename, int type, std::list<textureNode*>& texture_list);
 
 void textureMap(Object *obj, double a, double b, color *col);
 void normalMap(Object *obj, double a, double b, struct point *n);

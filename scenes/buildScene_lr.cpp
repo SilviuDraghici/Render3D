@@ -2,6 +2,7 @@
 Object *o;
 point p;
 PointLS *l;
+matrix t;
 
 //living room scene
 const std::string checkers_texture = "scenes/checkers.ppm";
@@ -43,26 +44,40 @@ scene->meshFactory.buildMesh(room_mesh);
 //o->invert_and_bound();
 //scene->insertObject(o);
 
+
+scene->meshFactory.setDefaultColor(255 / 255.0, 74 / 255.0, 249 / 255.0);
+t = Sc(1);
+t *= Tr(2,0, 1);
+scene->meshFactory.setTransform(t);
+scene->meshFactory.buildMesh(cube_mesh);
+
+
+/*
 o = new Mesh(255 / 255.0, 74 / 255.0, 249 / 255.0);
 strcpy(o->label, "cube mesh");
 ((Mesh *)o)->setMesh(cube_mesh);
-loadTexture(o, checkers_texture, 1, scene);
+set_texture(o, diamond_texture, 1, scene->texture_list);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.54;
 o->T *= Sc(1);
-//o->T *= RotX(scene->frame * PI / 120);
-//o->T *= RotY(scene->frame * PI / 120);
 o->T *= Tr(2,0, 1);
-//o->T *= RotX(-PI / 2);
-//o->T *= Tr(4, 0, 0);
 o->invert_and_bound();
 scene->insertObject(o);
+*/
 
+scene->meshFactory.setDefaultColor(255 / 255.0, 249 / 255.0, 74 / 255.0);
+t = Sc(1);
+t *= RotX(scene->frame * PI / 120);
+t *= RotY(scene->frame * PI / 120);
+t *= Tr(-2,0,1);
+scene->meshFactory.setTransform(t);
+scene->meshFactory.buildMesh(sphere_mesh);
 
+/*
 o = new Mesh(255 / 255.0, 249 / 255.0, 74 / 255.0);
-strcpy(o->label, "sphere mesh");
+//strcpy(o->label, "sphere mesh");
 ((Mesh *)o)->setMesh(sphere_mesh);
-loadTexture(o, world_mask_texture, 1, scene);
+set_texture(o, world_mask_texture, 1, scene->texture_list);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.54;
 o->T *= Sc(1);
@@ -73,7 +88,7 @@ o->T *= Tr(-2,0,1);
 //o->T *= Tr(4, 0, 0);
 o->invert_and_bound();
 scene->insertObject(o);
-
+*/
 
 // Planar light source at top
 o = new Plane(1.0, 1.0, 1.0);

@@ -340,10 +340,10 @@ void Mesh::setMesh(const std::string& filename) {
     }
 
     //print the materials in this object
-    std::cout << mtl_list.size() << " [";
-    for (auto const &i: mtl_list) {
-        std::cout << i << ", ";
-    } std::cout << "]\n";
+    //std::cout << mtl_list.size() << " [";
+    //for (auto const &i: mtl_list) {
+    //    std::cout << i << ", ";
+    //} std::cout << "]\n";
 
 
     bvh.set_build_method(BuildMethod::MidSplit);
@@ -365,8 +365,8 @@ void Mesh::setMaterial(const std::string &mtllib_line){
     
     if(std::find(mtl_file_list.begin(), mtl_file_list.end(), file_name) == mtl_file_list.end()){
         mtl_file_list.push_front(file_name);
-        std::cout << "\n" << file_name << "\n";
-        std::cout << "###########################################\n";
+        //std::cout << "\n" << file_name << "\n";
+        //std::cout << "###########################################\n";
 
         std::string line;
         std::ifstream mesh_obj(file_name);
@@ -400,7 +400,7 @@ void Mesh::setMaterial(const std::string &mtllib_line){
                 for (std::string::size_type i = 0; i < texture_name.size(); i++) {
                     texture_name[i] = (texture_name[i] == '\\') ? '/' : texture_name[i];
                 }
-                std::cout << "texture: " << texture_name << std::endl;
+                //std::cout << "texture: " << texture_name << std::endl;
                 //loadTexture(this, texture_name, 1, scene);
             }
         }

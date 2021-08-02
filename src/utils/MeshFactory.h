@@ -16,7 +16,6 @@ class MeshFactory{
     ~MeshFactory();
     void setDefaultColor(color& c);
     void setDefaultColor(double r, double g, double b);
-    void setTransform(matrix& m);
     void setTransform(matrix m);
     void buildMesh(const std::string& filename);
 
@@ -28,16 +27,16 @@ class MeshFactory{
     TriangleFace* buildFace(std::string& line);
     void setMaterial(const std::string& mtllib_line);
     
-    int num_vertices = 0;
+    int num_vertices;
     point *vertices = NULL;
 
-    int num_texture_coords = 0;
+    int num_texture_coords;
     double *texture_coords = NULL;
 
     int num_normals;
     point *normals = NULL;
 
-    int num_faces = 0;
+    int num_faces;
     PrimitiveData *faces = NULL;
 
     std::string dir;
