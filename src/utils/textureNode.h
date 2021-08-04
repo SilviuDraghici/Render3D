@@ -15,7 +15,7 @@ struct textureNode {
     }
     
     ~textureNode(){
-        std::cout << "deleteing texture " << name << "\n";
+        //std::cout << "deleteing texture " << name << "\n";
         free(im->rgbdata);
         free(im);
     }

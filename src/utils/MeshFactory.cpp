@@ -36,11 +36,12 @@ void MeshFactory::setTransform(matrix m){
     transformation = m;
 }
 
-void MeshFactory::buildMesh(const std::string& filename){
-    mesh = new Mesh(default_color);
-    mesh->T = transformation;
-    mesh->set_pathTrace_properties(1.0, 0.0, 0.0);
-    mesh->r_index = 1.54;
+void MeshFactory::loadMeshFile(const std::string& filename){
+    //mesh = new Mesh(default_color);
+    //mesh->name = filename;
+    //mesh->T = transformation;
+    //mesh->set_pathTrace_properties(1.0, 0.0, 0.0);
+    //mesh->r_index = 1.54;
 
     int last_dir_sep = filename.find_last_of("/");
     if(last_dir_sep != std::string::npos){
@@ -55,7 +56,12 @@ void MeshFactory::buildMesh(const std::string& filename){
     std::string line;
     std::ifstream mesh_obj(filename);
 
-    num_vertices = 0, num_texture_coords = 0, num_normals = 0, num_faces = 0;
+    num_vertices = num_texture_coords = num_normals = num_faces = 0;
+
+    std::string object_name;
+    int num_objects=0;
+    //int* object_face_counts = NULL;
+    material* current_material = NULL;
 
     int v = 1, t = 1, vn = 1, f = 0;
     double x, y, z, scale;
@@ -76,7 +82,7 @@ void MeshFactory::buildMesh(const std::string& filename){
         }
 
         if(line.rfind("mtllib ", 0) == 0){
-            setMaterial(line);
+            loadMaterialFile(line);
         } else if (line.rfind("v ", 0) == 0) {
             //count vertices and update average location
             num_vertices++;
@@ -108,15 +114,18 @@ void MeshFactory::buildMesh(const std::string& filename){
             num_normals++;
         } else if (line.rfind("vt ", 0) == 0){
             num_texture_coords++;
-        }else if (line.rfind("f ", 0) == 0) {
+        } else if (line.rfind("f ", 0) == 0) {
             //count faces
             num_faces += count_vertices(line) - 2;
+        } else if (line.rfind("o ", 0) == 0){
+            num_objects++;
         }
     }
 
     //std::cout << "num vertices: " << num_vertices << "\n";
     //std::cout << "num normals: " << num_normals << "\n";
     //std::cout << "num faces: " << num_faces << "\n";
+    std::cout << "num objects: " << num_objects << "\n";
 
     //go to begining of file
     mesh_obj.clear();
@@ -143,6 +152,10 @@ void MeshFactory::buildMesh(const std::string& filename){
 
     faces = (PrimitiveData *)malloc(num_faces * sizeof(PrimitiveData));
     int num_vertices;
+
+    int num_faces_in_object = 0, first_face_in_object = 0;
+    std::string mtl_name;
+    
     int start_index = 2, end_index;
     std::string face_string, first_vertex;
     while (getline(mesh_obj, line)) {
@@ -150,7 +163,35 @@ void MeshFactory::buildMesh(const std::string& filename){
             //remove '\r' from windows format objs
             line.erase(line.find('\r'));
         }
-        if (line.rfind("v ", 0) == 0) {
+        
+        if (line.rfind("o ", 0) == 0){
+            //build the previous object if it isnt null and has more than 0 faces.
+            
+            //std::cout << "Object: " << object_name << " num faces: " << num_faces_in_object;
+            //std::cout << " faces built: " << f << " first face: " << first_face_in_object << "\n";
+            //std::cout << "material: " << mtl_name << "\n";
+            
+            if(!object_name.empty() && num_faces_in_object > 0){
+                mesh = new Mesh(std::find(mtl_list.begin(), mtl_list.end(), mtl_name)->col);
+                mesh->name = object_name;
+                mesh->T = transformation;
+                mesh->set_pathTrace_properties(1.0, 0.0, 0.0);
+                mesh->r_index = 1.54;
+                mesh->bvh.set_build_method(BuildMethod::MidSplit);
+                mesh->bvh.set_search_method(SearchMethod::BFS);
+                mesh->bvh.build(faces + first_face_in_object, num_faces_in_object);
+                first_face_in_object += num_faces_in_object;
+                mesh->texImg = std::find(mtl_list.begin(), mtl_list.end(), mtl_name)->im;
+                mesh->invert_and_bound();
+                object_list.push_front(mesh);
+            }
+            start_index = line.find_first_not_of(" ", 1);
+            object_name = line.substr(start_index);
+            num_faces_in_object = 0;
+        } else if(line.rfind("usemtl ", 0) == 0){
+            start_index = line.find_first_not_of(" ", 6);
+            mtl_name = material_file_name + "::" + line.substr(start_index);
+        } else if (line.rfind("v ", 0) == 0) {
             sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
             x = (x - avg_x) / scale, y = (y - avg_y) / scale,
             z = -(z - avg_z) / scale;
@@ -189,21 +230,21 @@ void MeshFactory::buildMesh(const std::string& filename){
                 //printf("flin: [%s]\n", face_string.c_str());
                 faces[f] = buildFace(face_string);
                 f++;
+                num_faces_in_object++;
             }
         }
         //if( f > 5) break;
     }
 
     //print the materials in this object
-    //std::cout << mtl_list.size() << " [";
+    //std::cout << mtl_list.size() << "[\n";
     //for (auto const &i: mtl_list) {
-    //    std::cout << i << ", ";
+    //    std::cout << i << "\n";
     //} std::cout << "]\n";
 
-
-    mesh->bvh.set_build_method(BuildMethod::MidSplit);
-    mesh->bvh.set_search_method(SearchMethod::BFS);
-    mesh->bvh.build(faces, num_faces);
+    //mesh->bvh.set_build_method(BuildMethod::MidSplit);
+    //mesh->bvh.set_search_method(SearchMethod::BFS);
+    //mesh->bvh.build(faces, num_faces);
 
     mesh_obj.close();
 
@@ -212,23 +253,23 @@ void MeshFactory::buildMesh(const std::string& filename){
     free(normals);
     free(faces);
 
-    mesh->invert_and_bound();
-    object_list.push_front(mesh);
+    //mesh->invert_and_bound();
+    //object_list.push_front(mesh);
 }
 
-void MeshFactory::setMaterial(const std::string &mtllib_line){
+void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
     size_t start_index = mtllib_line.find_first_of(" ") + 1;
-    std::string file_name = dir + mtllib_line.substr(start_index);
+    material_file_name = dir + mtllib_line.substr(start_index);
     
-    if(std::find(mtl_file_list.begin(), mtl_file_list.end(), file_name) == mtl_file_list.end()){
-        mtl_file_list.push_front(file_name);
-        std::cout << "\n" << file_name << "\n";
-        std::cout << "###########################################\n";
+    if(std::find(mtl_file_list.begin(), mtl_file_list.end(), material_file_name) == mtl_file_list.end()){
+        mtl_file_list.push_front(material_file_name);
+        //std::cout << "\n" << material_file_name << "\n";
+        //std::cout << "###########################################\n";
 
         std::string line;
-        std::ifstream mesh_obj(file_name);
+        std::ifstream mesh_obj(material_file_name);
         if (!mesh_obj.is_open()) {
-            std::cout << "Unable to open material file: " << file_name << "\n";
+            std::cout << "Unable to open material file: " << material_file_name << "\n";
             return;
         }
 
@@ -246,20 +287,31 @@ void MeshFactory::setMaterial(const std::string &mtllib_line){
             std::string texture_name;
             if(line.rfind("newmtl ", 0) == 0){
                 start_index = line.find_first_of(" ") + 1;
-                mtl_name = file_name + "::" + line.substr(start_index);
+                mtl_name = material_file_name + "::" + line.substr(start_index);
                 if(std::find(mtl_list.begin(), mtl_list.end(), mtl_name) == mtl_list.end()){
-                    mtl_list.push_front(mtl_name);
+                    mtl_list.push_front(material(mtl_name));
                 }
                 //std::cout << "mtl: " << mtl_name << "\n";
+            } else if(line.rfind("Kd ", 0) == 0){
+                double r,g,b;
+                sscanf(line.c_str(), "Kd %lf %lf %lf", &r, &g, &b);
+                mtl_list.front().col = {r,g,b};
             } else if (line.rfind("map_Kd ", 0) == 0){
                 start_index = line.find_first_of(" ") + 1;
                 texture_name = dir + line.substr(start_index);
                 for (std::string::size_type i = 0; i < texture_name.size(); i++) {
                     texture_name[i] = (texture_name[i] == '\\') ? '/' : texture_name[i];
                 }
-                std::cout << "texture: [" << texture_name << "]\n";
-                //load_texture(texture_name, 1, texture_list);
-                set_texture(mesh, texture_name, 1, texture_list);
+                //std::cout << "texture: [" << texture_name << "]\n";
+                //std::cout << "materials: [";
+                //for (material m: mtl_list){
+                //    std::cout << m << ",";
+                //}std::cout << "]\n";
+                mtl_list.front().im = load_texture(texture_name, 1, texture_list)->im;
+                //mesh->texImg = mtl_list.front().im; 
+                
+                //set_texture(mesh, texture_name, 1, texture_list);
+                //std::cout << "mtl: "<< mtl_list.front().name << "\n";
             }
         }
     }

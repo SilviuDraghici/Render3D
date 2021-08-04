@@ -26,7 +26,7 @@ scene->cam_focal = -3;
 scene->meshFactory.setDefaultColor(74 / 255.0, 255 / 255.0, 249 / 255.0);
 
 scene->meshFactory.setTransform(Tr(0,-5,0) * Sc(40));
-scene->meshFactory.buildMesh(room_mesh);
+scene->meshFactory.loadMeshFile(room_mesh);
 
 
 
@@ -49,7 +49,7 @@ scene->meshFactory.setDefaultColor(255 / 255.0, 74 / 255.0, 249 / 255.0);
 t = Sc(1);
 t *= Tr(2,0, 1);
 scene->meshFactory.setTransform(t);
-scene->meshFactory.buildMesh(cube_mesh);
+scene->meshFactory.loadMeshFile(cube_mesh);
 
 
 /*
@@ -71,7 +71,7 @@ t *= RotX(scene->frame * PI / 120);
 t *= RotY(scene->frame * PI / 120);
 t *= Tr(-2,0,1);
 scene->meshFactory.setTransform(t);
-scene->meshFactory.buildMesh(sphere_mesh);
+scene->meshFactory.loadMeshFile(sphere_mesh);
 
 /*
 o = new Mesh(255 / 255.0, 249 / 255.0, 74 / 255.0);
@@ -95,7 +95,7 @@ o = new Plane(1.0, 1.0, 1.0);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->refl_sig = 0.0;
 o->r_index = 1.54;
-strcpy(o->label, "Top Light");
+o->name = "Top Light";
 o->T *= Sc(0.5, 2.5, 1);
 o->T *= RotX(PI / 2);
 o->T *= Tr(0, 9.995, 5);

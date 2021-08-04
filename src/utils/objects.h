@@ -60,7 +60,7 @@ class Primitive {
 
 class Object : public Primitive{
    public:
-    char label[20];  // for debugging
+    std::string name;  // for debugging
 
     RT_properties
         rt;  // Object's albedos for Phong model (for ray tracing)

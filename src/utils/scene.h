@@ -61,6 +61,10 @@ class Scene {
     }
 
     ~Scene(){
+        //std::cout << "Objects:\n";
+        //for(Object* obj: object_list){
+        //    std::cout << obj->name << "\n";
+        //}
         delete(rt_point_light_list);
         delete(bvh);
         for (textureNode * t_node : texture_list){

@@ -270,14 +270,14 @@ Primitive *BVH::bfs(struct Ray *ray) {
         lambda = INFINITY;
         lambda = currentBox->c1->intersect(ray, lambda);
         if (lambda < INFINITY) {
-            if (lambda < THR) std::cout << ((Object *)currentBox->c1)->label << " " << lambda << "\n";
+            if (lambda < THR) std::cout << ((Object *)currentBox->c1)->name << " " << lambda << "\n";
             bvh_queue.emplace(lambda, currentBox->c1);
         }
 
         lambda = INFINITY;
         lambda = currentBox->c2->intersect(ray, lambda);
         if (lambda < INFINITY) {
-            if (lambda < THR) std::cout << ((Object *)currentBox->c2)->label << " " << lambda << "\n";
+            if (lambda < THR) std::cout << ((Object *)currentBox->c2)->name << " " << lambda << "\n";
             bvh_queue.emplace(lambda, currentBox->c2);
         }
     }
@@ -361,7 +361,7 @@ void printNode(Primitive *node, int space) {
         }
         point min = point(node->min_x(), node->min_y(), node->min_z());
         point max = point(node->max_x(), node->max_y(), node->max_z());
-        std::cout << ((Object *)node)->label << " " << min << " " << max << "\n";
+        std::cout << ((Object *)node)->name << " " << min << " " << max << "\n";
         return;
     }
 

@@ -9,6 +9,7 @@
 #include "meshes.h"
 #include "color.h"
 #include "textureNode.h"
+#include "material.h"
 
 class MeshFactory{
   public:
@@ -17,7 +18,7 @@ class MeshFactory{
     void setDefaultColor(color& c);
     void setDefaultColor(double r, double g, double b);
     void setTransform(matrix m);
-    void buildMesh(const std::string& filename);
+    void loadMeshFile(const std::string& filename);
 
   private:
     Mesh* mesh = NULL;
@@ -25,7 +26,8 @@ class MeshFactory{
     std::list<textureNode*>& texture_list;
 
     TriangleFace* buildFace(std::string& line);
-    void setMaterial(const std::string& mtllib_line);
+    void loadMaterialFile(const std::string& mtllib_line);
+    Mesh* buildMesh();
     
     int num_vertices;
     point *vertices = NULL;
@@ -40,8 +42,9 @@ class MeshFactory{
     PrimitiveData *faces = NULL;
 
     std::string dir;
+    std::string material_file_name;
     std::list<std::string> mtl_file_list;
-    std::list<std::string> mtl_list;
+    std::list<material> mtl_list;
     
     color default_color = color(74 / 255.0, 255 / 255.0, 249 / 255.0);
     matrix transformation;
