@@ -58,7 +58,6 @@ void MeshFactory::loadMeshFile(const std::string& filename){
 
     num_vertices = num_texture_coords = num_normals = num_faces = 0;
 
-    std::string object_name;
     int num_objects=0;
     //int* object_face_counts = NULL;
     material* current_material = NULL;
@@ -153,9 +152,7 @@ void MeshFactory::loadMeshFile(const std::string& filename){
     faces = (PrimitiveData *)malloc(num_faces * sizeof(PrimitiveData));
     int num_vertices;
 
-    int num_faces_in_object = 0, first_face_in_object = 0;
-    std::string mtl_name;
-    
+    num_faces_in_object = 0, first_face_in_object = 0;
     int start_index = 2, end_index;
     std::string face_string, first_vertex;
     while (getline(mesh_obj, line)) {
@@ -172,17 +169,7 @@ void MeshFactory::loadMeshFile(const std::string& filename){
             //std::cout << "material: " << mtl_name << "\n";
             
             if(!object_name.empty() && num_faces_in_object > 0){
-                mesh = new Mesh(std::find(mtl_list.begin(), mtl_list.end(), mtl_name)->col);
-                mesh->name = object_name;
-                mesh->T = transformation;
-                mesh->set_pathTrace_properties(1.0, 0.0, 0.0);
-                mesh->r_index = 1.54;
-                mesh->bvh.set_build_method(BuildMethod::MidSplit);
-                mesh->bvh.set_search_method(SearchMethod::BFS);
-                mesh->bvh.build(faces + first_face_in_object, num_faces_in_object);
-                first_face_in_object += num_faces_in_object;
-                mesh->texImg = std::find(mtl_list.begin(), mtl_list.end(), mtl_name)->im;
-                mesh->invert_and_bound();
+                buildMesh();
                 object_list.push_front(mesh);
             }
             start_index = line.find_first_not_of(" ", 1);
@@ -235,6 +222,9 @@ void MeshFactory::loadMeshFile(const std::string& filename){
         }
         //if( f > 5) break;
     }
+
+    buildMesh();
+    object_list.push_front(mesh);
 
     //print the materials in this object
     //std::cout << mtl_list.size() << "[\n";
@@ -315,6 +305,20 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
             }
         }
     }
+}
+
+void MeshFactory::buildMesh(){
+    mesh = new Mesh(std::find(mtl_list.begin(), mtl_list.end(), mtl_name)->col);
+    mesh->name = object_name;
+    mesh->T = transformation;
+    mesh->set_pathTrace_properties(1.0, 0.0, 0.0);
+    mesh->r_index = 1.54;
+    mesh->bvh.set_build_method(BuildMethod::MidSplit);
+    mesh->bvh.set_search_method(SearchMethod::BFS);
+    mesh->bvh.build(faces + first_face_in_object, num_faces_in_object);
+    first_face_in_object += num_faces_in_object;
+    mesh->texImg = std::find(mtl_list.begin(), mtl_list.end(), mtl_name)->im;
+    mesh->invert_and_bound();
 }
 
 TriangleFace* MeshFactory::buildFace(std::string& line){

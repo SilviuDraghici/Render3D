@@ -16,7 +16,7 @@ const std::string cube_mesh = "scenes/cube/cube.obj";
 const std::string sphere_mesh = "scenes/sphere/sphere-cylcoords-4k.obj";
 
 scene->cam_pos = point(0, 0, -10);
-scene->cam_pos = RotY(scene->frame * PI/120) * scene->cam_pos;
+scene->cam_pos = RotY(-scene->frame * PI/120) * scene->cam_pos;
 scene->cam_gaze_point = point(0, 0, 0);
 scene->cam_gaze = scene->cam_gaze_point - scene->cam_pos;
 //scene->cam_up = point(0, 1, 0);
@@ -28,43 +28,15 @@ scene->meshFactory.setDefaultColor(74 / 255.0, 255 / 255.0, 249 / 255.0);
 scene->meshFactory.setTransform(Tr(0,-5,0) * Sc(40));
 scene->meshFactory.loadMeshFile(room_mesh);
 
-
-
-//o = new Mesh(74 / 255.0, 255 / 255.0, 249 / 255.0);
-//strcpy(o->label, "room mesh");
-//((Mesh *)o)->setMesh(room_mesh);
-//o->set_pathTrace_properties(1.0, 0.0, 0.0);
-//o->r_index = 1.54;
-//o->T *= Sc(40.0);
-//o->T *= RotX(scene->frame * PI / 120);
-//o->T *= RotY(scene->frame * PI / 120);
-//o->T *= Tr(0,-5,0);
-//o->T *= RotX(-PI / 2);
-//o->T *= Tr(4, 0, 0);
-//o->invert_and_bound();
-//scene->insertObject(o);
-
-
+/*
 scene->meshFactory.setDefaultColor(255 / 255.0, 74 / 255.0, 249 / 255.0);
 t = Sc(1);
 t *= Tr(2,0, 1);
 scene->meshFactory.setTransform(t);
 scene->meshFactory.loadMeshFile(cube_mesh);
-
-
-/*
-o = new Mesh(255 / 255.0, 74 / 255.0, 249 / 255.0);
-strcpy(o->label, "cube mesh");
-((Mesh *)o)->setMesh(cube_mesh);
-set_texture(o, diamond_texture, 1, scene->texture_list);
-o->set_pathTrace_properties(1.0, 0.0, 0.0);
-o->r_index = 1.54;
-o->T *= Sc(1);
-o->T *= Tr(2,0, 1);
-o->invert_and_bound();
-scene->insertObject(o);
 */
 
+/*
 scene->meshFactory.setDefaultColor(255 / 255.0, 249 / 255.0, 74 / 255.0);
 t = Sc(1);
 t *= RotX(scene->frame * PI / 120);
@@ -72,22 +44,6 @@ t *= RotY(scene->frame * PI / 120);
 t *= Tr(-2,0,1);
 scene->meshFactory.setTransform(t);
 scene->meshFactory.loadMeshFile(sphere_mesh);
-
-/*
-o = new Mesh(255 / 255.0, 249 / 255.0, 74 / 255.0);
-//strcpy(o->label, "sphere mesh");
-((Mesh *)o)->setMesh(sphere_mesh);
-set_texture(o, world_mask_texture, 1, scene->texture_list);
-o->set_pathTrace_properties(1.0, 0.0, 0.0);
-o->r_index = 1.54;
-o->T *= Sc(1);
-o->T *= RotX(scene->frame * PI / 120);
-o->T *= RotY(scene->frame * PI / 120);
-o->T *= Tr(-2,0,1);
-//o->T *= RotX(-PI / 2);
-//o->T *= Tr(4, 0, 0);
-o->invert_and_bound();
-scene->insertObject(o);
 */
 
 // Planar light source at top

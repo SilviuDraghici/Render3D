@@ -25,9 +25,13 @@ class MeshFactory{
     std::list<Object*>& object_list;
     std::list<textureNode*>& texture_list;
 
+    int num_faces_in_object, first_face_in_object;
+    std::string mtl_name;
+    std::string object_name;
+
     TriangleFace* buildFace(std::string& line);
     void loadMaterialFile(const std::string& mtllib_line);
-    Mesh* buildMesh();
+    void buildMesh();
     
     int num_vertices;
     point *vertices = NULL;
