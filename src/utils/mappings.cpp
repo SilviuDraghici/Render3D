@@ -7,21 +7,15 @@
 #include "utils.h"
 
 inline void uvMap(struct image *img, double u, double v, color *col) {
-    u = MIN(1, MAX(0, u));
-    v = MIN(1, MAX(0, v));
-    u = u * (img->sx - 1);
-    v = v * (img->sy - 1);
+    int x = (unsigned int)(u * img->sx) % img->sx;
+    int y = (unsigned int)(v * img->sy) % img->sy;
 
-    int x1 = (int)floor(u);
-    int y1 = (int)floor(v);
-    int x2 = MIN(img->sy - 1, (int)ceil(u));
-    int y2 = MIN(img->sy - 1, (int)ceil(v));
     //printf("u: %f v: %f\n", u, v);
     //printf("x: %d y: %d\n", x, y);
     double *rgbIm = (double *)img->rgbdata;
-    col->R = ((double)rgbIm[3 * (y1 * img->sx + x1) + 0]);
-    col->G = ((double)rgbIm[3 * (y1 * img->sx + x1) + 1]);
-    col->B = ((double)rgbIm[3 * (y1 * img->sx + x1) + 2]);
+    col->R = ((double)rgbIm[3 * (y * img->sx + x) + 0]);
+    col->G = ((double)rgbIm[3 * (y * img->sx + x) + 1]);
+    col->B = ((double)rgbIm[3 * (y * img->sx + x) + 2]);
     //printf("r: %f g: %f b: %f\n", *R, *G, *B);
 }
 
