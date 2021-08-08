@@ -45,7 +45,7 @@ o = new Sphere(1.0, 1.0, 1.0);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->refl_sig = 0.0;
 o->r_index = 1.54;
-strcpy(o->label, "Top Light");
+o->name = "Top Light";
 o->T *= Tr(0, 30, -3.5);
 o->isLightSource = 1;
 o->invert_and_bound();

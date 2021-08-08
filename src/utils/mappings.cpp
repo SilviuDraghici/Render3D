@@ -10,16 +10,13 @@ inline void uvMap(struct image *img, double u, double v, color *col) {
     int x = (unsigned int)(u * img->sx) % img->sx;
     int y = (unsigned int)(v * img->sy) % img->sy;
 
-    //printf("u: %f v: %f\n", u, v);
-    //printf("x: %d y: %d\n", x, y);
     double *rgbIm = (double *)img->rgbdata;
     col->R = ((double)rgbIm[3 * (y * img->sx + x) + 0]);
     col->G = ((double)rgbIm[3 * (y * img->sx + x) + 1]);
     col->B = ((double)rgbIm[3 * (y * img->sx + x) + 2]);
-    //printf("r: %f g: %f b: %f\n", *R, *G, *B);
 }
 
-void set_texture(Object *o, const std::string& filename, int type, std::list<textureNode*>& texture_list) {
+void setTexture(Object *o, const std::string& filename, int type, std::list<textureNode*>& texture_list) {
     // Load a texture or normal map image from file and assign it to the
     // specified object.
     // type:   1  ->  Texture map  (RGB, .ppm)
@@ -27,7 +24,7 @@ void set_texture(Object *o, const std::string& filename, int type, std::list<tex
     //         3  ->  Alpha map    (grayscale, .pgm)
     // Stores loaded images in a linked list to avoid replication
     image *im;
-    textureNode *texture_node = load_texture(filename, type, texture_list);
+    textureNode *texture_node = loadTexture(filename, type, texture_list);
 
     // Found image already on the list
     if (type == 1)
@@ -38,7 +35,7 @@ void set_texture(Object *o, const std::string& filename, int type, std::list<tex
         o->alphaMap = texture_node->im;
 }
 
-textureNode* load_texture(const std::string& filename, int type, std::list<textureNode*>& texture_list){
+textureNode* loadTexture(const std::string& filename, int type, std::list<textureNode*>& texture_list){
     image *im;
     textureNode* texture_node = *std::find(texture_list.begin(), texture_list.end(), filename);;
     if (texture_node != *texture_list.end()) {

@@ -9,7 +9,11 @@
 struct material {
     std::string name;
     color col;
+    double alpha = 1;
+    double index_of_refrefraction = 1;
     image *im = NULL;
+
+    int is_light_source = 0;
     
     material(std::string& name):
     name(name)

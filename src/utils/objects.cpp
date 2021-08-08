@@ -141,7 +141,7 @@ void Object::randomPoint(double *x, double *y, double *z) {
     *x = r.x;
     *y = r.y;
     *z = r.z;
-    fprintf(stderr, "Object::randomPoint\n");
+    //fprintf(stderr, "Object::randomPoint\n");
 }
 
 double Object::intersect(struct Ray *r, double lambda) {

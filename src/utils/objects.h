@@ -75,7 +75,7 @@ class Object : public Primitive{
     image *alphaMap;   // Alpha map for the object
 
     // Material properties
-    double refl_sig;
+    double refl_sig; // this is how diffuse the reflection is
     double r_index;  // Index of refraction
 
     int frontAndBack;   // Flag to indicate that both sides of the object

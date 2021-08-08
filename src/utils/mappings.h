@@ -8,8 +8,8 @@
 #include "scene.h"
 
 
-textureNode* load_texture(const std::string& filename, int type, std::list<textureNode*>& texture_list);
-void set_texture(Object *o, const std::string& filename, int type, std::list<textureNode*>& texture_list);
+textureNode* loadTexture(const std::string& filename, int type, std::list<textureNode*>& texture_list);
+void setTexture(Object *o, const std::string& filename, int type, std::list<textureNode*>& texture_list);
 
 void textureMap(Object *obj, double a, double b, color *col);
 void normalMap(Object *obj, double a, double b, struct point *n);

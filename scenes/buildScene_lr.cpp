@@ -29,6 +29,16 @@ scene->meshFactory.setTransform(Tr(0,-5,0) * Sc(40));
 scene->meshFactory.loadMeshFile(room_mesh);
 
 /*
+o = new Sphere(.99, .99, .99);
+o->set_pathTrace_properties(1.0, 0.0, 0.0);
+//o->set_rayTrace_properties(.05, .95, .35, .35, 1, 6);
+o->T = Tr(0, -2, 1);
+setTexture(o, world_mask_texture, 1, scene->texture_list);
+o->invert_and_bound();
+scene->insertObject(o);
+*/
+
+/*
 scene->meshFactory.setDefaultColor(255 / 255.0, 74 / 255.0, 249 / 255.0);
 t = Sc(1);
 t *= Tr(2,0, 1);

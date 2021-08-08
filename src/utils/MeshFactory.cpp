@@ -187,7 +187,9 @@ void MeshFactory::loadMeshFile(const std::string& filename){
         } else if (line.rfind("vt ", 0) == 0){
             sscanf(line.c_str(), "vt %lf %lf", &x, &y);
             texture_coords[t *2] = x;
-            texture_coords[(t * 2) + 1] = y;
+            // obj define texture coords in y axis to start from the bottom
+            // instead of the top so 1 - y makes textures right side up
+            texture_coords[(t * 2) + 1] = 1 - y;
             t++;
         } else if (line.rfind("vn ", 0) == 0){
             sscanf(line.c_str(), "vn %lf %lf %lf", &x, &y, &z);
@@ -282,10 +284,28 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
                     mtl_list.push_front(material(mtl_name));
                 }
                 //std::cout << "mtl: " << mtl_name << "\n";
+            } else if(line.rfind("Ke ", 0) == 0){
+                //Ke is a light source in Physically based rendering
+                double r,g,b;
+                sscanf(line.c_str(), "Ke %lf %lf %lf", &r, &g, &b);
+                mtl_list.front().col = {r,g,b};
+                mtl_list.front().is_light_source = 1;
             } else if(line.rfind("Kd ", 0) == 0){
                 double r,g,b;
                 sscanf(line.c_str(), "Kd %lf %lf %lf", &r, &g, &b);
-                mtl_list.front().col = {r,g,b};
+                if(!mtl_list.front().is_light_source){
+                    mtl_list.front().col = {r,g,b};
+                }
+            } else if (line.rfind("d ", 0) == 0){
+                //d is how opaque an object is. 1 means fully opaque
+                sscanf(line.c_str(), "d %lf", &mtl_list.front().alpha);
+            } else if (line.rfind("Ti ", 0) == 0){
+                //Td is how transparent an object is. 1 means fully transparent
+                sscanf(line.c_str(), "Ti %lf", &mtl_list.front().alpha);
+                //alpha 1 means fully opaque
+                mtl_list.front().alpha = 1 - mtl_list.front().alpha;
+            } else if (line.rfind("Ni ", 0) == 0){
+                sscanf(line.c_str(), "Ni %lf", &mtl_list.front().index_of_refrefraction);
             } else if (line.rfind("map_Kd ", 0) == 0){
                 start_index = line.find_first_of(" ") + 1;
                 texture_name = dir + line.substr(start_index);
@@ -297,7 +317,7 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
                 //for (material m: mtl_list){
                 //    std::cout << m << ",";
                 //}std::cout << "]\n";
-                mtl_list.front().im = load_texture(texture_name, 1, texture_list)->im;
+                mtl_list.front().im = loadTexture(texture_name, 1, texture_list)->im;
                 //mesh->texImg = mtl_list.front().im; 
                 
                 //set_texture(mesh, texture_name, 1, texture_list);
@@ -308,16 +328,23 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
 }
 
 void MeshFactory::buildMesh(){
-    mesh = new Mesh(std::find(mtl_list.begin(), mtl_list.end(), mtl_name)->col);
+    material mtl = *std::find(mtl_list.begin(), mtl_list.end(), mtl_name);
+    mesh = new Mesh(mtl.col);
     mesh->name = object_name;
     mesh->T = transformation;
-    mesh->set_pathTrace_properties(1.0, 0.0, 0.0);
-    mesh->r_index = 1.54;
+    //mesh->set_rayTrace_properties(0.1, double diffuse,
+    //                                 double specular, double global,
+    //                                 double alpha, double shiny)
+    mesh->set_pathTrace_properties(mtl.alpha, 0.0, 1-mtl.alpha);
+    mesh->r_index = mtl.index_of_refrefraction;
+    
+    mesh->isLightSource = mtl.is_light_source;
+    mesh->pt.LSweight = 1;
     mesh->bvh.set_build_method(BuildMethod::MidSplit);
     mesh->bvh.set_search_method(SearchMethod::BFS);
     mesh->bvh.build(faces + first_face_in_object, num_faces_in_object);
     first_face_in_object += num_faces_in_object;
-    mesh->texImg = std::find(mtl_list.begin(), mtl_list.end(), mtl_name)->im;
+    mesh->texImg = mtl.im;
     mesh->invert_and_bound();
 }
 
