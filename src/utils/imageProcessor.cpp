@@ -1,5 +1,8 @@
 #include "imageProcessor.h"
 
+// on linux: sudo apt-get install libpng-dev
+#include <png.h>
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -193,7 +196,54 @@ struct image *newImage(int size_x, int size_y, int pixel_size) {
     return (NULL);
 }
 
-void imageOutput(struct image *im, const char *filename) {
+/**
+ * Save the image stored in `img` into the given PNG file
+ */
+bool PNGImageOutput(image *img, const char *filename) {
+  FILE *fp = fopen(filename, "wb");
+  if (!fp) {
+    return false;
+  }
+  png_structp png_ptr =
+      png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  if (!png_ptr) {
+    fclose(fp);
+    return false;
+  }
+  png_infop info_ptr = png_create_info_struct(png_ptr);
+  if (!info_ptr) {
+    png_destroy_write_struct(&png_ptr, NULL);
+    fclose(fp);
+    return false;
+  }
+  if (setjmp(png_jmpbuf(png_ptr))) {
+    png_destroy_write_struct(&png_ptr, &info_ptr);
+    fclose(fp);
+    return false;
+  }
+  png_init_io(png_ptr, fp);
+  png_set_IHDR(png_ptr, info_ptr, img->sx, img->sy, 8, PNG_COLOR_TYPE_RGB,
+               PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
+               PNG_FILTER_TYPE_BASE);
+  png_write_info(png_ptr, info_ptr);
+  png_byte *image = new png_byte[img->sx * img->sy * 3];
+  for (int i = 0; i < img->sx * img->sy * 3; i++) {
+    image[i] = (png_byte)(((unsigned char *)img->rgbdata)[i]);
+  }
+  png_bytep row_pointers[img->sy];
+  for (int i = 0; i < img->sy; i++) {
+    row_pointers[i] = &image[i * img->sx * 3];
+  }
+  png_write_image(png_ptr, row_pointers);
+  png_write_end(png_ptr, info_ptr);
+  png_destroy_write_struct(&png_ptr, &info_ptr);
+  fclose(fp);
+
+  delete[] image;
+  return true;
+}
+
+void PPMImageOutput(image *im, const char *filename) {
     // Writes out a .ppm file from the image data contained in 'im'.
     // Note that Windows typically doesn't know how to open .ppm
     // images. Use Gimp or any other seious image processing
@@ -323,6 +373,10 @@ void dataOutput(double *im, int sx, char *name) {
     bits24 = (unsigned char *)calloc(sx * sx * 3, sizeof(unsigned char));
     for (int i = 0; i < sx * sx * 3; i++)
         *(bits24 + i) = (unsigned char)(255.0 * (*(imT + i)));
+    
+    image img = {bits24, sx, sx};
+    PNGImageOutput(&img, name);
+    /*
     f = fopen(name, "wb+");
     if (f == NULL) {
         fprintf(stderr, "Unable to open file %s for output! No image written\n", name);
@@ -334,6 +388,7 @@ void dataOutput(double *im, int sx, char *name) {
     fprintf(f, "255\n");
     fwrite(bits24, sx * sx * 3 * sizeof(unsigned char), 1, f);
     fclose(f);
+    */
     
 
     free(bits24);

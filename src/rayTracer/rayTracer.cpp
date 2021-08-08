@@ -128,7 +128,7 @@ void rayTraceMain(int argc, char *argv[]) {
     }      // end for j
     raytracing_timer.end();
     // Output rendered image
-    imageOutput(outImage, output_name);
+    PNGImageOutput(outImage, output_name);
 
     std::cout << "Ray Tracing Done!\n";
 
