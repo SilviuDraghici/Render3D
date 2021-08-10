@@ -44,7 +44,7 @@ Axis Primitive::longestAxis() const {
     }
 }
 
-Object::Object(double r = 1, double g = 1, double b = 1) {
+Object::Object(double r, double g, double b) {
     col.R = r;
     col.G = g;
     col.B = b;
@@ -198,7 +198,7 @@ double Object::max_z() const { return w_bound.max.z; }
 
 ///////////////////////////////Plane//////////////////////////////////////
 
-Plane::Plane(double r = 1, double g = 1, double b = 1) : Object(r, g, b) {
+Plane::Plane(double r, double g, double b) : Object(r, g, b) {
     frontAndBack = 1;
 }
 
@@ -564,7 +564,7 @@ void Box::intersect(struct Ray *ray, double *lambda, struct point *p,
     }
 }
 
-Triangle::Triangle(double r = 1, double g = 1, double b = 1) : Object(r, g, b) {
+Triangle::Triangle(double r, double g, double b) : Object(r, g, b) {
     frontAndBack = 1;
     // equilateral triangle on x-y plane unit circle centered at 0
     p1.x = -0.866, p1.y = -0.5;
@@ -633,7 +633,7 @@ void Triangle::setPoints(point p1, point p2, point p3) {
     this->p1 = p1, this->p2 = p2, this->p3 = p3;
 }
 
-Polygon::Polygon(double r = 1, double g = 1, double b = 1) : Object(r, g, b) {
+Polygon::Polygon(double r, double g, double b) : Object(r, g, b) {
     frontAndBack = 1;
     p = (point *)malloc(3 * sizeof(point));
     e = (point *)malloc(3 * sizeof(point));

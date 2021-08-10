@@ -84,7 +84,7 @@ class Object : public Primitive{
 
     Bounds w_bound; // the bounds for this object in world coordinates
 
-    Object(double r, double g, double b);
+    Object(double r = 1, double g = 1, double b = 1);
     Object(color &c);
     void set_color(double r, double g, double b);
     void set_rayTrace_properties(double ambient, double diffuse,
@@ -115,7 +115,7 @@ class Object : public Primitive{
 
 class Plane : public Object {
    public:
-    Plane(double r, double g, double b);
+    Plane(double r = 1, double g = 1, double b = 1);
     void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
     void set_canonical_bounds();
@@ -155,7 +155,7 @@ class Box : public Object {
 
 class Triangle : public Object {
    public:
-    Triangle(double r, double g, double b);
+    Triangle(double r = 1, double g = 1, double b = 1);
     void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
 
@@ -170,7 +170,7 @@ class Triangle : public Object {
 
 class Polygon : public Object {
    public:
-    Polygon(double r, double g, double b);
+    Polygon(double r = 1, double g = 1, double b = 1);
     void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
     void setNumPoints(int num);
