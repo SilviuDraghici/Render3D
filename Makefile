@@ -15,7 +15,7 @@ EXE     := Render3D
 # Release Variables
 #
 OBJS     = $(patsubst $(SRC)/%.cpp,$(OBJ)/%.o,$(SRCS))
-R_CFLAGS = -g -I$(INCLUDE) -std=c++17 -O3 -ffast-math $(OPENMP) -ftree-vectorize -msse2 -mfpmath=sse -flto -march=native
+R_CFLAGS = -g -std=c++17 -O3 -ffast-math $(OPENMP) -ftree-vectorize -msse2 -mfpmath=sse -flto -march=native
 R_LDLIBS = -lm -lpng $(OPENMP)
 
 #
@@ -23,7 +23,7 @@ R_LDLIBS = -lm -lpng $(OPENMP)
 #
 DOBJ     = $(OBJ)_deb
 DOBJS    = $(patsubst $(SRC)/%.cpp,$(DOBJ)/%.o,$(SRCS))
-CFLAGS   = -g -I$(INCLUDE) -std=c++17
+CFLAGS   = -g -std=c++17
 LDLIBS   = -lm -lpng
 
 .PHONY: all run clean release debug
