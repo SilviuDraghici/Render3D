@@ -16,6 +16,7 @@
 #include "../utils/objects.h"
 #include "../utils/ray.h"
 #include "../utils/utils.h"
+#include "../utils/ColorTransform.h"
 
 static Scene *scene;
 
@@ -85,6 +86,8 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
 }
 
 void pathTraceMain(int argc, char *argv[]) {
+    LinerToSRGB<double> colorTransform = LinerToSRGB<double>();
+
     color col;  // Return color for pixels
     fprintf(stderr, "PathTracing\n");
     if (argc < 5) {
@@ -234,7 +237,9 @@ void pathTraceMain(int argc, char *argv[]) {
         }      // end for j
 
         if (k % samples_per_update == 0) {  // update output image
-            dataOutput(rgbIm, scene->sx, output_name);
+            image transformedImage = {colorTransform(*outImage),outImage->sx,outImage->sx};
+            PNGImageOutput(&transformedImage, output_name);
+            //dataOutput(rgbIm, scene->sx, output_name);
         }
 
     }  // End for k
@@ -243,7 +248,9 @@ void pathTraceMain(int argc, char *argv[]) {
 
     // Output rendered image
     if (k % samples_per_update != 1) {
-        dataOutput(rgbIm, scene->sx, output_name);
+        image transformedImage = {colorTransform(*outImage),outImage->sx,outImage->sx};
+        PNGImageOutput(&transformedImage, output_name);
+        //dataOutput(rgbIm, scene->sx, output_name);
     }
 
     free(cam);

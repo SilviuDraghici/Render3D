@@ -64,11 +64,11 @@ o->r_index = 1.54;
 o->name = "Top Light";
 o->T *= Sc(0.5, 2.5, 1);
 o->T *= RotX(PI / 2);
-o->T *= Tr(0, 9.995, 5);
+o->T *= Tr(0, 9.995, 0);
 o->isLightSource = 1;
 o->pt.LSweight *= 0.5 * 2.5 * 1;  // <- scale weight by scale
 o->invert_and_bound();
-//scene->insertObject(o);
+scene->insertObject(o);
 
 p.x = 0;
 p.y = 0;

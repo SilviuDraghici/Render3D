@@ -42,14 +42,14 @@ void rayTraceMain(int argc, char *argv[]) {
         sc.frame = atoi(argv[5]) - 1;
     }
 
-    unsigned char *rgbIm;
+    double* rgbIm;
     // Allocate memory for the new image
-    outImage = newImage(scene->sx, scene->sx, sizeof(unsigned char));
+    outImage = newImage(scene->sx, scene->sx, sizeof(double));
     if (!outImage) {
         fprintf(stderr, "Unable to allocate memory for raytraced image\n");
         exit(0);
     } else {
-        rgbIm = (unsigned char *)outImage->rgbdata;
+        rgbIm = (double* )outImage->rgbdata;
     }
 
     // Camera center is at (0,0,-1)
@@ -118,12 +118,9 @@ void rayTraceMain(int argc, char *argv[]) {
             if (col.R == -1) {
                 col = background;
             }
-            rgbIm[3 * (j * outImage->sx + i) + 0] =
-                (unsigned char)(255 * col.R);
-            rgbIm[3 * (j * outImage->sx + i) + 1] =
-                (unsigned char)(255 * col.G);
-            rgbIm[3 * (j * outImage->sx + i) + 2] =
-                (unsigned char)(255 * col.B);
+            rgbIm[3 * (j * outImage->sx + i) + 0] = col.R;
+            rgbIm[3 * (j * outImage->sx + i) + 1] = col.G;
+            rgbIm[3 * (j * outImage->sx + i) + 2] = col.B;
         }  // end for i
     }      // end for j
     raytracing_timer.end();

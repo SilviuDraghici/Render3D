@@ -1,5 +1,9 @@
 #include "imageProcessor.h"
 
+#include "utils.h"
+
+#include <iostream>
+
 // on linux: sudo apt-get install libpng-dev
 #include <png.h>
 
@@ -200,47 +204,48 @@ struct image *newImage(int size_x, int size_y, int pixel_size) {
  * Save the image stored in `img` into the given PNG file
  */
 bool PNGImageOutput(image *img, const char *filename) {
-  FILE *fp = fopen(filename, "wb");
-  if (!fp) {
-    return false;
-  }
-  png_structp png_ptr =
-      png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-  if (!png_ptr) {
-    fclose(fp);
-    return false;
-  }
-  png_infop info_ptr = png_create_info_struct(png_ptr);
-  if (!info_ptr) {
-    png_destroy_write_struct(&png_ptr, NULL);
-    fclose(fp);
-    return false;
-  }
-  if (setjmp(png_jmpbuf(png_ptr))) {
+    double* color_data = (double*)img->rgbdata;
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) {
+        return false;
+    }
+    png_structp png_ptr =
+        png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (!png_ptr) {
+        fclose(fp);
+        return false;
+    }
+    png_infop info_ptr = png_create_info_struct(png_ptr);
+    if (!info_ptr) {
+        png_destroy_write_struct(&png_ptr, NULL);
+        fclose(fp);
+        return false;
+    }
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        png_destroy_write_struct(&png_ptr, &info_ptr);
+        fclose(fp);
+        return false;
+    }
+    png_init_io(png_ptr, fp);
+    png_set_IHDR(png_ptr, info_ptr, img->sx, img->sy, 8, PNG_COLOR_TYPE_RGB,
+                PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
+                PNG_FILTER_TYPE_BASE);
+    png_write_info(png_ptr, info_ptr);
+    png_byte *image = new png_byte[img->sx * img->sy * 3];
+    for (int i = 0; i < img->sx * img->sy * 3; i++) {
+        image[i] = (png_byte)(color_data[i] * 255);
+    }
+    png_bytep row_pointers[img->sy];
+    for (int i = 0; i < img->sy; i++) {
+        row_pointers[i] = &image[i * img->sx * 3];
+    }
+    png_write_image(png_ptr, row_pointers);
+    png_write_end(png_ptr, info_ptr);
     png_destroy_write_struct(&png_ptr, &info_ptr);
     fclose(fp);
-    return false;
-  }
-  png_init_io(png_ptr, fp);
-  png_set_IHDR(png_ptr, info_ptr, img->sx, img->sy, 8, PNG_COLOR_TYPE_RGB,
-               PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
-               PNG_FILTER_TYPE_BASE);
-  png_write_info(png_ptr, info_ptr);
-  png_byte *image = new png_byte[img->sx * img->sy * 3];
-  for (int i = 0; i < img->sx * img->sy * 3; i++) {
-    image[i] = (png_byte)(((unsigned char *)img->rgbdata)[i]);
-  }
-  png_bytep row_pointers[img->sy];
-  for (int i = 0; i < img->sy; i++) {
-    row_pointers[i] = &image[i * img->sx * 3];
-  }
-  png_write_image(png_ptr, row_pointers);
-  png_write_end(png_ptr, info_ptr);
-  png_destroy_write_struct(&png_ptr, &info_ptr);
-  fclose(fp);
 
-  delete[] image;
-  return true;
+    delete[] image;
+    return true;
 }
 
 void PPMImageOutput(image *im, const char *filename) {
@@ -285,6 +290,21 @@ void deleteImage(struct image *im) {
 }
 
 void dataOutput(double *im, int sx, char *name) {
+    /*
+    int num_pixls_above_1 = 0;
+    int num_pixls_below_0 = 0;
+    double highest_value = 0;
+    for (int i = 0; i < sx * sx * 3; i++) {
+        if(im[i] > 0) num_pixls_above_1 ++;
+        if(im[i] > highest_value) highest_value = im[i];
+        if(im[i] < 0) num_pixls_below_0 ++; 
+    }
+
+    std::cout << "num_pixls_above_1 " << num_pixls_above_1 << "\n";
+    std::cout << "highest_value " << highest_value << "\n";
+    std::cout << "num_pixls_below_0 " << num_pixls_below_0 << "\n";
+    */
+   
     FILE *f;
     double *imT;
     double HDRhist[1000];

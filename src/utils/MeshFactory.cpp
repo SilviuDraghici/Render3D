@@ -289,7 +289,7 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
                 double r,g,b;
                 sscanf(line.c_str(), "Ke %lf %lf %lf", &r, &g, &b);
                 mtl_list.front().col = {r,g,b};
-                mtl_list.front().is_light_source = 1;
+                //mtl_list.front().is_light_source = 1;
             } else if(line.rfind("Kd ", 0) == 0){
                 double r,g,b;
                 sscanf(line.c_str(), "Kd %lf %lf %lf", &r, &g, &b);
