@@ -86,8 +86,6 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
 }
 
 void pathTraceMain(int argc, char *argv[]) {
-    LinerToSRGB<double> colorTransform = LinerToSRGB<double>();
-
     color col;  // Return color for pixels
     fprintf(stderr, "PathTracing\n");
     if (argc < 5) {
@@ -112,6 +110,9 @@ void pathTraceMain(int argc, char *argv[]) {
     if (6 <= argc) {
         sc.frame = atoi(argv[5]) - 1;
     }
+
+    LinerToSRGB<double> colorTransform = LinerToSRGB<double>();
+    //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
 
     double *rgbIm;
     // Allocate memory for the new image
@@ -239,7 +240,6 @@ void pathTraceMain(int argc, char *argv[]) {
         if (k % samples_per_update == 0) {  // update output image
             image transformedImage = {colorTransform(*outImage),outImage->sx,outImage->sx};
             PNGImageOutput(&transformedImage, output_name);
-            //dataOutput(rgbIm, scene->sx, output_name);
         }
 
     }  // End for k
@@ -250,7 +250,6 @@ void pathTraceMain(int argc, char *argv[]) {
     if (k % samples_per_update != 1) {
         image transformedImage = {colorTransform(*outImage),outImage->sx,outImage->sx};
         PNGImageOutput(&transformedImage, output_name);
-        //dataOutput(rgbIm, scene->sx, output_name);
     }
 
     free(cam);
