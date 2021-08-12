@@ -117,7 +117,7 @@ o->T *= Tr(0, -9.995, 5);
 o->isLightSource = 1;
 o->pt.LSweight *= 0.5 * 2.5 * 1;  // <- scale weight by scale
 o->invert_and_bound();
-//scene->insertObject(o);
+scene->insertObject(o);
 
 p.x = 0;
 p.y = 9.9;

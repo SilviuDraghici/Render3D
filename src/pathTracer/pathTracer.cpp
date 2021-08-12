@@ -29,7 +29,6 @@ double total_weight;
 // array of light sources
 Object **light_listt;
 int num_lights;
-int curr_light;
 
 inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
                                   point *n, Object **explt) {
@@ -37,6 +36,7 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
     Ray pToLight;
     pToLight.p0 = *p;
 
+    int curr_light = 0;
     double prob = 0;
     double dice = xor128();
     for (int i = 0; i < num_lights; i++) {
@@ -68,7 +68,7 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
     *explt = light_listt[curr_light];
     if (obstruction == light_listt[curr_light] && dot(&pToLight.d, &nls) < 0) {
         // printf("total weight: %f\n", total_weight);
-        double A = total_weight * light_listt[curr_light]->pt.LSweight;
+        double A = total_weight * light_listt[curr_light]->pt.surface_area;
         double dxd = pToLight.d.x * pToLight.d.x +
                      pToLight.d.y * pToLight.d.y +
                      pToLight.d.z * pToLight.d.z;
@@ -130,11 +130,11 @@ void pathTraceMain(int argc, char *argv[]) {
     double wt;
     wght = (double *)calloc(scene->sx * scene->sx, sizeof(double));
     if (!wght) {
-        fprintf(stderr, "Unable to allocate memory for pathTracw]e weights\n");
+        fprintf(stderr, "Unable to allocate memory for pathTracer weights\n");
         exit(0);
     }
     for (int i = 0; i < scene->sx * scene->sx; i++) {
-        *(wght + i) = 1.0;
+        wght[i] = 1.0;
     }
 
     // Camera center is at (0,0,-1)
@@ -169,7 +169,7 @@ void pathTraceMain(int argc, char *argv[]) {
             num_lights++;
         }
     }
-    curr_light = 0;
+    int curr_light = 0;
 
     view *cam;  // Camera and view for this scene
     cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up),
@@ -205,8 +205,8 @@ void pathTraceMain(int argc, char *argv[]) {
         // fflush(stderr);
 #pragma omp parallel for schedule(dynamic, 1) private(i, j, wt, ray, col, is, \
                                                       js)
-        for (j = 0; j < scene->sx;
-             j++) {  // For each of the pixels in the image
+        // For each of the pixels in the image
+        for (j = 0; j < scene->sx; j++) {  
             for (i = 0; i < scene->sx; i++) {
                 col = 0;
 
@@ -220,9 +220,11 @@ void pathTraceMain(int argc, char *argv[]) {
                 ray.pt.expl_col = 0;
                 ray.pt.isLightRay = 0;
 
-                wt = *(wght + i + (j * scene->sx));
+                wt = wght[i + (j * scene->sx)];
 
                 PathTrace(&ray, 1, &col, NULL, NULL);
+
+
                 rgbIm[3 * (j * outImage->sx + i) + 0] +=
                     col.R * pow(2, -log(wt));
                 rgbIm[3 * (j * outImage->sx + i) + 1] +=
@@ -233,7 +235,7 @@ void pathTraceMain(int argc, char *argv[]) {
                 wt += col.R;
                 wt += col.G;
                 wt += col.B;
-                *(wght + i + (j * scene->sx)) = wt;
+                wght[i + (j * scene->sx)] = wt;
             }  // end for i
         }      // end for j
 
@@ -334,9 +336,12 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
 
     // if hit light source
     if (obj->isLightSource && dot(&ray->d, &n) < 0) {
-        *col = ray->pt.ray_col + ray->pt.expl_col;
-        if (explt == obj) {  // the ray cast is the same as explicit
-            *col = ray->pt.expl_col;
+        *col = ray->pt.expl_col;
+        // if (explt == obj) {  // the ray cast is the same as explicit
+        //   *col = ray->pt.pexpl_col;
+        // }
+        if (Os == NULL || Os->pt.diffuse < 0.8){
+          *col += ray->pt.ray_col;
         }
 
         return;
@@ -405,6 +410,7 @@ void normalizeLightWeights(std::list<Object *>& object_list) {
 
     for(Object* const& obj : object_list){
         if (obj->isLightSource) {
+            obj->pt.surface_area = obj->pt.LSweight;
             obj->pt.LSweight /= total_weight;
         }
     }

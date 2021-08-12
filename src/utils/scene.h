@@ -57,7 +57,7 @@ class Scene {
 
     void insertObject(Object *o) {
         if (o == NULL) return;
-        object_list.push_front(o);
+        object_list.push_back(o);
     }
 
     ~Scene(){

@@ -10,7 +10,9 @@ template <typename colorSize> class ColorTransform{
 template <typename colorSize>
 class LinerToSRGB: public ColorTransform<colorSize>{
   public:
-    LinerToSRGB(double e = 1.0):exposure(e){}
+    LinerToSRGB(double e = 1.0):exposure(e){
+        std::cout << "Using Color Transform LinerToSRGB with exposure " << exposure << std::endl;
+    }
     colorSize* operator()(image& im){
         colorSize* transformedColors  = new colorSize[im.sx * im.sy * 3];
         colorSize* im_data = (colorSize* )im.rgbdata;
@@ -36,7 +38,9 @@ class LinerToSRGB: public ColorTransform<colorSize>{
 template <typename colorSize>
 class LinerToPacosFunction: public ColorTransform<colorSize>{
   public:
-    LinerToPacosFunction(){}
+    LinerToPacosFunction(){
+        std::cout << "Using Color Transform LinerToPacosFunction" << std::endl;
+    }
 
     colorSize* operator()(image& im){
         FILE *f;
