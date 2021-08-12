@@ -341,8 +341,8 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
     // if hit light source
     if (obj->isLightSource && dot(&ray->d, &n) < 0) {
         *col = ray->pt.expl_col;
-        if (explt != obj) {  // the ray cast is the same as explicit
-            *col += ray->pt.ray_col;
+        if ((Os == NULL || Os->pt.diffuse < 0.8) && (explt != obj)){
+          *col += ray->pt.ray_col;
         }
         return;
     }
