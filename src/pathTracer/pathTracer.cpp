@@ -20,7 +20,7 @@
 
 static Scene *scene;
 
-int samples_per_update = 100;
+int samples_per_update = 25;
 
 unsigned long int NUM_RAYS;
 
@@ -32,6 +32,9 @@ int num_lights;
 
 inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
                                   point *n, Object **explt) {
+    
+    //*explt = NULL;
+    
     // ray from intersection point to light source
     Ray pToLight;
     pToLight.p0 = *p;
@@ -65,9 +68,10 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
 
     // printf("source: %s, obstruction: %s\n", obj->label,
     // obstruction->label);
-    *explt = light_listt[curr_light];
+    
     if (obstruction == light_listt[curr_light] && dot(&pToLight.d, &nls) < 0) {
         // printf("total weight: %f\n", total_weight);
+        *explt = light_listt[curr_light];
         double A = total_weight * light_listt[curr_light]->pt.surface_area;
         double dxd = pToLight.d.x * pToLight.d.x +
                      pToLight.d.y * pToLight.d.y +
@@ -111,7 +115,7 @@ void pathTraceMain(int argc, char *argv[]) {
         sc.frame = atoi(argv[5]) - 1;
     }
 
-    LinerToSRGB<double> colorTransform = LinerToSRGB<double>();
+    LinerToSRGB<double> colorTransform = LinerToSRGB<double>(1.0);
     //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
 
     double *rgbIm;
@@ -169,7 +173,6 @@ void pathTraceMain(int argc, char *argv[]) {
             num_lights++;
         }
     }
-    int curr_light = 0;
 
     view *cam;  // Camera and view for this scene
     cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up),
@@ -225,13 +228,14 @@ void pathTraceMain(int argc, char *argv[]) {
                 PathTrace(&ray, 1, &col, NULL, NULL);
 
 
-                rgbIm[3 * (j * outImage->sx + i) + 0] +=
-                    col.R * pow(2, -log(wt));
-                rgbIm[3 * (j * outImage->sx + i) + 1] +=
-                    col.G * pow(2, -log(wt));
-                rgbIm[3 * (j * outImage->sx + i) + 2] +=
-                    col.B * pow(2, -log(wt));
-
+                //rgbIm[3 * (j * outImage->sx + i) + 0] += col.R * pow(2, -log(wt));
+                //rgbIm[3 * (j * outImage->sx + i) + 1] += col.G * pow(2, -log(wt));
+                //rgbIm[3 * (j * outImage->sx + i) + 2] += col.B * pow(2, -log(wt));
+                
+                rgbIm[3 * (j * outImage->sx + i) + 0] += col.R / scene->pt_num_samples;
+                rgbIm[3 * (j * outImage->sx + i) + 1] += col.G / scene->pt_num_samples;
+                rgbIm[3 * (j * outImage->sx + i) + 2] += col.B / scene->pt_num_samples;
+                
                 wt += col.R;
                 wt += col.G;
                 wt += col.B;
@@ -296,7 +300,7 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
     if (depth > scene->pt_max_depth)  // Max recursion depth reached. Return black (no
                                       // light coming into pixel from this path).
     {
-        *col = ray->pt.expl_col;  // These are accumulators, initialized at 0.
+        //*col = ray->pt.expl_col;  // These are accumulators, initialized at 0.
                                   // Whenever we find a source of light these
                                   // get incremented accordingly. At the end of
                                   // the recursion, we return whatever light we
@@ -306,7 +310,7 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
 
     findFirstHit(scene, ray, &lambda, Os, &obj, &p, &n, &a, &b);
     if (obj == NULL || lambda < THR) {
-        *col = ray->pt.expl_col;
+        //*col = ray->pt.expl_col;
         return;
     }
 
@@ -337,13 +341,9 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
     // if hit light source
     if (obj->isLightSource && dot(&ray->d, &n) < 0) {
         *col = ray->pt.expl_col;
-        // if (explt == obj) {  // the ray cast is the same as explicit
-        //   *col = ray->pt.pexpl_col;
-        // }
-        if (Os == NULL || Os->pt.diffuse < 0.8){
-          *col += ray->pt.ray_col;
+        if (explt != obj) {  // the ray cast is the same as explicit
+            *col += ray->pt.ray_col;
         }
-
         return;
     }
 

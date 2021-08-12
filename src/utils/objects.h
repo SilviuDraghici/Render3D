@@ -27,7 +27,7 @@ struct PT_properties {
 
     double LSweight;  // If this is an area light source, keeps track of its
                       // weight (volume)
-    double surface_area;;
+    double surface_area;
 };
 
 class Bounds {

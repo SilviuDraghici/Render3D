@@ -93,7 +93,7 @@ o->invert_and_bound();
 scene->insertObject(o);
 
 // Planar light source at top
-o = new Plane(1.0, 1.0, 1.0);
+o = new Plane(25.0, 25.0, 25.0);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->refl_sig = 0.0;
 o->r_index = 1.54;
@@ -106,7 +106,7 @@ o->pt.LSweight *= 0.5 * 2.5 * 1;  // <- scale weight by scale
 o->invert_and_bound();
 scene->insertObject(o);
 
-o = new Plane(1.0, 1.0, 1.0);
+o = new Plane(25.0, 25.0, 25.0);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->refl_sig = 0.0;
 o->r_index = 1.54;
