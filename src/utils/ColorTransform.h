@@ -10,8 +10,8 @@ template <typename colorSize> class ColorTransform{
 template <typename colorSize>
 class LinerToSRGB: public ColorTransform<colorSize>{
   public:
-    LinerToSRGB(double e = 1.0):exposure(e){
-        std::cout << "Using Color Transform LinerToSRGB with exposure " << exposure << std::endl;
+    LinerToSRGB(int ns, double e = 1.0):num_samples(ns), exposure(e){
+        std::cout << std::endl << "Using Color Transform: Linear to SRGB with " << num_samples << " samples" << std::endl;
     }
     colorSize* operator()(image& im){
         colorSize* transformedColors  = new colorSize[im.sx * im.sy * 3];
@@ -26,12 +26,14 @@ class LinerToSRGB: public ColorTransform<colorSize>{
     }
   private:
     colorSize linearToSRGB(colorSize L){
+        L = L / num_samples;
         colorSize S = L * 12.92;
         if (L > 0.0031308) {
         S = 1.055 * pow(L, 1.0 / 2.4) - 0.055;
         }
         return clamp01(S);
     }
+    int num_samples;
     double exposure;
 };
 

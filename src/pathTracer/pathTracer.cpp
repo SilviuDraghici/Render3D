@@ -115,9 +115,6 @@ void pathTraceMain(int argc, char *argv[]) {
         sc.frame = atoi(argv[5]) - 1;
     }
 
-    LinerToSRGB<double> colorTransform = LinerToSRGB<double>(1.0);
-    //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
-
     double *rgbIm;
     // Allocate memory for the new image
     outImage = newImage(scene->sx, scene->sx, sizeof(double));
@@ -232,9 +229,9 @@ void pathTraceMain(int argc, char *argv[]) {
                 //rgbIm[3 * (j * outImage->sx + i) + 1] += col.G * pow(2, -log(wt));
                 //rgbIm[3 * (j * outImage->sx + i) + 2] += col.B * pow(2, -log(wt));
                 
-                rgbIm[3 * (j * outImage->sx + i) + 0] += col.R / scene->pt_num_samples;
-                rgbIm[3 * (j * outImage->sx + i) + 1] += col.G / scene->pt_num_samples;
-                rgbIm[3 * (j * outImage->sx + i) + 2] += col.B / scene->pt_num_samples;
+                rgbIm[3 * (j * outImage->sx + i) + 0] += col.R;
+                rgbIm[3 * (j * outImage->sx + i) + 1] += col.G;
+                rgbIm[3 * (j * outImage->sx + i) + 2] += col.B;
                 
                 wt += col.R;
                 wt += col.G;
@@ -244,6 +241,8 @@ void pathTraceMain(int argc, char *argv[]) {
         }      // end for j
 
         if (k % samples_per_update == 0) {  // update output image
+            LinerToSRGB<double> colorTransform = LinerToSRGB<double>(k, 1.0);
+            //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
             image transformedImage = {colorTransform(*outImage),outImage->sx,outImage->sx};
             PNGImageOutput(&transformedImage, output_name);
         }
@@ -254,6 +253,8 @@ void pathTraceMain(int argc, char *argv[]) {
 
     // Output rendered image
     if (k % samples_per_update != 1) {
+        LinerToSRGB<double> colorTransform = LinerToSRGB<double>(k, 1.0);
+        //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
         image transformedImage = {colorTransform(*outImage),outImage->sx,outImage->sx};
         PNGImageOutput(&transformedImage, output_name);
     }
