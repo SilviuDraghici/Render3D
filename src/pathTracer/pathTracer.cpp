@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <string>
+#include <algorithm>
+#include <sstream>
 #include <list>
 
 #include "../utils/affineTransforms.h"
@@ -107,7 +110,21 @@ void pathTraceMain(int argc, char *argv[]) {
     sc.path_tracing_mode = 1;
     scene = &sc;
 
-    scene->sx = atoi(argv[2]);
+
+    std::string dims = argv[2];
+    if (std::find(dims.begin(), dims.end(), 'x') != dims.end()) {
+        std::stringstream sdims(dims);
+        std::string dim;
+        getline(sdims,dim, 'x');
+        scene->sx = atoi(dim.c_str());
+        getline(sdims, dim, 'x');
+        scene->sy = atoi(dim.c_str());
+    } else {
+        scene->sx = atoi(argv[2]);
+        scene->sy = atoi(argv[2]);
+    }
+    //std::cout << "Image size: " << scene->sx << "x" << scene->sy << std::endl;
+
     scene->pt_num_samples = atoi(argv[3]);
     strcpy(&output_name[0], argv[4]);
 
@@ -117,7 +134,7 @@ void pathTraceMain(int argc, char *argv[]) {
 
     double *rgbIm;
     // Allocate memory for the new image
-    outImage = newImage(scene->sx, scene->sx, sizeof(double));
+    outImage = newImage(scene->sx, scene->sy, sizeof(double));
 
     if (!outImage) {
         fprintf(stderr, "Unable to allocate memory for pathtraced image\n");
@@ -129,12 +146,12 @@ void pathTraceMain(int argc, char *argv[]) {
     // array of weights per pixel used to scale image colors
     double *wght;  // Holds weights for each pixel - to provide log response
     double wt;
-    wght = (double *)calloc(scene->sx * scene->sx, sizeof(double));
+    wght = (double *)calloc(scene->sx * scene->sy, sizeof(double));
     if (!wght) {
         fprintf(stderr, "Unable to allocate memory for pathTracer weights\n");
         exit(0);
     }
-    for (int i = 0; i < scene->sx * scene->sx; i++) {
+    for (int i = 0; i < scene->sx * scene->sy; i++) {
         wght[i] = 1.0;
     }
 
@@ -172,8 +189,10 @@ void pathTraceMain(int argc, char *argv[]) {
     }
 
     view *cam;  // Camera and view for this scene
+    double wleft,wtop,wwidth,wheight;
+    scaleCameraPlainByImageDimesions(wleft, wtop, wwidth, wheight, scene->sx, scene->sy);
     cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up),
-                    scene->cam_focal, -2, 2, 4);
+                    scene->cam_focal, wleft,wtop,wwidth,wheight);
 
     if (cam == NULL) {
         fprintf(stderr,
@@ -184,7 +203,7 @@ void pathTraceMain(int argc, char *argv[]) {
         exit(0);
     }
 
-    setPixelStep(scene, cam, scene->sx, scene->sx);
+    setPixelStep(scene, cam, scene->sx, scene->sy);
 
     normalizeLightWeights(scene->object_list);
 
@@ -206,7 +225,7 @@ void pathTraceMain(int argc, char *argv[]) {
 #pragma omp parallel for schedule(dynamic, 1) private(i, j, wt, ray, col, is, \
                                                       js)
         // For each of the pixels in the image
-        for (j = 0; j < scene->sx; j++) {  
+        for (j = 0; j < scene->sy; j++) {  
             for (i = 0; i < scene->sx; i++) {
                 col = 0;
 
@@ -243,7 +262,7 @@ void pathTraceMain(int argc, char *argv[]) {
         if (k % samples_per_update == 0) {  // update output image
             LinerToSRGB<double> colorTransform = LinerToSRGB<double>(k, scene->exposure);
             //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
-            image transformedImage = {colorTransform(*outImage),outImage->sx,outImage->sx};
+            image transformedImage = {colorTransform(*outImage), outImage->sx, outImage->sy};
             PNGImageOutput(&transformedImage, output_name);
         }
 
@@ -255,7 +274,7 @@ void pathTraceMain(int argc, char *argv[]) {
     if (k % samples_per_update != 1) {
         LinerToSRGB<double> colorTransform = LinerToSRGB<double>(k, scene->exposure);
         //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
-        image transformedImage = {colorTransform(*outImage),outImage->sx,outImage->sx};
+        image transformedImage = {colorTransform(*outImage),outImage->sx,outImage->sy};
         PNGImageOutput(&transformedImage, output_name);
     }
 
