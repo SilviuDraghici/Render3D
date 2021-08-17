@@ -21,11 +21,15 @@ const std::string sphere_mesh = "scenes/sphere/sphere-cylcoords-4k.obj";
 //scene->cam_gaze_point = point(0, 0, 0);
 
 //cam pos similar to refernce image
-scene->cam_pos = point(-2.5, 0, -18);
-scene->cam_pos = RotY(-23 * PI/120) * scene->cam_pos;
+scene->cam_pos = point(0, 0, -16);
+scene->cam_pos = Tr(-2,0,0) * RotY(-15 * PI/120) * scene->cam_pos;
 scene->cam_gaze_point = point(0, -4, 0);
 
 scene->cam_gaze = scene->cam_gaze_point - scene->cam_pos;
+scene->cam_gaze = {-6.8883, -4, 16.6298};
+
+//std::cout << "cam_gaze: " << scene->cam_gaze << std::endl;
+
 //scene->cam_up = point(0, 1, 0);
 scene->cam_focal = -3;
 
