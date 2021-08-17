@@ -79,7 +79,7 @@ void findFirstHit(Scene *scene, Ray *ray, double *lambda, Object *Os, Object **o
     //   *n      -  A pointer to a 3D point structure so you can return the normal at the intersection point
     //   *a, *b  -  Pointers toward double variables so you can return the texture coordinates a,b at the intersection point
 
-    Object *curr_obj = scene->object_list;
+    Object *curr_obj;// = scene->object_list;
     double curr_l, curr_a, curr_b;
     point curr_p, curr_n;
     *lambda = INFINITY;

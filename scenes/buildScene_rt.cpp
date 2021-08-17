@@ -10,7 +10,7 @@ scene->cam_pos = point(0, 0, -1);
 //scene->cam_focal = -1;
 
 o = new Sphere(1, .25, .25);  // Initialize a sphere
-o->set_rayTrace_properties(.05, .95, .35, .35, 1, 6);
+o->set_rayTrace_properties(.05, .95, .35, .35, 1, 3);
 o->T = Tr(2, 2.5, 1.5) * RotZ(PI / 4) * Sc(1.5, .75, .75);
 o->invert_and_bound();     // Compute the inverse transform * DON'T FORGET TO DO THIS! *
 scene->insertObject(o);
@@ -45,7 +45,7 @@ o = new Sphere(1.0, 1.0, 1.0);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->refl_sig = 0.0;
 o->r_index = 1.54;
-strcpy(o->label, "Top Light");
+o->name = "Top Light";
 o->T *= Tr(0, 30, -3.5);
 o->isLightSource = 1;
 o->invert_and_bound();

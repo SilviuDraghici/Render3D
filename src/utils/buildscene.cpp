@@ -11,36 +11,22 @@
 void buildScene(Scene *scene) {
 #include "../../scenes/buildScene_lr.cpp"
     
-    PrimitiveData *prims = (PrimitiveData *)malloc(scene->num_objects * sizeof(PrimitiveData));
+    PrimitiveData *prims = (PrimitiveData *)malloc(scene->object_list.size() * sizeof(PrimitiveData));
     scene->bvh = new BVH;
     int i = 0;
-    Object *prim = scene->object_list;
-    while(prim != NULL){
+    
+    for(Object* const& prim : scene->object_list){
         prims[i] = prim;
         i++;
-        prim = prim->next;
     }
+
     scene->bvh->set_build_method(BuildMethod::MidSplit);
     scene->bvh->set_search_method(SearchMethod::BFS);
-    scene->bvh->build(prims, scene->num_objects);
+    scene->bvh->build(prims, scene->object_list.size());
     //scene->bvh->print();
-    std::cout << scene->num_objects << " objects in scene\n";
+    std::cout << scene->object_list.size() << " objects in scene\n";
     //point min = point(scene->bvh->root->min_x(), scene->bvh->root->min_y(), scene->bvh->root->min_z());
     //point max = point(scene->bvh->root->max_x(), scene->bvh->root->max_y(), scene->bvh->root->max_z());
     //std::cout << "b bound:"<< min << " " << max << "\n";
     free(prims);
-}
-
-void insertObject(Object *o, Scene *scene) {
-    Object **list = &scene->object_list;
-    if (o == NULL) return;
-    scene->num_objects++;
-    // Inserts an object into the object list.
-    if (*(list) == NULL) {
-        *(list) = o;
-        (*(list))->next = NULL;
-    } else {
-        o->next = (*(list))->next;
-        (*(list))->next = o;
-    }
 }

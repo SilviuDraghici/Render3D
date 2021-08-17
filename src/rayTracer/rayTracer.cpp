@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
+#include <algorithm>
+#include <sstream>
 
 #include "../utils/affineTransforms.h"
 #include "../utils/buildscene.h"
@@ -35,21 +38,35 @@ void rayTraceMain(int argc, char *argv[]) {
     Scene sc;
     scene = &sc;
 
-    scene->sx = atoi(argv[2]);
+    std::string dims = argv[2];
+    if (std::find(dims.begin(), dims.end(), 'x') != dims.end()) {
+        std::stringstream sdims(dims);
+        std::string dim;
+        getline(sdims,dim, 'x');
+        scene->sx = atoi(dim.c_str());
+        getline(sdims, dim, 'x');
+        scene->sy = atoi(dim.c_str());
+    } else {
+        scene->sx = atoi(argv[2]);
+        scene->sy = atoi(argv[2]);
+    }
+    //std::cout << "Image size: " << scene->sx << "x" << scene->sy << std::endl;
+
+    
     strcpy(&output_name[0], argv[4]);
 
     if (6 <= argc) {
         sc.frame = atoi(argv[5]) - 1;
     }
 
-    unsigned char *rgbIm;
+    double* rgbIm;
     // Allocate memory for the new image
-    outImage = newImage(scene->sx, scene->sx, sizeof(unsigned char));
+    outImage = newImage(scene->sx, scene->sy, sizeof(double));
     if (!outImage) {
         fprintf(stderr, "Unable to allocate memory for raytraced image\n");
         exit(0);
     } else {
-        rgbIm = (unsigned char *)outImage->rgbdata;
+        rgbIm = (double* )outImage->rgbdata;
     }
 
     // Camera center is at (0,0,-1)
@@ -73,8 +90,10 @@ void rayTraceMain(int argc, char *argv[]) {
     buildscene_timer.print_elapsed_time(std::cerr);
 
     view *cam;  // Camera and view for this scene
+    double wleft,wtop,wwidth,wheight;
+    scaleCameraPlainByImageDimesions(wleft, wtop, wwidth, wheight, scene->sx, scene->sy);
     cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up),
-                    scene->cam_focal, -2, 2, 4);
+                    scene->cam_focal, wleft,wtop,wwidth,wheight);
 
     if (cam == NULL) {
         fprintf(stderr,
@@ -85,7 +104,7 @@ void rayTraceMain(int argc, char *argv[]) {
         exit(0);
     }
 
-    setPixelStep(scene, cam, scene->sx, scene->sx);
+    setPixelStep(scene, cam, scene->sx, scene->sy);
 
     Ray ray;
     double depth;
@@ -100,7 +119,7 @@ void rayTraceMain(int argc, char *argv[]) {
     Timer raytracing_timer("Raytracing");
     raytracing_timer.start();
 
-    double start_j = 0, end_j = scene->sx, start_i = 0, end_i = scene->sx;
+    double start_j = 0, end_j = scene->sy, start_i = 0, end_i = scene->sx;
 #ifdef DEBUG
     start_i = 831, start_j = 815;
     end_i = start_i + 1, end_j = start_j + 1;
@@ -118,17 +137,14 @@ void rayTraceMain(int argc, char *argv[]) {
             if (col.R == -1) {
                 col = background;
             }
-            rgbIm[3 * (j * outImage->sx + i) + 0] =
-                (unsigned char)(255 * col.R);
-            rgbIm[3 * (j * outImage->sx + i) + 1] =
-                (unsigned char)(255 * col.G);
-            rgbIm[3 * (j * outImage->sx + i) + 2] =
-                (unsigned char)(255 * col.B);
+            rgbIm[3 * (j * outImage->sx + i) + 0] = col.R;
+            rgbIm[3 * (j * outImage->sx + i) + 1] = col.G;
+            rgbIm[3 * (j * outImage->sx + i) + 2] = col.B;
         }  // end for i
     }      // end for j
     raytracing_timer.end();
     // Output rendered image
-    imageOutput(outImage, output_name);
+    PNGImageOutput(outImage, output_name);
 
     std::cout << "Ray Tracing Done!\n";
 
@@ -297,7 +313,7 @@ void rtShade(Object *obj, point *p, point *n, Ray *ray,
     Ray cam_reflection;
     rayReflect(ray, p, n, &cam_reflection);
 
-    if (obj->refl_sig > 0) {
+    if (obj->refl_sig > 0 && 0) {
         rt_brandished_trace(&cam_reflection, obj, &global, depth);
     } else {
         rayTrace(&cam_reflection, depth + 1, &global, obj);

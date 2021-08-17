@@ -1,23 +1,20 @@
 #ifndef SCENE_H
 #define SCENE_H
 
+#include <list>
+
 #include "BVH.h"
 #include "utils.h"
-
-struct textureNode {
-    char name[1024];
-    int type;
-    image *im;
-    textureNode *next;
-    ~textureNode(){
-        free(im->rgbdata);
-        free(im);
-        delete(next);
-    }
-};
+#include "textureNode.h"
+#include "MeshFactory.h"
 
 class Scene {
     public:
+
+    Scene():
+    meshFactory(object_list, texture_list)
+    {}
+
     //general settings:
     int sx = 1024, sy = 1024;
 
@@ -29,6 +26,8 @@ class Scene {
     int pt_num_samples = 1000;
 
     bool path_tracing_mode = 0;
+
+    double exposure = 1.0;
 
     //set 1 to use antialiasing in the raytrcer
     //path tracer implicitly has antialiasing
@@ -44,36 +43,36 @@ class Scene {
     double du, dv;
 
     //variables for the scene itself
-    int num_objects = 0;
-    Object *object_list = NULL;
+    std::list<Object *> object_list;
 
     BVH *bvh = NULL;
 
     //this is for the ray tracer
     PointLS *rt_point_light_list = NULL;
 
-    textureNode *texture_list = NULL;
+    std::list<textureNode *> texture_list;
+
+    MeshFactory meshFactory;
 
     //this can be used for creating animations
     int frame = 0;
+
     void insertObject(Object *o) {
         if (o == NULL) return;
-        num_objects++;
-        
-        // Inserts an object into the object list.
-        if (object_list == NULL) {
-            object_list = o;
-            object_list->next = NULL;
-        } else {
-            o->next = object_list->next;
-            object_list->next = o;
-        }
+        object_list.push_back(o);
     }
 
     ~Scene(){
+        //std::cout << "Objects:\n";
+        //for(Object* obj: object_list){
+        //    std::cout << obj->name << "\n";
+        //}
         delete(rt_point_light_list);
         delete(bvh);
-        delete(texture_list);
+        for (textureNode * t_node : texture_list){
+            delete(t_node);
+        }
+        texture_list.clear();
     }
 };
 

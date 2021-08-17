@@ -16,7 +16,7 @@ scene->cam_focal = -3;
 // Two spheres scene
 // Refract
 o = new Sphere(.99, .99, .99);
-strcpy(o->label, "Refract Shpere");
+o->name = "Left Refract Shpere";
 o->set_pathTrace_properties(0.0, 0.0, 1.0);
 o->r_index = 1.54;
 o->T *= RotY(PI);
@@ -27,11 +27,10 @@ scene->insertObject(o);
 
 // Reflect
 o = new Sphere(.99, .99, .99);
-strcpy(o->label, "Reflect Sphere");
+o->name = "Right Reflect Sphere";
 o->set_pathTrace_properties(0.0, 1.0, 0.0);
 o->refl_sig = 0.05;
 o->r_index = 2.47;
-strcpy(o->label, "Right Sphere");
 o->T *= Sc(3.75);
 o->T *= Tr(4, -3.75, 6.5);
 o->invert_and_bound();
@@ -42,7 +41,7 @@ scene->insertObject(o);
 o = new Plane(.75, .25, .25);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.4;
-strcpy(o->label, "Left Wall");
+o->name = "Left Wall";
 o->T *= RotY(PI / 2);
 o->T *= Sc(25);
 o->T *= Tr(-10, 0, 5);
@@ -53,7 +52,7 @@ scene->insertObject(o);
 o = new Plane(.25, .25, .75);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.4;
-strcpy(o->label, "Right Wall");
+o->name = "Right Wall";
 o->T *= RotY(PI / 2);
 o->T *= Sc(25);
 o->T *= Tr(10, 0, 5);
@@ -64,7 +63,7 @@ scene->insertObject(o);
 o = new Plane(.75, .75, .75);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.4;
-strcpy(o->label, "Back Wall");
+o->name = "Back Wall";
 //o->T *= RotateZ(o, PI/4);
 o->T *= Sc(10);
 o->T *= Tr(0, 0, 15);
@@ -75,7 +74,7 @@ scene->insertObject(o);
 o = new Plane(.75, .75, .75);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.4;
-strcpy(o->label, "Bottom Wall");
+o->name = "Bottom Wall";
 o->T *= RotX(PI / 2);
 o->T *= Sc(25);
 o->T *= Tr(0, -10, 5);
@@ -86,7 +85,7 @@ scene->insertObject(o);
 o = new Plane(.75, .75, .75);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->r_index = 1.4;
-strcpy(o->label, "Top Wall");
+o->name = "Top Wall";
 o->T *= RotX(-PI / 2);
 o->T *= Sc(25);
 o->T *= Tr(0, 10, 5);
@@ -94,11 +93,11 @@ o->invert_and_bound();
 scene->insertObject(o);
 
 // Planar light source at top
-o = new Plane(1.0, 1.0, 1.0);
+o = new Plane(25.0, 25.0, 25.0);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->refl_sig = 0.0;
 o->r_index = 1.54;
-strcpy(o->label, "Top Light");
+o->name = "Top Light";
 o->T *= Sc(0.5, 2.5, 1);
 o->T *= RotX(PI / 2);
 o->T *= Tr(0, 9.995, 5);
@@ -106,6 +105,19 @@ o->isLightSource = 1;
 o->pt.LSweight *= 0.5 * 2.5 * 1;  // <- scale weight by scale
 o->invert_and_bound();
 scene->insertObject(o);
+
+o = new Plane(25.0, 25.0, 25.0);
+o->set_pathTrace_properties(1.0, 0.0, 0.0);
+o->refl_sig = 0.0;
+o->r_index = 1.54;
+o->name = "Bottom Light";
+o->T *= Sc(0.5, 2.5, 1);
+o->T *= RotX(-PI / 2);
+o->T *= Tr(0, -9.995, 5);
+o->isLightSource = 1;
+o->pt.LSweight *= 0.5 * 2.5 * 1;  // <- scale weight by scale
+o->invert_and_bound();
+//scene->insertObject(o);
 
 p.x = 0;
 p.y = 9.9;

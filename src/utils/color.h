@@ -73,4 +73,8 @@ struct color {
     }
 };
 
+inline std::ostream &operator<<(std::ostream &strm, const color &a){
+    return strm << "(" << a.R << ", " << a.G << ", " << a.B << ")";
+}
+
 #endif

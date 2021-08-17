@@ -7,7 +7,21 @@
 #include "ray.h"
 #include "utils.h"
 
-struct view *setupView(struct point *e, struct point *g, struct point *up, double f, double wl, double wt, double wsize) {
+void scaleCameraPlainByImageDimesions(double& wleft, double& wtop, double& wwidth, double& wheight, int width, int height){
+    double ratio;
+    if(width < height) {
+        ratio = (double)height / (double)width;
+        wwidth = 4;
+        wheight = 4 * ratio;
+    } else {
+        ratio = (double)width / (double)height;
+        wwidth = 4 * ratio;
+        wheight = 4;
+    }
+    wleft = -wwidth / 2.0;
+    wtop = wheight / 2.0;
+}
+struct view *setupView(struct point *e, struct point *g, struct point *up, double f, double wl, double wt, double width, double height) {
     /*
     This function sets up the camera axes and viewing direction as discussed in the
     lecture notes.
@@ -61,7 +75,8 @@ struct view *setupView(struct point *e, struct point *g, struct point *up, doubl
     c->f = f;
     c->wl = wl;
     c->wt = wt;
-    c->wsize = wsize;
+    c->wwidth = width;
+    c->wheight = height;
 
     // Set up coordinate conversion matrices
     // Camera2World matrix (M_cw in the notes)
@@ -112,8 +127,8 @@ struct view *setupView(struct point *e, struct point *g, struct point *up, doubl
 }
 
 void setPixelStep(Scene *scene, struct view *cam, double sx, double sy) {
-    scene->du = cam->wsize / (sx - 1);  // du and dv. In the notes in terms of wl and wr, wt and wb,
-    scene->dv = -cam->wsize / (sx - 1);
+    scene->du = cam->wwidth / (sx - 1);  // du and dv. In the notes in terms of wl and wr, wt and wb,
+    scene->dv = -cam->wheight / (sy - 1);
 }
 
 void getRayFromPixel(Scene *scene, struct Ray *ray, struct view *cam, double i, double j) {

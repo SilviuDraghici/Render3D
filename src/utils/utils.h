@@ -196,4 +196,13 @@ inline double xor128(void) {
     return (w = w ^ (w >> 19) ^ (t ^ (t >> 8))) / 2147483647.0;
 }
 
+inline float min(const float a, const float b) { return (a < b) ? a : b; }
+inline float max(const float a, const float b) { return (a > b) ? a : b; }
+
+/**
+ * Restrict a value to be between 0 and 1
+ */
+inline float clamp01(const float a) { 
+  return min(1, max(a, 0)); 
+}
 #endif

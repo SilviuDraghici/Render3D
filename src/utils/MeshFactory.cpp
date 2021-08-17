@@ -1,16 +1,12 @@
-#include "meshes.h"
+#include "MeshFactory.h"
 
 #include <fstream>
 #include <iostream>
-#include <limits>
-#include <queue>
 #include <algorithm>
 
-#include "ray.h"
+#include "mappings.h"
 
-//#define DEBUG
-
-int count_vertices(std::string &face){
+inline int count_vertices(std::string &face){
     int n = 0;
     for(int i = 1; i < face.size(); i++){
         if(face[i] != ' ')
@@ -21,171 +17,31 @@ int count_vertices(std::string &face){
     return n;
 }
 
-TriangleFace::TriangleFace() {}
+MeshFactory::MeshFactory(std::list<Object*>& o_l, std::list<textureNode*>& t_l):
+object_list(o_l), texture_list(t_l){}
 
-TriangleFace::TriangleFace(point p1, point p2, point p3) {
-    this->p1 = p1;
-    this->p2 = p2;
-    this->p3 = p3;
+MeshFactory::~MeshFactory(){
+
 }
 
-TriangleFace::TriangleFace(double x1, double y1, double z1, double x2,
-                           double y2, double z2, double x3, double y3,
-                           double z3) {
-    p1.x = x1, p1.y = y1, p1.z = z1;
-    p2.x = x2, p2.y = y2, p2.z = z2;
-    p3.x = x3, p3.y = y3, p3.z = z3;
+void MeshFactory::setDefaultColor(color& c){
+    default_color = c;
 }
 
-double TriangleFace::min_x() const { return MIN(p1.x, MIN(p2.x, p3.x)); }
-double TriangleFace::min_y() const { return MIN(p1.y, MIN(p2.y, p3.y)); }
-double TriangleFace::min_z() const { return MIN(p1.z, MIN(p2.z, p3.z)); }
-double TriangleFace::max_x() const { return MAX(p1.x, MAX(p2.x, p3.x)); }
-double TriangleFace::max_y() const { return MAX(p1.y, MAX(p2.y, p3.y)); }
-double TriangleFace::max_z() const { return MAX(p1.z, MAX(p2.z, p3.z)); }
-
-void TriangleFace::intersect(struct Ray *ray, double *lambda,
-                             point *bary_coords) {
-    // Computes and returns the value of 'lambda' at the intersection
-    // between the specified ray and the specified triangle.
-
-    point e12 = p2 - p1;
-    point e23 = p3 - p2;
-
-    point normal = cross(&e12, &e23);
-    double denom = dot(&normal, &normal);
-
-    // ray plane intersection calculation
-    point pi, r = p1 - ray->p0;
-    double d_dot_n = dot(&ray->d, &normal);
-    double r_dot_n = dot(&r, &normal);
-    double t_lambda = r_dot_n / d_dot_n;
-
-    if (t_lambda < THR)  //|| *lambda < t_lambda)
-        return;          // intersection with plane is negative
-
-    double u, v, w;
-
-    rayPosition(ray, t_lambda, &pi);
-
-    // e12 has already been calculated
-    point v1i = pi - p1;
-    point crossp = cross(&e12, &v1i);
-    u = dot(&crossp, &normal);
-    if (u < 0) return;  // outside first edge
-
-    // e23 has already been calculated
-    point v2i = pi - p2;
-    crossp = cross(&e23, &v2i);
-    v = dot(&crossp, &normal);
-    if (v < 0) return;  // outside second edge
-
-    point e31 = p1 - p3;
-    point v3i = pi - p3;
-    crossp = cross(&e31, &v3i);
-    w = dot(&crossp, &normal);
-    if (w < 0) return;  // outside third edge
-
-    // intersection is within triangle
-    bary_coords->z = u / denom;
-    bary_coords->x = v / denom;
-    bary_coords->y = w / denom;
-    *lambda = t_lambda;
-    return;
+void MeshFactory::setDefaultColor(double r, double g, double b){
+    default_color = color(r, g, b);
 }
 
-double TriangleFace::intersect(struct Ray *ray, double lambda) {
-    // Computes and returns the value of 'lambda' at the intersection
-    // between the specified ray and the specified triangle.
-
-    point e12 = p2 - p1;
-    point e23 = p3 - p2;
-
-    point normal = cross(&e12, &e23);
-
-    // ray plane intersection calculation
-    point pi, r = p1 - ray->p0;
-    double d_dot_n = dot(&ray->d, &normal);
-    double r_dot_n = dot(&r, &normal);
-    double t_lambda = r_dot_n / d_dot_n;
-
-    if (t_lambda < THR || lambda < t_lambda)
-        return INFINITY;  // intersection with plane is negative
-                          // or larger than current lambda
-
-    double u, v, w;
-
-    rayPosition(ray, t_lambda, &pi);
-
-    // e12 has already been calculated
-    point v1i = pi - p1;
-    point crossp = cross(&e12, &v1i);
-    u = dot(&crossp, &normal);
-    if (u < 0) return INFINITY;  // outside first edge
-
-    // e23 has already been calculated
-    point v2i = pi - p2;
-    crossp = cross(&e23, &v2i);
-    v = dot(&crossp, &normal);
-    if (v < 0) return INFINITY;  // outside second edge
-
-    point e31 = p1 - p3;
-    point v3i = pi - p3;
-    crossp = cross(&e31, &v3i);
-    w = dot(&crossp, &normal);
-    if (w < 0) return INFINITY;  // outside third edge
-
-    return t_lambda;
+void MeshFactory::setTransform(matrix m){
+    transformation = m;
 }
 
-bool TriangleFace::isprim() { return true; }
-
-point TriangleFace::normal(point *bary_coords) {
-    point e12 = p2 - p1;
-    point e23 = p3 - p2;
-
-    return cross(&e12, &e23);
-}
-
-void TriangleFace::texture_coordinates(double *a, double *b, point *bary_coords) {return;}
-
-std::ostream &operator<<(std::ostream &strm, const TriangleFace &a) {
-    return strm << "p1: " << a.p1 << " p2: " << a.p2 << " p3: " << a.p3;
-}
-
-void TriangleFace_N::setNormals(point n1, point n2, point n3) {
-    this->n1 = n1, this->n2 = n2, this->n3 = n3;
-}
-
-point TriangleFace_N::normal(point *bary_coords) {
-    // std::cout << "n1: " << n1 << " n2: " << n2 << " n3: " << n3 << "\n";
-    return n1 * bary_coords->x + n2 * bary_coords->y + n3 * bary_coords->z;
-}
-
-void TriangleFace_T::set_texture_coordinates(double p1_u, double p1_v, double p2_u, double p2_v, double p3_u, double p3_v){
-    this->p1_u=p1_u, this->p1_v=p1_v,this->p2_u=p2_u, this->p2_v=p2_v, this->p3_u=p3_u, this->p3_v=p3_v;
-}
-
-void TriangleFace_T::texture_coordinates(double *a, double *b, point *bary_coords){
-    *a = p1_u * bary_coords->x + p2_u * bary_coords->y + p3_u * bary_coords->z;
-    *b = p1_v * bary_coords->x + p2_v * bary_coords->y + p3_v * bary_coords->z;
-}
-
-std::ostream &operator<<(std::ostream &strm, const TriangleFace_N &a) {
-    return strm << "p1: " << a.p1 << " p2: " << a.p2 << " p3: " << a.p3
-                << "n1: " << a.n1 << " n2: " << a.n2 << " n3: " << a.n3;
-}
-
-void BoundingBox::setBounds(double min_x, double max_x, double min_y,
-                            double max_y, double min_z, double max_z) {
-    this->b_min_x = min_x, this->b_max_x = max_x;
-    this->b_min_y = min_y, this->b_max_y = max_y;
-    this->b_min_z = min_z, this->b_max_z = max_z;
-}
-
-void Mesh::setMesh(const std::string& filename) {
-    //std::cout << "\nBuilding Mesh: " << this->label << "\n";
-    frontAndBack = 0;
+void MeshFactory::loadMeshFile(const std::string& filename){
+    //mesh = new Mesh(default_color);
+    //mesh->name = filename;
+    //mesh->T = transformation;
+    //mesh->set_pathTrace_properties(1.0, 0.0, 0.0);
+    //mesh->r_index = 1.54;
 
     int last_dir_sep = filename.find_last_of("/");
     if(last_dir_sep != std::string::npos){
@@ -200,7 +56,11 @@ void Mesh::setMesh(const std::string& filename) {
     std::string line;
     std::ifstream mesh_obj(filename);
 
-    num_vertices = 0, num_faces = 0, num_normals = 0;
+    num_vertices = num_texture_coords = num_normals = num_faces = 0;
+
+    int num_objects=0;
+    //int* object_face_counts = NULL;
+    material* current_material = NULL;
 
     int v = 1, t = 1, vn = 1, f = 0;
     double x, y, z, scale;
@@ -221,7 +81,7 @@ void Mesh::setMesh(const std::string& filename) {
         }
 
         if(line.rfind("mtllib ", 0) == 0){
-            setMaterial(line);
+            loadMaterialFile(line);
         } else if (line.rfind("v ", 0) == 0) {
             //count vertices and update average location
             num_vertices++;
@@ -253,15 +113,18 @@ void Mesh::setMesh(const std::string& filename) {
             num_normals++;
         } else if (line.rfind("vt ", 0) == 0){
             num_texture_coords++;
-        }else if (line.rfind("f ", 0) == 0) {
+        } else if (line.rfind("f ", 0) == 0) {
             //count faces
             num_faces += count_vertices(line) - 2;
+        } else if (line.rfind("o ", 0) == 0){
+            num_objects++;
         }
     }
 
     //std::cout << "num vertices: " << num_vertices << "\n";
     //std::cout << "num normals: " << num_normals << "\n";
     //std::cout << "num faces: " << num_faces << "\n";
+    std::cout << "num objects: " << num_objects << "\n";
 
     //go to begining of file
     mesh_obj.clear();
@@ -288,6 +151,8 @@ void Mesh::setMesh(const std::string& filename) {
 
     faces = (PrimitiveData *)malloc(num_faces * sizeof(PrimitiveData));
     int num_vertices;
+
+    num_faces_in_object = 0, first_face_in_object = 0;
     int start_index = 2, end_index;
     std::string face_string, first_vertex;
     while (getline(mesh_obj, line)) {
@@ -295,7 +160,25 @@ void Mesh::setMesh(const std::string& filename) {
             //remove '\r' from windows format objs
             line.erase(line.find('\r'));
         }
-        if (line.rfind("v ", 0) == 0) {
+        
+        if (line.rfind("o ", 0) == 0){
+            //build the previous object if it isnt null and has more than 0 faces.
+            
+            //std::cout << "Object: " << object_name << " num faces: " << num_faces_in_object;
+            //std::cout << " faces built: " << f << " first face: " << first_face_in_object << "\n";
+            //std::cout << "material: " << mtl_name << "\n";
+            
+            if(!object_name.empty() && num_faces_in_object > 0){
+                buildMesh();
+                object_list.push_front(mesh);
+            }
+            start_index = line.find_first_not_of(" ", 1);
+            object_name = line.substr(start_index);
+            num_faces_in_object = 0;
+        } else if(line.rfind("usemtl ", 0) == 0){
+            start_index = line.find_first_not_of(" ", 6);
+            mtl_name = material_file_name + "::" + line.substr(start_index);
+        } else if (line.rfind("v ", 0) == 0) {
             sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
             x = (x - avg_x) / scale, y = (y - avg_y) / scale,
             z = -(z - avg_z) / scale;
@@ -304,7 +187,9 @@ void Mesh::setMesh(const std::string& filename) {
         } else if (line.rfind("vt ", 0) == 0){
             sscanf(line.c_str(), "vt %lf %lf", &x, &y);
             texture_coords[t *2] = x;
-            texture_coords[(t * 2) + 1] = y;
+            // obj define texture coords in y axis to start from the bottom
+            // instead of the top so 1 - y makes textures right side up
+            texture_coords[(t * 2) + 1] = 1 - y;
             t++;
         } else if (line.rfind("vn ", 0) == 0){
             sscanf(line.c_str(), "vn %lf %lf %lf", &x, &y, &z);
@@ -334,21 +219,24 @@ void Mesh::setMesh(const std::string& filename) {
                 //printf("flin: [%s]\n", face_string.c_str());
                 faces[f] = buildFace(face_string);
                 f++;
+                num_faces_in_object++;
             }
         }
         //if( f > 5) break;
     }
 
+    buildMesh();
+    object_list.push_front(mesh);
+
     //print the materials in this object
-    //std::cout << mtl_list.size() << " [";
+    //std::cout << mtl_list.size() << "[\n";
     //for (auto const &i: mtl_list) {
-    //    std::cout << i << ", ";
+    //    std::cout << i << "\n";
     //} std::cout << "]\n";
 
-
-    bvh.set_build_method(BuildMethod::MidSplit);
-    bvh.set_search_method(SearchMethod::BFS);
-    bvh.build(faces, num_faces);
+    //mesh->bvh.set_build_method(BuildMethod::MidSplit);
+    //mesh->bvh.set_search_method(SearchMethod::BFS);
+    //mesh->bvh.build(faces, num_faces);
 
     mesh_obj.close();
 
@@ -356,22 +244,24 @@ void Mesh::setMesh(const std::string& filename) {
     free(texture_coords);
     free(normals);
     free(faces);
-    //std::cout<< "Build complete!\n";
+
+    //mesh->invert_and_bound();
+    //object_list.push_front(mesh);
 }
 
-void Mesh::setMaterial(const std::string &mtllib_line){
+void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
     size_t start_index = mtllib_line.find_first_of(" ") + 1;
-    std::string file_name = dir + mtllib_line.substr(start_index);
+    material_file_name = dir + mtllib_line.substr(start_index);
     
-    if(std::find(mtl_file_list.begin(), mtl_file_list.end(), file_name) == mtl_file_list.end()){
-        mtl_file_list.push_front(file_name);
-        //std::cout << "\n" << file_name << "\n";
+    if(std::find(mtl_file_list.begin(), mtl_file_list.end(), material_file_name) == mtl_file_list.end()){
+        mtl_file_list.push_front(material_file_name);
+        //std::cout << "\n" << material_file_name << "\n";
         //std::cout << "###########################################\n";
 
         std::string line;
-        std::ifstream mesh_obj(file_name);
+        std::ifstream mesh_obj(material_file_name);
         if (!mesh_obj.is_open()) {
-            std::cout << "Unable to open material file: " << file_name << "\n";
+            std::cout << "Unable to open material file: " << material_file_name << "\n";
             return;
         }
 
@@ -389,25 +279,141 @@ void Mesh::setMaterial(const std::string &mtllib_line){
             std::string texture_name;
             if(line.rfind("newmtl ", 0) == 0){
                 start_index = line.find_first_of(" ") + 1;
-                mtl_name = file_name + "::" + line.substr(start_index);
+                mtl_name = material_file_name + "::" + line.substr(start_index);
                 if(std::find(mtl_list.begin(), mtl_list.end(), mtl_name) == mtl_list.end()){
-                    mtl_list.push_front(mtl_name);
+                    mtl_list.push_front(material(mtl_name));
                 }
                 //std::cout << "mtl: " << mtl_name << "\n";
+            } else if(line.rfind("Ke ", 0) == 0){
+                //Ke is a light source in Physically based rendering
+                double r,g,b;
+                sscanf(line.c_str(), "Ke %lf %lf %lf", &r, &g, &b);
+                mtl_list.front().col_diffuse = {r,g,b};
+                //mtl_list.front().is_light_source = 1;
+            } else if(line.rfind("Ka ", 0) == 0){
+                double r,g,b;
+                sscanf(line.c_str(), "Ka %lf %lf %lf", &r, &g, &b);
+                if(!mtl_list.front().is_light_source){
+                    mtl_list.front().col_ambient = {r,g,b};
+                }
+            } else if(line.rfind("Kd ", 0) == 0){
+                double r,g,b;
+                sscanf(line.c_str(), "Kd %lf %lf %lf", &r, &g, &b);
+                if(!mtl_list.front().is_light_source){
+                    mtl_list.front().col_diffuse = {r,g,b};
+                }
+            } else if(line.rfind("Ks ", 0) == 0){
+                double r,g,b;
+                sscanf(line.c_str(), "Ks %lf %lf %lf", &r, &g, &b);
+                if(!mtl_list.front().is_light_source){
+                    mtl_list.front().col_specular = {r,g,b};
+                }
+            } else if (line.rfind("Ns ", 0) == 0){
+                sscanf(line.c_str(), "Ns %i", &mtl_list.front().Ns);
+            } else if (line.rfind("d ", 0) == 0){
+                //d is how opaque an object is. 1 means fully opaque
+                sscanf(line.c_str(), "d %lf", &mtl_list.front().alpha);
+            } else if (line.rfind("Ti ", 0) == 0){
+                //Td is how transparent an object is. 1 means fully transparent
+                sscanf(line.c_str(), "Ti %lf", &mtl_list.front().alpha);
+                //alpha 1 means fully opaque
+                mtl_list.front().alpha = 1 - mtl_list.front().alpha;
+            } else if (line.rfind("Ni ", 0) == 0){
+                sscanf(line.c_str(), "Ni %lf", &mtl_list.front().index_of_refraction);
             } else if (line.rfind("map_Kd ", 0) == 0){
                 start_index = line.find_first_of(" ") + 1;
                 texture_name = dir + line.substr(start_index);
                 for (std::string::size_type i = 0; i < texture_name.size(); i++) {
                     texture_name[i] = (texture_name[i] == '\\') ? '/' : texture_name[i];
                 }
-                //std::cout << "texture: " << texture_name << std::endl;
-                //loadTexture(this, texture_name, 1, scene);
+                //std::cout << "texture: [" << texture_name << "]\n";
+                //std::cout << "materials: [";
+                //for (material m: mtl_list){
+                //    std::cout << m << ",";
+                //}std::cout << "]\n";
+                mtl_list.front().im = loadTexture(texture_name, 1, texture_list)->im;
+                //mesh->texImg = mtl_list.front().im; 
+                
+                //set_texture(mesh, texture_name, 1, texture_list);
+                //std::cout << "mtl: "<< mtl_list.front().name << "\n";
             }
         }
     }
 }
 
-TriangleFace* Mesh::buildFace(std::string& line){
+void MeshFactory::buildMesh(){
+    material mtl = *std::find(mtl_list.begin(), mtl_list.end(), mtl_name);
+    color col = mtl.col_ambient + mtl.col_diffuse + mtl.col_specular;
+    double diffuse, reflect, refract, refl_sig;
+    diffuse = sqrt(mtl.col_ambient.R * mtl.col_ambient.R +
+                   mtl.col_ambient.G * mtl.col_ambient.G +
+                   mtl.col_ambient.B * mtl.col_ambient.B) +
+              sqrt(mtl.col_diffuse.R * mtl.col_diffuse.R +
+                   mtl.col_diffuse.G * mtl.col_diffuse.G +
+                   mtl.col_diffuse.B * mtl.col_diffuse.B);
+    double color_length = sqrt(col.R * col.R + col.G * col.G + col.B * col.B);
+    
+    diffuse = diffuse / color_length;
+    reflect = 1 - diffuse;
+    
+    double specular_length = sqrt(mtl.col_specular.R * mtl.col_specular.R +
+                                  mtl.col_specular.G * mtl.col_specular.G +
+                                  mtl.col_specular.B * mtl.col_specular.B);
+    if (specular_length > 0) {
+        if( 0 <= mtl.Ns && mtl.Ns <= 1000){
+            // convert 0 - 1000 range to 0 to 1 where 1000 maps to 0
+            refl_sig = 1 - mtl.Ns/1000.0;
+        }
+    }
+
+    diffuse = mtl.alpha * diffuse;
+    reflect = mtl.alpha * reflect;
+    refract = 1 - mtl.alpha;
+
+    double sum = diffuse + reflect + refract;
+    diffuse /= sum;
+    reflect /= sum;
+    refract /= sum;
+
+    double max_col = max(col.R, max(col.G, col.B));
+    if (max_col > 1) {
+        col.R /= max_col;
+        col.G /= max_col;
+        col.B /= max_col;
+    }
+
+    mesh = new Mesh(col);
+    //mesh->set_rayTrace_properties(0.1, double diffuse,
+    //                                 double specular, double global,
+    //                                 double alpha, double shiny)
+    mesh->set_pathTrace_properties(diffuse, reflect, refract);
+    mesh->refl_sig = refl_sig;
+    mesh->name = object_name;
+    mesh->T = transformation;
+    mesh->r_index = mtl.index_of_refraction;
+
+    /*
+    std::cout << "\n------------------------\n";
+    std::cout << "mtl: " << mtl.name << "\n";
+    std::cout << "color: " << mesh->col << "\n";
+    std::cout << "diffuse: " << mesh->pt.diffuse << "\n";
+    std::cout << "reflect: " << mesh->pt.reflect << "\n";
+    std::cout << "refract: " << mesh->pt.refract << "\n";
+    std::cout << "refl_sig: " << mesh->refl_sig << "\n";
+    std::cout << "r_index: "<< mesh->r_index << "\n";
+    */
+   
+    mesh->isLightSource = mtl.is_light_source;
+    mesh->pt.LSweight = 1;
+    mesh->bvh.set_build_method(BuildMethod::MidSplit);
+    mesh->bvh.set_search_method(SearchMethod::BFS);
+    mesh->bvh.build(faces + first_face_in_object, num_faces_in_object);
+    first_face_in_object += num_faces_in_object;
+    mesh->texImg = mtl.im;
+    mesh->invert_and_bound();
+}
+
+TriangleFace* MeshFactory::buildFace(std::string& line){
     //std::cout << "["<< line << "]\n";
     int p1, p2, p3, t1, t2, t3, n1, n2, n3;
     if (sscanf(line.c_str(), "f %d %d %d", &p1, &p2, &p3) == 3){
@@ -439,41 +445,4 @@ TriangleFace* Mesh::buildFace(std::string& line){
         return face;
     }
     return NULL;
-}
-
-void Mesh::set_canonical_bounds() {
-    w_bound.min.x = bvh.root->min_x();
-    w_bound.min.y = bvh.root->min_y();
-    w_bound.min.z = bvh.root->min_z();
-    w_bound.max.x = bvh.root->max_x();
-    w_bound.max.y = bvh.root->max_y();
-    w_bound.max.z = bvh.root->max_z();
-}
-
-void Mesh::intersect(struct Ray *ray, double *lambda, struct point *p,
-                     struct point *n, double *a, double *b) {
-    *lambda = INFINITY;
-
-    struct Ray ray_transformed;
-    rayTransform(ray, &ray_transformed, this);
-
-    TriangleFace *closest_face;
-    //((bvh).*(bvh.search))(ray);
-    closest_face = (TriangleFace *)bvh.search(&ray_transformed);
-
-    point bary_coords;
-    if (closest_face != NULL) {
-        closest_face->intersect(&ray_transformed, lambda, &bary_coords);
-        *n = closest_face->normal(&bary_coords);
-        normalTransform(n, n, this);
-        normalize(n);
-        closest_face->texture_coordinates(a, b, &bary_coords);
-        rayPosition(ray, *lambda, p);
-    }
-}
-
-void adjust_indexes(int& i1, int& i2, int& i3, int array_size){
-    if (i1 < 0) i1 = array_size + i1;
-    if (i2 < 0) i2 = array_size + i2;
-    if (i3 < 0) i3 = array_size + i3;
 }

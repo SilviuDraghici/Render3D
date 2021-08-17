@@ -27,6 +27,7 @@ struct PT_properties {
 
     double LSweight;  // If this is an area light source, keeps track of its
                       // weight (volume)
+    double surface_area;
 };
 
 class Bounds {
@@ -60,7 +61,7 @@ class Primitive {
 
 class Object : public Primitive{
    public:
-    char label[20];  // for debugging
+    std::string name;  // for debugging
 
     RT_properties
         rt;  // Object's albedos for Phong model (for ray tracing)
@@ -75,7 +76,7 @@ class Object : public Primitive{
     image *alphaMap;   // Alpha map for the object
 
     // Material properties
-    double refl_sig;
+    double refl_sig; // this is how diffuse the reflection is
     double r_index;  // Index of refraction
 
     int frontAndBack;   // Flag to indicate that both sides of the object
@@ -84,7 +85,7 @@ class Object : public Primitive{
 
     Bounds w_bound; // the bounds for this object in world coordinates
 
-    Object(double r, double g, double b);
+    Object(double r = 1, double g = 1, double b = 1);
     Object(color &c);
     void set_color(double r, double g, double b);
     void set_rayTrace_properties(double ambient, double diffuse,
@@ -111,13 +112,11 @@ class Object : public Primitive{
     double max_x() const;
     double max_y() const;
     double max_z() const;
-
-    Object *next = NULL;
 };
 
 class Plane : public Object {
    public:
-    Plane(double r, double g, double b);
+    Plane(double r = 1, double g = 1, double b = 1);
     void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
     void set_canonical_bounds();
@@ -157,7 +156,7 @@ class Box : public Object {
 
 class Triangle : public Object {
    public:
-    Triangle(double r, double g, double b);
+    Triangle(double r = 1, double g = 1, double b = 1);
     void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
 
@@ -172,7 +171,7 @@ class Triangle : public Object {
 
 class Polygon : public Object {
    public:
-    Polygon(double r, double g, double b);
+    Polygon(double r = 1, double g = 1, double b = 1);
     void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
     void setNumPoints(int num);

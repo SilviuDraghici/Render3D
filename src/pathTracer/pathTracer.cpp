@@ -5,6 +5,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <string>
+#include <algorithm>
+#include <sstream>
+#include <list>
+
 #include "../utils/affineTransforms.h"
 #include "../utils/buildscene.h"
 #include "../utils/camera.h"
@@ -14,10 +19,11 @@
 #include "../utils/objects.h"
 #include "../utils/ray.h"
 #include "../utils/utils.h"
+#include "../utils/ColorTransform.h"
 
 static Scene *scene;
 
-int samples_per_update = 100;
+int samples_per_update = 25;
 
 unsigned long int NUM_RAYS;
 
@@ -26,14 +32,17 @@ double total_weight;
 // array of light sources
 Object **light_listt;
 int num_lights;
-int curr_light;
 
 inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
                                   point *n, Object **explt) {
+    
+    //*explt = NULL;
+    
     // ray from intersection point to light source
     Ray pToLight;
     pToLight.p0 = *p;
 
+    int curr_light = 0;
     double prob = 0;
     double dice = xor128();
     for (int i = 0; i < num_lights; i++) {
@@ -62,10 +71,11 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
 
     // printf("source: %s, obstruction: %s\n", obj->label,
     // obstruction->label);
-    *explt = light_listt[curr_light];
+    
     if (obstruction == light_listt[curr_light] && dot(&pToLight.d, &nls) < 0) {
         // printf("total weight: %f\n", total_weight);
-        double A = total_weight * light_listt[curr_light]->pt.LSweight;
+        *explt = light_listt[curr_light];
+        double A = total_weight * light_listt[curr_light]->pt.surface_area;
         double dxd = pToLight.d.x * pToLight.d.x +
                      pToLight.d.y * pToLight.d.y +
                      pToLight.d.z * pToLight.d.z;
@@ -100,7 +110,21 @@ void pathTraceMain(int argc, char *argv[]) {
     sc.path_tracing_mode = 1;
     scene = &sc;
 
-    scene->sx = atoi(argv[2]);
+
+    std::string dims = argv[2];
+    if (std::find(dims.begin(), dims.end(), 'x') != dims.end()) {
+        std::stringstream sdims(dims);
+        std::string dim;
+        getline(sdims,dim, 'x');
+        scene->sx = atoi(dim.c_str());
+        getline(sdims, dim, 'x');
+        scene->sy = atoi(dim.c_str());
+    } else {
+        scene->sx = atoi(argv[2]);
+        scene->sy = atoi(argv[2]);
+    }
+    //std::cout << "Image size: " << scene->sx << "x" << scene->sy << std::endl;
+
     scene->pt_num_samples = atoi(argv[3]);
     strcpy(&output_name[0], argv[4]);
 
@@ -110,7 +134,7 @@ void pathTraceMain(int argc, char *argv[]) {
 
     double *rgbIm;
     // Allocate memory for the new image
-    outImage = newImage(scene->sx, scene->sx, sizeof(double));
+    outImage = newImage(scene->sx, scene->sy, sizeof(double));
 
     if (!outImage) {
         fprintf(stderr, "Unable to allocate memory for pathtraced image\n");
@@ -122,13 +146,13 @@ void pathTraceMain(int argc, char *argv[]) {
     // array of weights per pixel used to scale image colors
     double *wght;  // Holds weights for each pixel - to provide log response
     double wt;
-    wght = (double *)calloc(scene->sx * scene->sx, sizeof(double));
+    wght = (double *)calloc(scene->sx * scene->sy, sizeof(double));
     if (!wght) {
-        fprintf(stderr, "Unable to allocate memory for pathTracw]e weights\n");
+        fprintf(stderr, "Unable to allocate memory for pathTracer weights\n");
         exit(0);
     }
-    for (int i = 0; i < scene->sx * scene->sx; i++) {
-        *(wght + i) = 1.0;
+    for (int i = 0; i < scene->sx * scene->sy; i++) {
+        wght[i] = 1.0;
     }
 
     // Camera center is at (0,0,-1)
@@ -148,30 +172,27 @@ void pathTraceMain(int argc, char *argv[]) {
     buildScene(scene);
     // count number of lights
     num_lights = 0;
-    Object *curr_obj = scene->object_list;
-    while (curr_obj != NULL) {
+    for(Object* const& curr_obj : scene->object_list){
         if (curr_obj->isLightSource) {
             num_lights++;
         }
-        curr_obj = curr_obj->next;
     }
 
     // create array of light pointers
     light_listt = (Object **)malloc(num_lights * sizeof(Object *));
     num_lights = 0;
-    curr_obj = scene->object_list;
-    while (curr_obj != NULL) {
+    for(Object* const& curr_obj : scene->object_list){
         if (curr_obj->isLightSource) {
             light_listt[num_lights] = curr_obj;
             num_lights++;
         }
-        curr_obj = curr_obj->next;
     }
-    curr_light = 0;
 
     view *cam;  // Camera and view for this scene
+    double wleft,wtop,wwidth,wheight;
+    scaleCameraPlainByImageDimesions(wleft, wtop, wwidth, wheight, scene->sx, scene->sy);
     cam = setupView(&(scene->cam_pos), &(scene->cam_gaze), &(scene->cam_up),
-                    scene->cam_focal, -2, 2, 4);
+                    scene->cam_focal, wleft,wtop,wwidth,wheight);
 
     if (cam == NULL) {
         fprintf(stderr,
@@ -182,7 +203,7 @@ void pathTraceMain(int argc, char *argv[]) {
         exit(0);
     }
 
-    setPixelStep(scene, cam, scene->sx, scene->sx);
+    setPixelStep(scene, cam, scene->sx, scene->sy);
 
     normalizeLightWeights(scene->object_list);
 
@@ -203,8 +224,8 @@ void pathTraceMain(int argc, char *argv[]) {
         // fflush(stderr);
 #pragma omp parallel for schedule(dynamic, 1) private(i, j, wt, ray, col, is, \
                                                       js)
-        for (j = 0; j < scene->sx;
-             j++) {  // For each of the pixels in the image
+        // For each of the pixels in the image
+        for (j = 0; j < scene->sy; j++) {  
             for (i = 0; i < scene->sx; i++) {
                 col = 0;
 
@@ -218,25 +239,31 @@ void pathTraceMain(int argc, char *argv[]) {
                 ray.pt.expl_col = 0;
                 ray.pt.isLightRay = 0;
 
-                wt = *(wght + i + (j * scene->sx));
+                wt = wght[i + (j * scene->sx)];
 
                 PathTrace(&ray, 1, &col, NULL, NULL);
-                rgbIm[3 * (j * outImage->sx + i) + 0] +=
-                    col.R * pow(2, -log(wt));
-                rgbIm[3 * (j * outImage->sx + i) + 1] +=
-                    col.G * pow(2, -log(wt));
-                rgbIm[3 * (j * outImage->sx + i) + 2] +=
-                    col.B * pow(2, -log(wt));
 
+
+                //rgbIm[3 * (j * outImage->sx + i) + 0] += col.R * pow(2, -log(wt));
+                //rgbIm[3 * (j * outImage->sx + i) + 1] += col.G * pow(2, -log(wt));
+                //rgbIm[3 * (j * outImage->sx + i) + 2] += col.B * pow(2, -log(wt));
+                
+                rgbIm[3 * (j * outImage->sx + i) + 0] += col.R;
+                rgbIm[3 * (j * outImage->sx + i) + 1] += col.G;
+                rgbIm[3 * (j * outImage->sx + i) + 2] += col.B;
+                
                 wt += col.R;
                 wt += col.G;
                 wt += col.B;
-                *(wght + i + (j * scene->sx)) = wt;
+                wght[i + (j * scene->sx)] = wt;
             }  // end for i
         }      // end for j
 
         if (k % samples_per_update == 0) {  // update output image
-            dataOutput(rgbIm, scene->sx, output_name);
+            LinerToSRGB<double> colorTransform = LinerToSRGB<double>(k, scene->exposure);
+            //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
+            image transformedImage = {colorTransform(*outImage), outImage->sx, outImage->sy};
+            PNGImageOutput(&transformedImage, output_name);
         }
 
     }  // End for k
@@ -245,7 +272,10 @@ void pathTraceMain(int argc, char *argv[]) {
 
     // Output rendered image
     if (k % samples_per_update != 1) {
-        dataOutput(rgbIm, scene->sx, output_name);
+        LinerToSRGB<double> colorTransform = LinerToSRGB<double>(k, scene->exposure);
+        //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
+        image transformedImage = {colorTransform(*outImage),outImage->sx,outImage->sy};
+        PNGImageOutput(&transformedImage, output_name);
     }
 
     free(cam);
@@ -290,7 +320,7 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
     if (depth > scene->pt_max_depth)  // Max recursion depth reached. Return black (no
                                       // light coming into pixel from this path).
     {
-        *col = ray->pt.expl_col;  // These are accumulators, initialized at 0.
+        //*col = ray->pt.expl_col;  // These are accumulators, initialized at 0.
                                   // Whenever we find a source of light these
                                   // get incremented accordingly. At the end of
                                   // the recursion, we return whatever light we
@@ -300,7 +330,7 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
 
     findFirstHit(scene, ray, &lambda, Os, &obj, &p, &n, &a, &b);
     if (obj == NULL || lambda < THR) {
-        *col = ray->pt.expl_col;
+        //*col = ray->pt.expl_col;
         return;
     }
 
@@ -330,11 +360,10 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
 
     // if hit light source
     if (obj->isLightSource && dot(&ray->d, &n) < 0) {
-        *col = ray->pt.ray_col + ray->pt.expl_col;
-        if (explt == obj) {  // the ray cast is the same as explicit
-            *col = ray->pt.expl_col;
+        *col = ray->pt.expl_col;
+        if ((Os == NULL || Os->pt.diffuse < 0.8) && (explt != obj)){
+          *col += ray->pt.ray_col;
         }
-
         return;
     }
 
@@ -391,20 +420,18 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
     }
 }
 
-void normalizeLightWeights(Object *object_list) {
+void normalizeLightWeights(std::list<Object *>& object_list) {
     // Update light source weights - will give you weights for each light source
     // that add up to 1
-    Object *obj = object_list;
     total_weight = 0;
-    while (obj != NULL) {
+    for(Object* const& obj : object_list){
         if (obj->isLightSource) total_weight += obj->pt.LSweight;
-        obj = obj->next;
     }
-    obj = object_list;
-    while (obj != NULL) {
+
+    for(Object* const& obj : object_list){
         if (obj->isLightSource) {
+            obj->pt.surface_area = obj->pt.LSweight;
             obj->pt.LSweight /= total_weight;
         }
-        obj = obj->next;
     }
 }

@@ -1,5 +1,12 @@
 #include "imageProcessor.h"
 
+#include "utils.h"
+
+#include <iostream>
+
+// on linux: sudo apt-get install libpng-dev
+#include <png.h>
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -193,7 +200,56 @@ struct image *newImage(int size_x, int size_y, int pixel_size) {
     return (NULL);
 }
 
-void imageOutput(struct image *im, const char *filename) {
+/**
+ * Save the image stored in `img` into the given PNG file
+ */
+bool PNGImageOutput(image *img, const char *filename) {
+    printf("\nSaving Image\n");
+    double* color_data = (double*)img->rgbdata;
+    FILE *fp = fopen(filename, "wb");
+    if (!fp) {
+        return false;
+    }
+    png_structp png_ptr =
+        png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+    if (!png_ptr) {
+        fclose(fp);
+        return false;
+    }
+    png_infop info_ptr = png_create_info_struct(png_ptr);
+    if (!info_ptr) {
+        png_destroy_write_struct(&png_ptr, NULL);
+        fclose(fp);
+        return false;
+    }
+    if (setjmp(png_jmpbuf(png_ptr))) {
+        png_destroy_write_struct(&png_ptr, &info_ptr);
+        fclose(fp);
+        return false;
+    }
+    png_init_io(png_ptr, fp);
+    png_set_IHDR(png_ptr, info_ptr, img->sx, img->sy, 8, PNG_COLOR_TYPE_RGB,
+                PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_BASE,
+                PNG_FILTER_TYPE_BASE);
+    png_write_info(png_ptr, info_ptr);
+    png_byte *image = new png_byte[img->sx * img->sy * 3];
+    for (int i = 0; i < img->sx * img->sy * 3; i++) {
+        image[i] = (png_byte)(color_data[i] * 255);
+    }
+    png_bytep row_pointers[img->sy];
+    for (int i = 0; i < img->sy; i++) {
+        row_pointers[i] = &image[i * img->sx * 3];
+    }
+    png_write_image(png_ptr, row_pointers);
+    png_write_end(png_ptr, info_ptr);
+    png_destroy_write_struct(&png_ptr, &info_ptr);
+    fclose(fp);
+
+    delete[] image;
+    return true;
+}
+
+void PPMImageOutput(image *im, const char *filename) {
     // Writes out a .ppm file from the image data contained in 'im'.
     // Note that Windows typically doesn't know how to open .ppm
     // images. Use Gimp or any other seious image processing
@@ -232,110 +288,4 @@ void deleteImage(struct image *im) {
             free(im->rgbdata);
         free(im);
     }
-}
-
-void dataOutput(double *im, int sx, char *name) {
-    FILE *f;
-    double *imT;
-    double HDRhist[1000];
-    int i, j;
-    double mx, mi, biw, pct;
-    unsigned char *bits24;
-    int name_len = strlen(name);
-    char pfmname[1024];
-
-    imT = (double *)calloc(sx * sx * 3, sizeof(double));
-    memcpy(imT, im, sx * sx * 3 * sizeof(double));
-    strcpy(&pfmname[0], name);
-    if (pfmname[(name_len - 1) - 3] == '.') {
-        pfmname[(name_len - 1) - 2] = 'p';
-        pfmname[(name_len - 1) - 1] = 'f';
-        pfmname[(name_len - 1) - 0] = 'm';
-    } else {
-        strcat(&pfmname[0], ".pfm");
-    }
-    // Output the floating point data so we can post-process externally
-    f = fopen(pfmname, "w");
-    fprintf(f, "PF\n");
-    fprintf(f, "%d %d\n", sx, sx);
-    fprintf(f, "%1.1f\n", -1.0);
-    fwrite(imT, sx * sx * 3 * sizeof(double), 1, f);
-    fclose(f);
-
-    // Post processing HDR map - find reasonable cutoffs for normalization
-    for (j = 0; j < 1000; j++)
-        HDRhist[j] = 0;
-
-    mi = 10e6;
-    mx = -10e6;
-    for (i = 0; i < sx * sx * 3; i++) {
-        if (*(imT + i) < mi)
-            mi = *(imT + i);
-        if (*(imT + i) > mx)
-            mx = *(imT + i);
-    }
-
-    for (i = 0; i < sx * sx * 3; i++) {
-        *(imT + i) = *(imT + i) - mi;
-        *(imT + i) = *(imT + i) / (mx - mi);
-    }
-    fprintf(stderr, "\nSaving Image\n");
-    //fprintf(stderr, "\nImage stats: Minimum=%f, maximum=%f\n", mi, mx);
-    biw = 1.000001 / 1000.0;
-    // Histogram
-    for (i = 0; i < sx * sx * 3; i++) {
-        for (j = 0; j < 1000; j++)
-            if (*(imT + i) >= (biw * j) && *(imT + i) < (biw * (j + 1))) {
-                HDRhist[j]++;
-                break;
-            }
-    }
-
-    pct = .005 * (sx * sx * 3);
-    mx = 0;
-    for (j = 5; j < 990; j++) {
-        mx += HDRhist[j];
-        if (HDRhist[j + 5] - HDRhist[j - 5] > pct)
-            break;
-        if (mx > pct)
-            break;
-    }
-    mi = (biw * (.90 * j));
-
-    for (j = 990; j > 5; j--) {
-        if (HDRhist[j - 5] - HDRhist[j + 5] > pct)
-            break;
-    }
-    mx = (biw * (j + (.25 * (999 - j))));
-
-    //fprintf(stderr, "Limit values chosen at min=%f, max=%f... normalizing image\n", mi, mx);
-
-    for (i = 0; i < sx * sx * 3; i++) {
-        *(imT + i) = *(imT + i) - mi;
-        *(imT + i) = *(imT + i) / (mx - mi);
-        if (*(imT + i) < 0.0)
-            *(imT + i) = 0.0;
-        if (*(imT + i) > 1.0)
-            *(imT + i) = 1.0;
-        *(imT + i) = pow(*(imT + i), .75);
-    }
-
-    bits24 = (unsigned char *)calloc(sx * sx * 3, sizeof(unsigned char));
-    for (int i = 0; i < sx * sx * 3; i++)
-        *(bits24 + i) = (unsigned char)(255.0 * (*(imT + i)));
-    f = fopen(name, "wb+");
-    if (f == NULL) {
-        fprintf(stderr, "Unable to open file %s for output! No image written\n", name);
-        return;
-    }
-    fprintf(f, "P6\n");
-    fprintf(f, "# Output from PathTracer.c\n");
-    fprintf(f, "%d %d\n", sx, sx);
-    fprintf(f, "255\n");
-    fwrite(bits24, sx * sx * 3 * sizeof(unsigned char), 1, f);
-    fclose(f);
-    
-
-    free(bits24);
-    free(imT);
 }
