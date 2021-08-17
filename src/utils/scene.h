@@ -27,6 +27,8 @@ class Scene {
 
     bool path_tracing_mode = 0;
 
+    double exposure = 1.0;
+
     //set 1 to use antialiasing in the raytrcer
     //path tracer implicitly has antialiasing
     int rt_antialiasing = 0;

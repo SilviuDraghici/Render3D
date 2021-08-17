@@ -288,14 +288,28 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
                 //Ke is a light source in Physically based rendering
                 double r,g,b;
                 sscanf(line.c_str(), "Ke %lf %lf %lf", &r, &g, &b);
-                mtl_list.front().col = {r,g,b};
+                mtl_list.front().col_diffuse = {r,g,b};
                 //mtl_list.front().is_light_source = 1;
+            } else if(line.rfind("Ka ", 0) == 0){
+                double r,g,b;
+                sscanf(line.c_str(), "Ka %lf %lf %lf", &r, &g, &b);
+                if(!mtl_list.front().is_light_source){
+                    mtl_list.front().col_ambient = {r,g,b};
+                }
             } else if(line.rfind("Kd ", 0) == 0){
                 double r,g,b;
                 sscanf(line.c_str(), "Kd %lf %lf %lf", &r, &g, &b);
                 if(!mtl_list.front().is_light_source){
-                    mtl_list.front().col = {r,g,b};
+                    mtl_list.front().col_diffuse = {r,g,b};
                 }
+            } else if(line.rfind("Ks ", 0) == 0){
+                double r,g,b;
+                sscanf(line.c_str(), "Ks %lf %lf %lf", &r, &g, &b);
+                if(!mtl_list.front().is_light_source){
+                    mtl_list.front().col_specular = {r,g,b};
+                }
+            } else if (line.rfind("Ns ", 0) == 0){
+                sscanf(line.c_str(), "Ns %i", &mtl_list.front().Ns);
             } else if (line.rfind("d ", 0) == 0){
                 //d is how opaque an object is. 1 means fully opaque
                 sscanf(line.c_str(), "d %lf", &mtl_list.front().alpha);
@@ -305,7 +319,7 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
                 //alpha 1 means fully opaque
                 mtl_list.front().alpha = 1 - mtl_list.front().alpha;
             } else if (line.rfind("Ni ", 0) == 0){
-                sscanf(line.c_str(), "Ni %lf", &mtl_list.front().index_of_refrefraction);
+                sscanf(line.c_str(), "Ni %lf", &mtl_list.front().index_of_refraction);
             } else if (line.rfind("map_Kd ", 0) == 0){
                 start_index = line.find_first_of(" ") + 1;
                 texture_name = dir + line.substr(start_index);
@@ -329,15 +343,66 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
 
 void MeshFactory::buildMesh(){
     material mtl = *std::find(mtl_list.begin(), mtl_list.end(), mtl_name);
-    mesh = new Mesh(mtl.col);
-    mesh->name = object_name;
-    mesh->T = transformation;
+    color col = mtl.col_ambient + mtl.col_diffuse + mtl.col_specular;
+    double diffuse, reflect, refract, refl_sig;
+    diffuse = sqrt(mtl.col_ambient.R * mtl.col_ambient.R +
+                   mtl.col_ambient.G * mtl.col_ambient.G +
+                   mtl.col_ambient.B * mtl.col_ambient.B) +
+              sqrt(mtl.col_diffuse.R * mtl.col_diffuse.R +
+                   mtl.col_diffuse.G * mtl.col_diffuse.G +
+                   mtl.col_diffuse.B * mtl.col_diffuse.B);
+    double color_length = sqrt(col.R * col.R + col.G * col.G + col.B * col.B);
+    
+    diffuse = diffuse / color_length;
+    reflect = 1 - diffuse;
+    
+    double specular_length = sqrt(mtl.col_specular.R * mtl.col_specular.R +
+                                  mtl.col_specular.G * mtl.col_specular.G +
+                                  mtl.col_specular.B * mtl.col_specular.B);
+    if (specular_length > 0) {
+        if( 0 <= mtl.Ns && mtl.Ns <= 1000){
+            // convert 0 - 1000 range to 0 to 1 where 1000 maps to 0
+            refl_sig = 1 - mtl.Ns/1000.0;
+        }
+    }
+
+    diffuse = mtl.alpha * diffuse;
+    reflect = mtl.alpha * reflect;
+    refract = 1 - mtl.alpha;
+
+    double sum = diffuse + reflect + refract;
+    diffuse /= sum;
+    reflect /= sum;
+    refract /= sum;
+
+    double max_col = max(col.R, max(col.G, col.B));
+    if (max_col > 1) {
+        col.R /= max_col;
+        col.G /= max_col;
+        col.B /= max_col;
+    }
+
+    mesh = new Mesh(col);
     //mesh->set_rayTrace_properties(0.1, double diffuse,
     //                                 double specular, double global,
     //                                 double alpha, double shiny)
-    mesh->set_pathTrace_properties(mtl.alpha, 0.0, 1-mtl.alpha);
-    mesh->r_index = mtl.index_of_refrefraction;
-    
+    mesh->set_pathTrace_properties(diffuse, reflect, refract);
+    mesh->refl_sig = refl_sig;
+    mesh->name = object_name;
+    mesh->T = transformation;
+    mesh->r_index = mtl.index_of_refraction;
+
+    /*
+    std::cout << "\n------------------------\n";
+    std::cout << "mtl: " << mtl.name << "\n";
+    std::cout << "color: " << mesh->col << "\n";
+    std::cout << "diffuse: " << mesh->pt.diffuse << "\n";
+    std::cout << "reflect: " << mesh->pt.reflect << "\n";
+    std::cout << "refract: " << mesh->pt.refract << "\n";
+    std::cout << "refl_sig: " << mesh->refl_sig << "\n";
+    std::cout << "r_index: "<< mesh->r_index << "\n";
+    */
+   
     mesh->isLightSource = mtl.is_light_source;
     mesh->pt.LSweight = 1;
     mesh->bvh.set_build_method(BuildMethod::MidSplit);

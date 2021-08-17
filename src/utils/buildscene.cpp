@@ -9,7 +9,7 @@
 #include "utils.h"
 
 void buildScene(Scene *scene) {
-#include "../../scenes/buildScene_cb.cpp"
+#include "../../scenes/buildScene_lr.cpp"
     
     PrimitiveData *prims = (PrimitiveData *)malloc(scene->object_list.size() * sizeof(PrimitiveData));
     scene->bvh = new BVH;

@@ -15,13 +15,21 @@ const std::string room_mesh = "scenes/living_room/living_room.obj";
 const std::string cube_mesh = "scenes/cube/cube.obj";
 const std::string sphere_mesh = "scenes/sphere/sphere-cylcoords-4k.obj";
 
-scene->cam_pos = point(0, 0, -10);
-scene->cam_pos = RotY(-scene->frame * PI/120) * scene->cam_pos;
-scene->cam_gaze_point = point(0, 0, 0);
+//default position for rotating the camera around the room
+//scene->cam_pos = point(0, 0, -10);
+//scene->cam_pos = RotY(-scene->frame * PI/120) * scene->cam_pos;
+//scene->cam_gaze_point = point(0, 0, 0);
+
+//cam pos similar to refernce image
+scene->cam_pos = point(-2.5, 0, -18);
+scene->cam_pos = RotY(-23 * PI/120) * scene->cam_pos;
+scene->cam_gaze_point = point(0, -4, 0);
+
 scene->cam_gaze = scene->cam_gaze_point - scene->cam_pos;
 //scene->cam_up = point(0, 1, 0);
 scene->cam_focal = -3;
 
+scene->exposure = 1;
 
 scene->meshFactory.setDefaultColor(74 / 255.0, 255 / 255.0, 249 / 255.0);
 
@@ -57,7 +65,7 @@ scene->meshFactory.loadMeshFile(sphere_mesh);
 */
 
 // Planar light source at top
-o = new Plane(1.0, 1.0, 1.0);
+o = new Plane(40.0, 40.0, 40.0);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->refl_sig = 0.0;
 o->r_index = 1.54;

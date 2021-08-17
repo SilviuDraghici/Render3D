@@ -241,7 +241,7 @@ void pathTraceMain(int argc, char *argv[]) {
         }      // end for j
 
         if (k % samples_per_update == 0) {  // update output image
-            LinerToSRGB<double> colorTransform = LinerToSRGB<double>(k, 1.0);
+            LinerToSRGB<double> colorTransform = LinerToSRGB<double>(k, scene->exposure);
             //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
             image transformedImage = {colorTransform(*outImage),outImage->sx,outImage->sx};
             PNGImageOutput(&transformedImage, output_name);
@@ -253,7 +253,7 @@ void pathTraceMain(int argc, char *argv[]) {
 
     // Output rendered image
     if (k % samples_per_update != 1) {
-        LinerToSRGB<double> colorTransform = LinerToSRGB<double>(k, 1.0);
+        LinerToSRGB<double> colorTransform = LinerToSRGB<double>(k, scene->exposure);
         //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
         image transformedImage = {colorTransform(*outImage),outImage->sx,outImage->sx};
         PNGImageOutput(&transformedImage, output_name);

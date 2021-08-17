@@ -204,6 +204,7 @@ struct image *newImage(int size_x, int size_y, int pixel_size) {
  * Save the image stored in `img` into the given PNG file
  */
 bool PNGImageOutput(image *img, const char *filename) {
+    printf("\nSaving Image\n");
     double* color_data = (double*)img->rgbdata;
     FILE *fp = fopen(filename, "wb");
     if (!fp) {
