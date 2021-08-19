@@ -11,6 +11,8 @@
 #include "textureNode.h"
 #include "material.h"
 
+#define MAX_REFL_SIG 0.3
+
 class MeshFactory{
   public:
     MeshFactory(std::list<Object*>& o_l, std::list<textureNode*>& t_l);

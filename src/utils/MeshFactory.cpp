@@ -360,9 +360,9 @@ void MeshFactory::buildMesh(){
                                   mtl.col_specular.G * mtl.col_specular.G +
                                   mtl.col_specular.B * mtl.col_specular.B);
     if (specular_length > 0) {
-        if( 0 <= mtl.Ns && mtl.Ns <= 1000){
+        if( 0 <= mtl.Ns && mtl.Ns <= 999){
             // convert 0 - 1000 range to 0 to 1 where 1000 maps to 0
-            refl_sig = 1 - mtl.Ns/1000.0;
+            refl_sig = MAX_REFL_SIG - (MAX_REFL_SIG * (mtl.Ns/1000.0));
         }
     }
 
@@ -392,7 +392,7 @@ void MeshFactory::buildMesh(){
     mesh->T = transformation;
     mesh->r_index = mtl.index_of_refraction;
 
-    /*
+    
     std::cout << "\n------------------------\n";
     std::cout << "mtl: " << mtl.name << "\n";
     std::cout << "color: " << mesh->col << "\n";
@@ -401,7 +401,7 @@ void MeshFactory::buildMesh(){
     std::cout << "refract: " << mesh->pt.refract << "\n";
     std::cout << "refl_sig: " << mesh->refl_sig << "\n";
     std::cout << "r_index: "<< mesh->r_index << "\n";
-    */
+    
    
     mesh->isLightSource = mtl.is_light_source;
     mesh->pt.LSweight = 1;

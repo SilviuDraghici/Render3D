@@ -6,6 +6,10 @@
 #include "objects.h"
 #include "utils.h"
 
+auto get_extension(std::string_view fn) {
+  return fn.substr(fn.find_last_of(".") + 1);
+}
+
 inline void uvMap(struct image *img, double u, double v, color *col) {
     int x = (unsigned int)(u * img->sx) % img->sx;
     int y = (unsigned int)(v * img->sy) % img->sy;
@@ -43,9 +47,14 @@ textureNode* loadTexture(const std::string& filename, int type, std::list<textur
         return texture_node;
     }
     // Load this texture image
-    if (type == 1 || type == 2)
-        im = readPPMimage(filename.c_str());
-    else if (type == 3)
+    if (type == 1 || type == 2){
+        auto extension = get_extension(filename);
+        if (extension == "ppm") {
+            im = readPPMimage(filename.c_str());
+        } else if (extension == "png") {
+            im = readPNGimage(filename.c_str());
+        }
+    } else if (type == 3)
         im = readPGMimage(filename.c_str());
 
     // Insert it into the texture list

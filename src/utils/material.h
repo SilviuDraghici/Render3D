@@ -8,8 +8,8 @@
 
 struct material {
     std::string name;
-    color col_ambient = {0.01, 0.01, 0.01};
-    color col_diffuse = {0.01, 0.01, 0.01};
+    color col_ambient  = {0.01, 0.01, 0.01};
+    color col_diffuse  = {0.01, 0.01, 0.01};
     color col_specular = {0.01, 0.01, 0.01};
     double alpha = 1;
     double index_of_refraction = 1;
