@@ -82,7 +82,7 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
         }
     #endif
 
-    if (obstruction != light_listt[curr_light] || dot(&pToLight.d, &nls) > 0 || dot(&pToLight.d, n) < 0) return;
+    if (obstruction != light_listt[curr_light] || dot(&pToLight.d, n) < 0) return;
     #ifdef DEBUG
         std::cout << "Explicit light sample\n";
     #endif
