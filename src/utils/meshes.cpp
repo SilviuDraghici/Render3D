@@ -8,8 +8,6 @@
 
 #include "ray.h"
 
-//#define DEBUG
-
 int count_vertices(std::string &face){
     int n = 0;
     for(int i = 1; i < face.size(); i++){

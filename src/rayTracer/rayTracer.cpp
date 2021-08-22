@@ -18,8 +18,6 @@
 #include "../utils/timer.h"
 #include "../utils/utils.h"
 
-//#define DEBUG
-
 static Scene *scene;
 void rayTraceMain(int argc, char *argv[]) {
     if (argc < 5) {
