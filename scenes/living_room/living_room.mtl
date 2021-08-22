@@ -6,7 +6,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0.03 0.03 0.03
-map_Kd textures\apple.ppm
+map_Kd textures\apple.png
 
 newmtl BackLight
 Kd 0.8 0.8 0.8
@@ -48,7 +48,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0.05 0.05 0.05
-map_Kd textures\book-spines.ppm
+map_Kd textures\book-spines.png
 
 newmtl CandleHolders
 Kd 0 0 0 
@@ -65,7 +65,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0 0 0
-map_Kd textures\carpet-text3b.ppm
+map_Kd textures\carpet-text3b.png
 
 newmtl CeilingLampshade
 Kd 1 1 1
@@ -74,7 +74,7 @@ Ns 8000
 d 0.5
 illum 2
 Ks 0 0 0
-map_Kd textures\Shade-paper.ppm
+map_Kd textures\Shade-paper.png
 
 # Cup
 newmtl Ceramic
@@ -92,7 +92,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0 0 0
-map_Kd textures\cushion-green-circles.ppm
+map_Kd textures\cushion-green-circles.png
 
 newmtl Cushion1
 Kd 0.8 0.79136 0.8
@@ -101,7 +101,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0 0 0
-map_Kd textures\cushion-stripe-purple.ppm
+map_Kd textures\cushion-stripe-purple.png
 
 newmtl Cushion3
 Kd 0.8 0.79136 0.8
@@ -110,7 +110,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0 0 0
-map_Kd textures\cushion-purple-yellow-stripe.ppm
+map_Kd textures\cushion-purple-yellow-stripe.png
 
 newmtl Default
 Kd 0 0 0
@@ -129,13 +129,13 @@ Ka 0 0 0
 Ks 0.2 0.2 0.2
 
 newmtl Floor
-Kd 1 1 1 
-Ns 5
+Kd 0.7 0.7 0.7 
+Ns 500
 d 1
 illum 2
 Ka 0 0 0
-Ks 0.05 0.05 0.05
-map_Kd textures\wood4.ppm
+Ks 0.3 0.3 0.3
+map_Kd textures\wood4.png
 
 newmtl LampStand
 Kd 0.9 0.9 0.9
@@ -152,17 +152,16 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0 0 0
-map_Kd textures\shade-stripes.ppm
+map_Kd textures\shade-stripes.png
 
 newmtl LargePicture
-Kd 0 0 0
+Kd 1 1 1
 Ns 1000
-Ks 0.1 0.1 0.1
+Ks 0.2 0.2 0.2
 d 1
 illum 2
 Ka 0 0 0
-Ks 0 0 0
-map_Kd textures\pic5wide.ppm
+map_Kd textures\pic5wide.png
 
 newmtl LeftLight
 Ke 5 5 5
@@ -188,7 +187,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0.05 0.05 0.05
-map_Kd textures\magazine.ppm
+map_Kd textures\magazine.png
 
 newmtl MiddleLight
 Ke 5 5 5
@@ -206,7 +205,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0.2 0.2 0.2
-map_Kd textures\picture11-vert.ppm
+map_Kd textures\picture11-vert.png
 
 newmtl Picture1
 Kd 1 1 1
@@ -215,7 +214,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0.2 0.2 0.2
-map_Kd textures\photo1.ppm
+map_Kd textures\photo1.png
 
 newmtl Picture2
 Kd 1 1 1
@@ -224,7 +223,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0.2 0.2 0.2
-map_Kd textures\photo3.ppm
+map_Kd textures\photo3.png
 
 newmtl Picture4
 Kd 1 1 1
@@ -233,7 +232,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0.2 0.2 0.2
-map_Kd textures\photo2.ppm
+map_Kd textures\photo2.png
 
 newmtl Picture5
 Kd 1 1 1
@@ -242,7 +241,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0.2 0.2 0.2
-map_Kd textures\photo4.ppm
+map_Kd textures\photo4.png
 
 newmtl RadiatorKnobOuter
 Kd 0.8 0.01 0.01
@@ -326,16 +325,16 @@ Ka 0 0 0
 Ks 0.04 0.04 0.04
 
 newmtl TvBevel
-Kd 0 0 0
-Ns 6
+Kd 0.01 0.01 0.01
+Ns 1000
 d 1
 illum 2
 Ka 0 0 0
-Ks 0.05 0.05 0.05
+Ks 0.2 0.2 0.2
 
 newmtl TvScreen
 Kd 0.01 0.01 0.01
-Ns 3
+Ns 900
 d 1
 illum 2
 Ka 0 0 0

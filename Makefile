@@ -7,6 +7,7 @@ OBJ     := build
 SRC      = src
 SRCS     = $(wildcard $(SRC)/pathTracer/*.cpp)
 SRCS    += $(wildcard $(SRC)/rayTracer/*.cpp)
+SRCS    += $(wildcard $(SRC)/normalsDisplay/*.cpp)
 SRCS    += $(wildcard $(SRC)/utils/*.cpp)
 SRCS    += $(SRC)/Render3D.cpp
 DEP     := deps
@@ -26,7 +27,7 @@ R_LDLIBS = -lm -lpng $(OPENMP)
 #
 DOBJ     = $(OBJ)_deb
 DOBJS    = $(patsubst $(SRC)/%.cpp,$(DOBJ)/%.o,$(SRCS))
-CFLAGS   = -g -std=c++17
+CFLAGS   = -g -std=c++17 -DDEBUG
 LDLIBS   = -lm -lpng
 
 .PHONY: all run clean release debug

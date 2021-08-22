@@ -19,6 +19,7 @@
 #include "../utils/objects.h"
 #include "../utils/ray.h"
 #include "../utils/utils.h"
+#include "../utils/timer.h"
 #include "../utils/ColorTransform.h"
 
 static Scene *scene;
@@ -69,27 +70,35 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
     findFirstHit(scene, &pToLight, &light_lambda, obj, &obstruction,
                  &lightp, &nls, &La, &Lb);
 
-    // printf("source: %s, obstruction: %s\n", obj->label,
-    // obstruction->label);
-    
-    if (obstruction == light_listt[curr_light] && dot(&pToLight.d, &nls) < 0) {
-        // printf("total weight: %f\n", total_weight);
-        *explt = light_listt[curr_light];
-        double A = total_weight * light_listt[curr_light]->pt.surface_area;
-        double dxd = pToLight.d.x * pToLight.d.x +
-                     pToLight.d.y * pToLight.d.y +
-                     pToLight.d.z * pToLight.d.z;
-        normalize(&pToLight.d);
-        double n_dot_l = fabs(dot(n, &pToLight.d));
-        double nls_dot_l = fabs(dot(&nls, &pToLight.d));
-        double w = MIN(1, (A * n_dot_l * nls_dot_l) / (dxd));
+    #ifdef DEBUG
+        if (obstruction->name == "Window Light") {
+            std::cout << "Object:\n";
+            std::cout << "\tname: " << obj->name << "\n";
+            std::cout << "\tnormal: " << *n << "\n";
+            std::cout << "Light:\n";
+            std::cout << "\tname: " << obstruction->name << "\n";
+            std::cout << "\tnormal: " << nls << "\n";
+            std::cout << "\ndot(object.normal, light.normal): " << dot(n, &nls) << "\n";
+        }
+    #endif
 
-        color light_col;
-        // set light color
-        textureMap(light_listt[curr_light], La, Lb, &light_col);
+    if (obstruction != light_listt[curr_light] || dot(&pToLight.d, n) < 0) return;
+    #ifdef DEBUG
+        std::cout << "Explicit light sample\n";
+    #endif
+    *explt = light_listt[curr_light];
+    double A = total_weight * light_listt[curr_light]->pt.surface_area;
+    double dxd = pToLight.d * pToLight.d;
+    normalize(&pToLight.d);
+    double n_dot_l = fabs(dot(n, &pToLight.d));
+    double nls_dot_l = fabs(dot(&nls, &pToLight.d));
+    double w = MIN(1, (A * n_dot_l * nls_dot_l) / (dxd));
 
-        ray->pt.expl_col += ray->pt.ray_col * light_col * w;
-    }
+    color light_col;
+    // set light color
+    textureMap(light_listt[curr_light], La, Lb, &light_col);
+
+    ray->pt.expl_col += ray->pt.ray_col * light_col * w;
 }
 
 void pathTraceMain(int argc, char *argv[]) {
@@ -209,24 +218,37 @@ void pathTraceMain(int argc, char *argv[]) {
 
     NUM_RAYS = 0;
 
-    time_t t1, t2;
-    //t1 = time(NULL);
-
     fprintf(stderr, "Rendering...\n");
     Ray ray;
     int k, j, i;
     double is, js;
 
-    //t1 = time(NULL);
+    Timer pathtracing_timer("Path Tracing");
+    pathtracing_timer.start();
+
+    #ifndef DEBUG
+        const int start_j = 0, end_j = scene->sy, start_i = 0, end_i = scene->sx;
+    #endif
+    #ifdef DEBUG
+        scene->pt_max_depth = 1;
+        const int start_i = 291, end_i = 292;
+        const int start_j = 366, end_j = 375;
+        std::cout << "DEBUG:\n";
+        std::cout << "Rendering horizontal (x) pixels in range [" << start_i << ", " << end_i << ")\n";
+        std::cout << "Rendering   vertical (y) pixels in range [" << start_j << ", " << end_j << ")\n";
+    #endif
 
     for (k = 1; k <= scene->pt_num_samples; k++) {
         fprintf(stderr, "\r%d/%d", k, scene->pt_num_samples);
         // fflush(stderr);
-#pragma omp parallel for schedule(dynamic, 1) private(i, j, wt, ray, col, is, \
-                                                      js)
-        // For each of the pixels in the image
-        for (j = 0; j < scene->sy; j++) {  
-            for (i = 0; i < scene->sx; i++) {
+
+        #pragma omp parallel for schedule(dynamic, 1) private(i, j, wt, ray, col, is, js)
+        for (int j = start_j; j < end_j; j++) {  // For each of the pixels in the image
+            for (int i = start_i; i < end_i; i++) {
+                #ifdef DEBUG
+                    printf("\n-------pixel: (%d %d)-------\n", i, j);
+                #endif
+
                 col = 0;
 
                 // Random sample within the pixel's area
@@ -268,7 +290,7 @@ void pathTraceMain(int argc, char *argv[]) {
 
     }  // End for k
 
-    //t2 = time(NULL);
+    pathtracing_timer.end();
 
     // Output rendered image
     if (k % samples_per_update != 1) {
@@ -279,12 +301,9 @@ void pathTraceMain(int argc, char *argv[]) {
     }
 
     free(cam);
-
     fprintf(stderr, "\nPath Tracing Done!\n");
-
     fprintf(stderr, "Total number of rays created: %ld\n", NUM_RAYS);
-    //fprintf(stderr, "Rays per second: %.0f\n",
-    //        (double)NUM_RAYS / (double)difftime(t2, t1));
+    pathtracing_timer.print_elapsed_time(std::cerr);
 }
 
 void PathTrace(Ray *ray, int depth, color *col, Object *Os,

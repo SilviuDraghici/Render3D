@@ -124,7 +124,7 @@ void MeshFactory::loadMeshFile(const std::string& filename){
     //std::cout << "num vertices: " << num_vertices << "\n";
     //std::cout << "num normals: " << num_normals << "\n";
     //std::cout << "num faces: " << num_faces << "\n";
-    std::cout << "num objects: " << num_objects << "\n";
+    //std::cout << "num objects: " << num_objects << "\n";
 
     //go to begining of file
     mesh_obj.clear();
@@ -360,9 +360,9 @@ void MeshFactory::buildMesh(){
                                   mtl.col_specular.G * mtl.col_specular.G +
                                   mtl.col_specular.B * mtl.col_specular.B);
     if (specular_length > 0) {
-        if( 0 <= mtl.Ns && mtl.Ns <= 1000){
+        if( 0 <= mtl.Ns && mtl.Ns <= 999){
             // convert 0 - 1000 range to 0 to 1 where 1000 maps to 0
-            refl_sig = 1 - mtl.Ns/1000.0;
+            refl_sig = MAX_REFL_SIG - (MAX_REFL_SIG * (mtl.Ns/1000.0));
         }
     }
 

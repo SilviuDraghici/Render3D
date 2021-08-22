@@ -20,6 +20,7 @@ struct image {
 extern struct image *outImage;
 extern char output_name[1024];  // Name of the output file for the raytraced .ppm image
 
+struct image *readPNGimage(const char *filename);
 struct image *readPPMimage(const char *filename);
 struct image *readPGMimage(const char *filename);
 struct image *newImage(int size_x, int size_y, int pixel_size);
