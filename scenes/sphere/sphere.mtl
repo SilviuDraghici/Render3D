@@ -12,4 +12,4 @@ newmtl default
   Kd 1 1 1
   Ks 0.01 0.01 0.01
   Ke 0 0 0
-  map_Kd world-mask.ppm
+  map_Kd world-mask.png

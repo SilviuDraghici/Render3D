@@ -404,9 +404,6 @@ void Cylinder::intersect(struct Ray *r, double *lambda, struct point *p,
 
         rayPosition(&ray_transformed, l, &cap_p);
         // check if the cap intersection is within the cylinder boundaries
-#ifdef DEBUG
-        printf("l: %f, lambda: %f, x^2 + y^2: %f\n", l, *lambda, cap_p.px * cap_p.px + cap_p.py * cap_p.py);
-#endif
 
         if (l > THR && cap_p.x * cap_p.x + cap_p.y * cap_p.y <= 1) {
             if ((*lambda != INFINITY && l < *lambda) || *lambda == INFINITY) {
@@ -428,9 +425,6 @@ void Cylinder::intersect(struct Ray *r, double *lambda, struct point *p,
 
         l = dot(&(p1), &cap_n) / d_dot_n;
         rayPosition(&ray_transformed, l, &cap_p);
-#ifdef DEBUG
-        printf("l: %f, lambda: %f, x^2 + y^2: %f\n", l, *lambda, cap_p.px * cap_p.px + cap_p.py * cap_p.py);
-#endif
 
         if (l > THR && cap_p.x * cap_p.x + cap_p.y * cap_p.y <= 1) {
             if ((*lambda != INFINITY && l < *lambda) || *lambda == INFINITY) {
@@ -439,10 +433,6 @@ void Cylinder::intersect(struct Ray *r, double *lambda, struct point *p,
             }
         }
     }
-
-#ifdef DEBUG
-    printf("lambda: %f\n", *lambda);
-#endif
 
     if (*lambda != INFINITY) {
         normalTransform(n, n, this);

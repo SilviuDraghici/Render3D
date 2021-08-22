@@ -93,6 +93,10 @@ struct point {
         return point(x * scalar, y * scalar, z * scalar);
     }
 
+    inline double operator*(const point& b) const {
+        return x * b.x + y * b.y + z * b.z;
+    }
+
     //std::ostream &operator<<(std::ostream &strm) {
     //  return strm << "(" << x << ", " << y << ", " << z << ", " << w << ")";
     //}

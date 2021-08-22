@@ -119,17 +119,22 @@ void rayTraceMain(int argc, char *argv[]) {
     Timer raytracing_timer("Raytracing");
     raytracing_timer.start();
 
-    double start_j = 0, end_j = scene->sy, start_i = 0, end_i = scene->sx;
-#ifdef DEBUG
-    start_i = 831, start_j = 815;
-    end_i = start_i + 1, end_j = start_j + 1;
-#endif
+    #ifndef DEBUG
+        const int start_j = 0, end_j = scene->sy, start_i = 0, end_i = scene->sx;
+    #endif
+    #ifdef DEBUG
+        const int start_i = 206, end_i = 212;
+        const int start_j = 100, end_j = start_j + 1;
+        std::cout << "DEBUG:\n";
+        std::cout << "Rendering horizontal (x) pixels in range [" << start_i << ", " << end_i << ")\n";
+        std::cout << "Rendering   vertical (y) pixels in range [" << start_j << ", " << end_j << ")\n";
+    #endif
 
     for (int j = start_j; j < end_j; j++) {  // For each of the pixels in the image
         for (int i = start_i; i < end_i; i++) {
-#ifdef DEBUG
-            printf("-------pixel: (%d %d)-------\n", i, j);
-#endif
+            #ifdef DEBUG
+                printf("\n-------pixel: (%d %d)-------\n", i, j);
+            #endif
             getRayFromPixel(scene, &ray, cam, i, j);
             depth = 1;
             col = 0;

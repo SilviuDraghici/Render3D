@@ -76,9 +76,7 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
         // printf("total weight: %f\n", total_weight);
         *explt = light_listt[curr_light];
         double A = total_weight * light_listt[curr_light]->pt.surface_area;
-        double dxd = pToLight.d.x * pToLight.d.x +
-                     pToLight.d.y * pToLight.d.y +
-                     pToLight.d.z * pToLight.d.z;
+        double dxd = pToLight.d * pToLight.d;
         normalize(&pToLight.d);
         double n_dot_l = fabs(dot(n, &pToLight.d));
         double nls_dot_l = fabs(dot(&nls, &pToLight.d));
@@ -219,14 +217,28 @@ void pathTraceMain(int argc, char *argv[]) {
 
     //t1 = time(NULL);
 
+    #ifndef DEBUG
+        const int start_j = 0, end_j = scene->sy, start_i = 0, end_i = scene->sx;
+    #endif
+    #ifdef DEBUG
+        const int start_i = 206, end_i = 212;
+        const int start_j = 100, end_j = start_j + 1;
+        std::cout << "DEBUG:\n";
+        std::cout << "Rendering horizontal (x) pixels in range [" << start_i << ", " << end_i << ")\n";
+        std::cout << "Rendering   vertical (y) pixels in range [" << start_j << ", " << end_j << ")\n";
+    #endif
+
     for (k = 1; k <= scene->pt_num_samples; k++) {
         fprintf(stderr, "\r%d/%d", k, scene->pt_num_samples);
         // fflush(stderr);
-#pragma omp parallel for schedule(dynamic, 1) private(i, j, wt, ray, col, is, \
-                                                      js)
-        // For each of the pixels in the image
-        for (j = 0; j < scene->sy; j++) {  
-            for (i = 0; i < scene->sx; i++) {
+
+        #pragma omp parallel for schedule(dynamic, 1) private(i, j, wt, ray, col, is, js)
+        for (int j = start_j; j < end_j; j++) {  // For each of the pixels in the image
+            for (int i = start_i; i < end_i; i++) {
+                #ifdef DEBUG
+                    printf("\n-------pixel: (%d %d)-------\n", i, j);
+                #endif
+
                 col = 0;
 
                 // Random sample within the pixel's area

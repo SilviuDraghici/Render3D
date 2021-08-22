@@ -124,7 +124,7 @@ void MeshFactory::loadMeshFile(const std::string& filename){
     //std::cout << "num vertices: " << num_vertices << "\n";
     //std::cout << "num normals: " << num_normals << "\n";
     //std::cout << "num faces: " << num_faces << "\n";
-    std::cout << "num objects: " << num_objects << "\n";
+    //std::cout << "num objects: " << num_objects << "\n";
 
     //go to begining of file
     mesh_obj.clear();
@@ -392,7 +392,7 @@ void MeshFactory::buildMesh(){
     mesh->T = transformation;
     mesh->r_index = mtl.index_of_refraction;
 
-    
+    /*
     std::cout << "\n------------------------\n";
     std::cout << "mtl: " << mtl.name << "\n";
     std::cout << "color: " << mesh->col << "\n";
@@ -401,7 +401,7 @@ void MeshFactory::buildMesh(){
     std::cout << "refract: " << mesh->pt.refract << "\n";
     std::cout << "refl_sig: " << mesh->refl_sig << "\n";
     std::cout << "r_index: "<< mesh->r_index << "\n";
-    
+    */
    
     mesh->isLightSource = mtl.is_light_source;
     mesh->pt.LSweight = 1;
