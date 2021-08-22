@@ -18,8 +18,6 @@
 #include "../utils/timer.h"
 #include "../utils/utils.h"
 
-//#define DEBUG
-
 static Scene *scene;
 void normalsDisplayMain(int argc, char *argv[]) {
     if (argc < 5) {
@@ -120,16 +118,9 @@ void normalsDisplayMain(int argc, char *argv[]) {
     raytracing_timer.start();
 
     double start_j = 0, end_j = scene->sy, start_i = 0, end_i = scene->sx;
-#ifdef DEBUG
-    start_i = 831, start_j = 815;
-    end_i = start_i + 1, end_j = start_j + 1;
-#endif
 
     for (int j = start_j; j < end_j; j++) {  // For each of the pixels in the image
         for (int i = start_i; i < end_i; i++) {
-#ifdef DEBUG
-            printf("-------pixel: (%d %d)-------\n", i, j);
-#endif
             getRayFromPixel(scene, &ray, cam, i, j);
             depth = 1;
             col = 0;

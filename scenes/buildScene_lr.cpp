@@ -38,43 +38,15 @@ scene->meshFactory.setDefaultColor(74 / 255.0, 255 / 255.0, 249 / 255.0);
 scene->meshFactory.setTransform(Tr(0,-5,0) * Sc(40));
 scene->meshFactory.loadMeshFile(room_mesh);
 
-/*
-o = new Sphere(.99, .99, .99);
-o->set_pathTrace_properties(1.0, 0.0, 0.0);
-//o->set_rayTrace_properties(.05, .95, .35, .35, 1, 6);
-o->T = Tr(0, -2, 1);
-setTexture(o, world_mask_texture, 1, scene->texture_list);
-o->invert_and_bound();
-scene->insertObject(o);
-*/
-
-/*
-scene->meshFactory.setDefaultColor(255 / 255.0, 74 / 255.0, 249 / 255.0);
-t = Sc(1);
-t *= Tr(2,0, 1);
-scene->meshFactory.setTransform(t);
-scene->meshFactory.loadMeshFile(cube_mesh);
-*/
-
-/*
-scene->meshFactory.setDefaultColor(255 / 255.0, 249 / 255.0, 74 / 255.0);
-t = Sc(1);
-t *= RotX(scene->frame * PI / 120);
-t *= RotY(scene->frame * PI / 120);
-t *= Tr(-2,0,1);
-scene->meshFactory.setTransform(t);
-scene->meshFactory.loadMeshFile(sphere_mesh);
-*/
-
 // Planar light source outside window
-o = new Plane(5, 5, 5);
+o = new Plane(40, 40, 40);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
 //setTexture(o, world_mask_texture, 1, scene->texture_list);
 o->refl_sig = 0.0;
 o->r_index = 1.54;
 o->name = "Window Light";
 o->T *= Sc(9, 4, 1);
-o->T *= RotX(PI );
+o->T *= RotX(PI);
 o->T *= Tr(-4.6, 0.8, 12);
 o->isLightSource = 1;
 o->pt.LSweight *= 6 * 1 * 1;  // <- scale weight by scale

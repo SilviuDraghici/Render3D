@@ -158,7 +158,6 @@ void TriangleFace_N::setNormals(point n1, point n2, point n3) {
 }
 
 point TriangleFace_N::normal(point *bary_coords) {
-    // std::cout << "n1: " << n1 << " n2: " << n2 << " n3: " << n3 << "\n";
     return n1 * bary_coords->x + n2 * bary_coords->y + n3 * bary_coords->z;
 }
 
@@ -465,6 +464,9 @@ void Mesh::intersect(struct Ray *ray, double *lambda, struct point *p,
     if (closest_face != NULL) {
         closest_face->intersect(&ray_transformed, lambda, &bary_coords);
         *n = closest_face->normal(&bary_coords);
+        #ifdef DEBUG
+            std::cout << "untransformed normal: " << *n << "\n";
+        #endif
         normalTransform(n, n, this);
         normalize(n);
         closest_face->texture_coordinates(a, b, &bary_coords);
