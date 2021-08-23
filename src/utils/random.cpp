@@ -1,6 +1,7 @@
+#include "utils.h"
 #include "random.h"
-#include <random>
 
+#include <random>
 
 thread_local static int rng_x = 123456789;
 thread_local static int rng_y = 362436069;
@@ -15,4 +16,17 @@ double xor128(void) {
   rng_y = rng_z;
   rng_z = rng_w;
   return (rng_w = rng_w ^ (rng_w >> 19) ^ (t ^ (t >> 8))) / 2147483647.0;
+}
+
+void cosWeightedSample(struct point *n, struct point *d) {
+    float u = xor128() * 2 - 1, theta = xor128() * 2 * PI;
+    float ra = sqrt(1 - u*u);
+    point pt;
+    pt.x = ra * cos(theta);
+    pt.y = ra * sin(theta);
+    pt.z = u;
+    pt.w = 1;
+    *d = *n + pt;
+    normalize(d);
+    return;
 }

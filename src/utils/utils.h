@@ -1,7 +1,6 @@
 #include <string.h>
 
 #include <iostream>
-#include "random.h"
 
 
 #ifndef UTILS_H

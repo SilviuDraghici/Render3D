@@ -1,4 +1,5 @@
 #include "L-Systems.h"
+#include "random.h"
 
 #define b_to_f 0.666
 double yscale = 2;
