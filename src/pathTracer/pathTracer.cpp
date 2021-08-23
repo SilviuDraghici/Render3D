@@ -67,32 +67,20 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
     point nls;
     double La, Lb;
 
+    normalize(&pToLight.d);
+
+    double ls_dot_n = dot(&pToLight.d, n);
+    if (ls_dot_n < 0) return;
+
     findFirstHit(scene, &pToLight, &light_lambda, obj, &obstruction,
                  &lightp, &nls, &La, &Lb);
 
-    #ifdef DEBUG
-        if (obstruction->name == "Window Light") {
-            std::cout << "Object:\n";
-            std::cout << "\tname: " << obj->name << "\n";
-            std::cout << "\tnormal: " << *n << "\n";
-            std::cout << "Light:\n";
-            std::cout << "\tname: " << obstruction->name << "\n";
-            std::cout << "\tnormal: " << nls << "\n";
-            std::cout << "\ndot(object.normal, light.normal): " << dot(n, &nls) << "\n";
-        }
-    #endif
+    double ls_dot_nls = dot(&pToLight.d, &nls);
+    if (obstruction != light_listt[curr_light] || ls_dot_nls > 0) return;
 
-    if (obstruction != light_listt[curr_light] || dot(&pToLight.d, &nls) > 0 || dot(&pToLight.d, n) < 0) return;
-    #ifdef DEBUG
-        std::cout << "Explicit light sample\n";
-    #endif
     *explt = light_listt[curr_light];
     double A = total_weight * light_listt[curr_light]->pt.surface_area;
-    double dxd = pToLight.d * pToLight.d;
-    normalize(&pToLight.d);
-    double n_dot_l = fabs(dot(n, &pToLight.d));
-    double nls_dot_l = fabs(dot(&nls, &pToLight.d));
-    double w = MIN(1, (A * n_dot_l * nls_dot_l) / (dxd));
+    double w = MIN(1, (A * ls_dot_n * -ls_dot_nls) / (light_lambda * light_lambda));
 
     color light_col;
     // set light color
@@ -306,6 +294,7 @@ void pathTraceMain(int argc, char *argv[]) {
     pathtracing_timer.print_elapsed_time(std::cerr);
 }
 
+__attribute__((flatten))
 void PathTrace(Ray *ray, int depth, color *col, Object *Os,
                Object *explicit_l) {
     // Trace one light path through the scene.
@@ -394,7 +383,7 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
         n.z *= -1;
     }
 
-    memcpy(&ray->p0, &p, sizeof(point));
+    ray->p0 = p;
 
     dice = xor128();
     if (dice <= diffuse) {  // diffuse
@@ -429,10 +418,14 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
     }
 
     dice = xor128();
-    max_col = MAX(MAX(ray->pt.ray_col.R, ray->pt.ray_col.G),
-                  MAX(ray->pt.ray_col.R, ray->pt.ray_col.B));
-    if (sqrt(dice) < max_col) {
-        return PathTrace(ray, depth + 1, col, obj, explt);
+    max_col = MAX(MAX(ray->pt.ray_col.R, ray->pt.ray_col.G), ray->pt.ray_col.B);
+    if (dice < max_col * max_col) {
+        double ratio = 1 / (max_col * max_col);
+        PathTrace(ray, depth + 1, col, obj, explt);
+        col->R *= ratio;
+        col->G *= ratio;
+        col->B *= ratio;
+        return;
     } else {
         *col = ray->pt.expl_col;
         return;

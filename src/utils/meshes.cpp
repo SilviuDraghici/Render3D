@@ -462,9 +462,6 @@ void Mesh::intersect(struct Ray *ray, double *lambda, struct point *p,
     if (closest_face != NULL) {
         closest_face->intersect(&ray_transformed, lambda, &bary_coords);
         *n = closest_face->normal(&bary_coords);
-        #ifdef DEBUG
-            std::cout << "untransformed normal: " << *n << "\n";
-        #endif
         normalTransform(n, n, this);
         normalize(n);
         closest_face->texture_coordinates(a, b, &bary_coords);
