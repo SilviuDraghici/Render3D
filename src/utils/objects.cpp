@@ -11,6 +11,7 @@
 #include "mappings.h"
 #include "ray.h"
 #include "utils.h"
+#include "random.h"
 
 void union_bounds(Bounds &a, point &b, Bounds &union_box) {
     union_box.min.x = MIN(a.min.x, b.x);

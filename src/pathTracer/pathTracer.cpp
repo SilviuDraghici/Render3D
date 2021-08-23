@@ -21,6 +21,7 @@
 #include "../utils/utils.h"
 #include "../utils/timer.h"
 #include "../utils/ColorTransform.h"
+#include "../utils/random.h"
 
 static Scene *scene;
 
@@ -80,7 +81,8 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
 
     *explt = light_listt[curr_light];
     double A = total_weight * light_listt[curr_light]->pt.surface_area;
-    double w = MIN(1, (A * ls_dot_n * -ls_dot_nls) / (light_lambda * light_lambda));
+    double light_contrib = (A * ls_dot_n * -ls_dot_nls) / (light_lambda * light_lambda);
+    double w = MIN(1, light_contrib);
 
     color light_col;
     // set light color
