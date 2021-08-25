@@ -97,6 +97,7 @@ class Search_Node {
    public:
     double lambda;
     Primitive *node;
+    Search_Node(){};
     Search_Node(double l, Primitive *n) {
         lambda = l;
         node = n;

@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <math.h>
 #include <string>
+#include "random.h"
 
 #include "ray.h"
 
