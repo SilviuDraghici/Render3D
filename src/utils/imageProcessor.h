@@ -28,5 +28,6 @@ struct image *newImage(int size_x, int size_y, int pixel_size);
 
 bool PNGImageOutput(image *im, const char *filename);
 void PPMImageOutput(image *im, const char *filename);
+bool PFMImageOutput(image *im, const char *filename);
 
 void deleteImage(struct image *im);

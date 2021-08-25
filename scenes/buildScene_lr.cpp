@@ -41,11 +41,11 @@ scene->meshFactory.loadMeshFile(room_mesh);
 // Planar light source outside window
 o = new Plane(40, 40, 40);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
-//setTexture(o, world_mask_texture, 1, scene->texture_list);
+setTexture(o, world_mask_texture, 1, scene->texture_list);
 o->refl_sig = 0.0;
 o->r_index = 1.54;
 o->name = "Window Light";
-o->T *= Sc(9, 4, 1);
+o->T *= Sc(9.6, 5.4, 1);
 o->T *= RotX(PI);
 o->T *= Tr(-4.6, 0.8, 12);
 o->isLightSource = 1;

@@ -87,6 +87,11 @@ void textureMap(Object *obj, double a, double b, color *col) {
         // Get object colour from the texture given the texture coordinates (a,b), and the texturing function
         // for the object. Note that we will use textures also for Photon Mapping.
         uvMap(obj->texImg, a, b, col);
+        if (obj->isLightSource){
+            col->R *= obj->col.R;
+            col->G *= obj->col.G;
+            col->B *= obj->col.B;
+        }
     }
     return;
 }

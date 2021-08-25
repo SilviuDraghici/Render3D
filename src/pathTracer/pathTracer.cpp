@@ -288,6 +288,11 @@ void pathTraceMain(int argc, char *argv[]) {
         PNGImageOutput(&transformedImage, output_name);
     }
 
+    for(int i = 0; i < scene->sx * scene->sy * 3; i++){
+        rgbIm[i] /= k;
+    }
+    PFMImageOutput(outImage, output_name);
+
     free(cam);
     fprintf(stderr, "\nPath Tracing Done!\n");
     fprintf(stderr, "Total number of rays created: %ld\n", NUM_RAYS);
@@ -422,9 +427,9 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
     if (dice < max_col * max_col) {
         double ratio = 1 / (max_col * max_col);
         PathTrace(ray, depth + 1, col, obj, explt);
-        col->R *= ratio;
-        col->G *= ratio;
-        col->B *= ratio;
+        //col->R *= ratio;
+        //col->G *= ratio;
+        //col->B *= ratio;
         return;
     } else {
         *col = ray->pt.expl_col;

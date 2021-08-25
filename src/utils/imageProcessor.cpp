@@ -324,6 +324,43 @@ bool PNGImageOutput(image *img, const char *filename) {
     return true;
 }
 
+bool PFMImageOutput(image *im, const char *filename){
+    // run magick convert out.pfm out.hdr to convert pfm to format LuminanceHDR can edit.
+    std::string pfmname = std::string(filename);
+    pfmname.replace(pfmname.find_last_of(".") + 1, pfmname.size(), "pfm");
+    std::cout << "Saving " << pfmname << std::endl;
+    
+    FILE *f;
+    float *output = new float[im->sx * im->sy * 3];
+    
+    double* rgbdata = (double* )im->rgbdata;
+    
+    size_t num_vals = im->sx * im->sy * 3;
+    for (size_t y = 0; y < im->sy; y++) {
+        for (size_t x = 0; x < im->sx; x++) {
+            size_t i_inp = (x + y * im->sx) * 3;
+            size_t i_out = (x + (im->sy - y - 1) * im->sx) * 3;
+            output[i_out + 0] = (float)rgbdata[i_inp + 0];
+            output[i_out + 1] = (float)rgbdata[i_inp + 1];
+            output[i_out + 2] = (float)rgbdata[i_inp + 2];
+        }
+    }
+
+    f = fopen(pfmname.c_str(), "wb+");
+    if (f == NULL) {
+    std::cerr << "Unable to open file " << pfmname << "\n";
+    return false;
+    }
+
+    fprintf(f, "PF\n");
+    fprintf(f, "%d %d\n", im->sx, im->sy);
+    fprintf(f, "-1.0\n");
+    fwrite(output, im->sx * im->sy * 3 * sizeof(float), 1, f);
+    fclose(f);
+    delete[] output;
+    return true;
+}
+
 void PPMImageOutput(image *im, const char *filename) {
     // Writes out a .ppm file from the image data contained in 'im'.
     // Note that Windows typically doesn't know how to open .ppm
