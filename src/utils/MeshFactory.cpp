@@ -116,7 +116,7 @@ void MeshFactory::loadMeshFile(const std::string& filename){
         } else if (line.rfind("f ", 0) == 0) {
             //count faces
             num_faces += count_vertices(line) - 2;
-        } else if (line.rfind("o ", 0) == 0){
+        } else if (line.rfind("usemtl ", 0) == 0){
             num_objects++;
         }
     }
@@ -161,23 +161,16 @@ void MeshFactory::loadMeshFile(const std::string& filename){
             line.erase(line.find('\r'));
         }
         
-        if (line.rfind("o ", 0) == 0){
+        if (line.rfind("usemtl ", 0) == 0){
             //build the previous object if it isnt null and has more than 0 faces.
-            
-            //std::cout << "Object: " << object_name << " num faces: " << num_faces_in_object;
-            //std::cout << " faces built: " << f << " first face: " << first_face_in_object << "\n";
-            //std::cout << "material: " << mtl_name << "\n";
             
             if(!object_name.empty() && num_faces_in_object > 0){
                 buildMesh();
                 object_list.push_front(mesh);
             }
-            start_index = line.find_first_not_of(" ", 1);
-            object_name = line.substr(start_index);
-            num_faces_in_object = 0;
-        } else if(line.rfind("usemtl ", 0) == 0){
             start_index = line.find_first_not_of(" ", 6);
-            mtl_name = material_file_name + "::" + line.substr(start_index);
+            object_name = material_file_name + "::" + line.substr(start_index);
+            num_faces_in_object = 0;
         } else if (line.rfind("v ", 0) == 0) {
             sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
             x = (x - avg_x) / scale, y = (y - avg_y) / scale,
@@ -344,7 +337,7 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
 }
 
 void MeshFactory::buildMesh(){
-    material mtl = *std::find(mtl_list.begin(), mtl_list.end(), mtl_name);
+    material mtl = *std::find(mtl_list.begin(), mtl_list.end(), object_name);
     color col = mtl.col_ambient + mtl.col_diffuse + mtl.col_specular;
     double diffuse, reflect, refract, refl_sig;
     diffuse = sqrt(mtl.col_ambient.R * mtl.col_ambient.R +
