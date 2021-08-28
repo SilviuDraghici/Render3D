@@ -107,7 +107,7 @@ void rayTraceMain(int argc, char *argv[]) {
     Ray ray;
     double depth;
     color col;
-    color background = 0;
+    color background = {0, 0, 0};
 
     std::cout << "Rendering...\n";
 
@@ -317,7 +317,7 @@ void rtShade(Object *obj, point *p, point *n, Ray *ray,
     rayReflect(ray, p, n, &cam_reflection);
 
     if (obj->refl_sig > 0 && 0) {
-        rt_brandished_trace(&cam_reflection, obj, &global, depth);
+        //rt_brandished_trace(&cam_reflection, obj, &global, depth);
     } else {
         rayTrace(&cam_reflection, depth + 1, &global, obj);
     }

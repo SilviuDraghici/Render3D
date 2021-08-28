@@ -225,8 +225,10 @@ void MeshFactory::loadMeshFile(const std::string& filename){
         //if( f > 5) break;
     }
 
-    buildMesh();
-    object_list.push_front(mesh);
+    if(num_faces_in_object > 0){
+        buildMesh();
+        object_list.push_front(mesh);
+    }
 
     //print the materials in this object
     //std::cout << mtl_list.size() << "[\n";
@@ -289,7 +291,7 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
                 double r,g,b;
                 sscanf(line.c_str(), "Ke %lf %lf %lf", &r, &g, &b);
                 mtl_list.front().col_diffuse = {r,g,b};
-                //mtl_list.front().is_light_source = 1;
+                mtl_list.front().is_light_source = 1;
             } else if(line.rfind("Ka ", 0) == 0){
                 double r,g,b;
                 sscanf(line.c_str(), "Ka %lf %lf %lf", &r, &g, &b);

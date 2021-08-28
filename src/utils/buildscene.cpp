@@ -9,7 +9,7 @@
 #include "utils.h"
 
 void buildScene(Scene *scene) {
-#include "../../scenes/buildScene_lr.cpp"
+#include "../../scenes/buildScene_sdb.cpp"
     
     PrimitiveData *prims = (PrimitiveData *)malloc(scene->object_list.size() * sizeof(PrimitiveData));
     scene->bvh = new BVH;
@@ -21,7 +21,7 @@ void buildScene(Scene *scene) {
     }
 
     scene->bvh->set_build_method(BuildMethod::SAH);
-    scene->bvh->set_search_method(SearchMethod::DFS);
+    scene->bvh->set_search_method(SearchMethod::BFS);
     scene->bvh->build(prims, scene->object_list.size());
     //scene->bvh->print();
     std::cout << scene->object_list.size() << " objects in scene\n";

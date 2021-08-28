@@ -11,7 +11,7 @@
 #include "textureNode.h"
 #include "material.h"
 
-#define MAX_REFL_SIG 0.3
+#define MAX_REFL_SIG 0.15
 
 class MeshFactory{
   public:
