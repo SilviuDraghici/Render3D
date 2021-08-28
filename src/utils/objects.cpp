@@ -6,6 +6,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <typeinfo>
 
 #include "affineTransforms.h"
 #include "mappings.h"
@@ -142,7 +143,7 @@ void Object::randomPoint(double *x, double *y, double *z) {
     *x = r.x;
     *y = r.y;
     *z = r.z;
-    //fprintf(stderr, "Object::randomPoint\n");
+    std::cout << "Implement randomPoint for: " << typeid(*this).name() << "!\n";
 }
 
 double Object::intersect(struct Ray *r, double lambda) {
@@ -346,8 +347,8 @@ void Sphere::surfaceCoordinates(double a, double b, double *x, double *y,
 
 void Sphere::randomPoint(double *x, double *y, double *z) {
     // Returns the 3D coordinates (x,y,z) of a randomly sampled point on the
-    // plane Sapling should be uniform, meaning there should be an equal change
-    // of gedtting any spot on the plane
+    // sphere Sapling should be uniform, meaning there should be an equal chance
+    // of getting any spot on the sphere
 
     double a = xor128() * 2 * PI;
     double b = xor128() * 2 - 1;

@@ -1,7 +1,7 @@
 #include <string.h>
 
 #include <iostream>
-
+#include <cmath>
 
 #ifndef UTILS_H
 #define UTILS_H
@@ -96,6 +96,10 @@ struct point {
 
     inline double operator*(const point& b) const {
         return x * b.x + y * b.y + z * b.z;
+    }
+
+    inline double length(){
+        return sqrt(x*x + y*y + z*z);
     }
 
     //std::ostream &operator<<(std::ostream &strm) {

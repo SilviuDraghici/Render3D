@@ -378,13 +378,30 @@ void MeshFactory::buildMesh(){
     refract /= sum;
 
     double max_col = max(col.R, max(col.G, col.B));
-    if (max_col > 1) {
+    if (max_col > 1 && !mtl.is_light_source) {
         col.R /= max_col;
         col.G /= max_col;
         col.B /= max_col;
     }
 
-    mesh = new Mesh(col);
+    if (mtl.is_light_source){
+        std::cout << "col: " << col << "\n";
+        MeshLight* ml = new MeshLight(col); 
+        ml->isLightSource = mtl.is_light_source;
+        ml->pt.LSweight = 10;
+        ml->bvh.set_build_method(BuildMethod::MidSplit);
+        ml->bvh.set_search_method(SearchMethod::BFS);
+        ml->bvh.build(faces + first_face_in_object, num_faces_in_object);
+        ml->buildLightFaceList();
+        mesh = ml;
+    } else {
+        mesh = new Mesh(col);
+        mesh->bvh.set_build_method(BuildMethod::MidSplit);
+        mesh->bvh.set_search_method(SearchMethod::BFS);
+        mesh->bvh.build(faces + first_face_in_object, num_faces_in_object);
+    }
+    first_face_in_object += num_faces_in_object;
+    
     //mesh->set_rayTrace_properties(0.1, double diffuse,
     //                                 double specular, double global,
     //                                 double alpha, double shiny)
@@ -405,12 +422,7 @@ void MeshFactory::buildMesh(){
     std::cout << "r_index: "<< mesh->r_index << "\n";
     */
    
-    mesh->isLightSource = mtl.is_light_source;
-    mesh->pt.LSweight = 1;
-    mesh->bvh.set_build_method(BuildMethod::MidSplit);
-    mesh->bvh.set_search_method(SearchMethod::BFS);
-    mesh->bvh.build(faces + first_face_in_object, num_faces_in_object);
-    first_face_in_object += num_faces_in_object;
+    
     mesh->texImg = mtl.im;
     mesh->invert_and_bound();
 }

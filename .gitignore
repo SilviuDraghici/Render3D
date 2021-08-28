@@ -14,5 +14,7 @@ frames*
 *.avi
 *.gif
 *.png
+*.hdr
+*.jpg
 *.dep
 *.d

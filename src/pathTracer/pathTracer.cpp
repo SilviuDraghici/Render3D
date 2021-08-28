@@ -168,7 +168,12 @@ void pathTraceMain(int argc, char *argv[]) {
 
     scene->cam_focal = -1;
 
+    Timer buildscene_timer("Buildscene");
+    buildscene_timer.start();
     buildScene(scene);
+    buildscene_timer.end();
+    buildscene_timer.print_elapsed_time(std::cerr);
+
     // count number of lights
     num_lights = 0;
     for(Object* const& curr_obj : scene->object_list){
