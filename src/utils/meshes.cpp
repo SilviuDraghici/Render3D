@@ -487,7 +487,7 @@ void Mesh::intersect(struct Ray *ray, double *lambda, struct point *p,
 void MeshLight::randomPoint(double *x, double *y, double *z){
     point p;
 
-    TriangleFace* face = NULL;
+    TriangleFace* face = lightFaceList.front().face;
     
     double a = xor128();
     double b = xor128();

@@ -290,7 +290,7 @@ Primitive *BVH::bfs(struct Ray *ray) {
 }
 
 Primitive *BVH::dfs(struct Ray *ray) {
-    double lambda = INFINITY, l1, l2;
+    double lambda = INFINITY, l1 = INFINITY, l2 = INFINITY;
     Primitive *closest_prim = NULL;
 
     Search_Node bvh_stack[256]; 

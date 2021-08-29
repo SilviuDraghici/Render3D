@@ -170,6 +170,7 @@ void MeshFactory::loadMeshFile(const std::string& filename){
             }
             start_index = line.find_first_not_of(" ", 6);
             object_name = material_file_name + "::" + line.substr(start_index);
+            mtl_name = material_file_name + "::" + line.substr(start_index);
             num_faces_in_object = 0;
         } else if (line.rfind("v ", 0) == 0) {
             sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
@@ -337,7 +338,7 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
 }
 
 void MeshFactory::buildMesh(){
-    material mtl = *std::find(mtl_list.begin(), mtl_list.end(), object_name);
+    material mtl = *std::find(mtl_list.begin(), mtl_list.end(), mtl_name);
     color col = mtl.col_ambient + mtl.col_diffuse + mtl.col_specular;
     double diffuse, reflect, refract, refl_sig;
     diffuse = sqrt(mtl.col_ambient.R * mtl.col_ambient.R +
@@ -383,14 +384,14 @@ void MeshFactory::buildMesh(){
         ml->isLightSource = mtl.is_light_source;
         ml->pt.LSweight = 10;
         ml->bvh.set_build_method(BuildMethod::MidSplit);
-        ml->bvh.set_search_method(SearchMethod::BFS);
+        ml->bvh.set_search_method(SearchMethod::DFS);
         ml->bvh.build(faces + first_face_in_object, num_faces_in_object);
         ml->buildLightFaceList();
         mesh = ml;
     } else {
         mesh = new Mesh(col);
         mesh->bvh.set_build_method(BuildMethod::MidSplit);
-        mesh->bvh.set_search_method(SearchMethod::BFS);
+        mesh->bvh.set_search_method(SearchMethod::DFS);
         mesh->bvh.build(faces + first_face_in_object, num_faces_in_object);
     }
     first_face_in_object += num_faces_in_object;
