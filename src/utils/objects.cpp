@@ -732,6 +732,101 @@ void normalTransform(struct point *n, struct point *n_transformed,
     normalize(n_transformed);
 }
 
+float Medium::density(point& point){
+    //return 0.05;
+    //printf("point: %f %f %f\n", point.x, point.y, point.z);
+    int x = point.x * (x_samples - 1);
+    int y = point.y * (y_samples - 1);
+    int z = point.z * (z_samples - 1);
+    //std::cout << "x: " << x << " y: " << y << " z: " << z << std::endl;
+    return 0.05 * density_field[x + y * x_samples + z * x_samples * y_samples];
+}
+
+void Medium::intersect(struct Ray *r, double *lambda, struct point *p, struct point *n, double *a, double *b){
+    struct Ray ray_transformed;
+    rayTransform(r, &ray_transformed, this);
+    double tmin = -INFINITY;
+    double tmax = INFINITY;
+
+    double _tmin;
+    double _tmax;
+    
+    // x axis slab
+    _tmin = (THR - ray_transformed.p0.x) / ray_transformed.d.x;
+    _tmax = (1 - THR - ray_transformed.p0.x) / ray_transformed.d.x;
+    if (_tmin > _tmax) std::swap(_tmin, _tmax);
+    if (_tmin > tmin) tmin = _tmin;
+    if (_tmax < tmax) tmax = _tmax;
+
+    // y axis slab
+    _tmin = (THR - ray_transformed.p0.y) / ray_transformed.d.y;
+    _tmax = (1 - THR - ray_transformed.p0.y) / ray_transformed.d.y;
+    if (_tmin > _tmax) std::swap(_tmin, _tmax);
+    if (tmin > _tmax || _tmin > tmax) return;
+    if (_tmin > tmin) tmin = _tmin;
+    if (_tmax < tmax) tmax = _tmax;
+
+    // z axis slab
+    _tmin = (THR - ray_transformed.p0.z) / ray_transformed.d.z;
+    _tmax = (1 - THR - ray_transformed.p0.z) / ray_transformed.d.z;
+    if (_tmin > _tmax) std::swap(_tmin, _tmax);
+    if (tmin > _tmax || _tmin > tmax) return;
+    if (_tmin > tmin) tmin = _tmin;
+    if (_tmax < tmax) tmax = _tmax;
+
+    if (tmin > *lambda) return;
+    if (tmin < THR && tmax < THR) return;
+    if (tmin < THR) tmin = THR;
+    
+    //std::cout << "tmin: " << tmin << std::endl;
+    float curr_density;
+    float dice;
+    point sample;
+    float theta, phi;
+    const float incr = 0.1;
+    for(float i = tmin + 0.01; i < tmax - 0.01; i += incr){
+        rayPosition(&ray_transformed, i, &sample);
+        curr_density = density(sample);
+        dice = xor128();
+        if(dice < curr_density){
+            //std::cout << "Density: " << curr_density << std::endl;
+            *lambda = i;
+            rayPosition(r, i, p);
+            theta = xor128() * 2 * PI;
+            phi = xor128() * PI;
+            n-> x = sin(theta) * cos(phi);
+            n-> y = sin(theta) * sin(phi);
+            n-> z = cos(theta);
+            return;
+        }
+    }
+}
+
+void Medium::set_medium(const std::string filename){
+    FILE* file = fopen(filename.c_str(), "r");
+    std::string line;
+
+    if (!file) {
+        std::cout << "Unable to open mesh file: " << filename << "\n";
+        return;
+    }
+
+    fscanf(file, "VOL %d %d %d", &x_samples, &y_samples, &z_samples);
+
+    density_field = new float[x_samples * y_samples * z_samples];
+
+    for(int i = 0; i < x_samples * y_samples * z_samples; i++){
+        fscanf(file, " %f", &density_field[i]);
+    }
+
+    fclose(file);
+}
+
+void Medium::set_canonical_bounds() {
+    w_bound.min = point(0, 0, 0);
+    w_bound.max = point(1, 1, 1);
+}
+
 void insertPLS(PointLS *l, PointLS **list) {
     if (l == NULL) return;
     // Inserts a light source into the list of light sources

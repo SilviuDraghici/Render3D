@@ -186,6 +186,19 @@ class Polygon : public Object {
     void calculate_edge_vectors();
 };
 
+class Medium : public Object {
+    public:
+      using Object::Object;
+      void intersect(struct Ray *r, double *lambda, struct point *p,
+                     struct point *n, double *a, double *b);
+      void set_medium(const std::string filename);
+      void set_canonical_bounds();
+    private:
+      float density(point& point);
+      int x_samples, y_samples, z_samples;
+      float* density_field;
+};
+
 /* The structure below defines a point light source */
 class PointLS {
     public:
