@@ -4,16 +4,16 @@ point p;
 PointLS *l;
 matrix t;
 
-//Salle de bain
+//fireplace room
 const std::string outside_window_light = "scenes/backyard.png";
 
-const std::string room_mesh = "scenes/salle_de_bain/salle_de_bain.obj";
+const std::string room_mesh = "scenes/fireplace_room/fireplace_room.obj";
 
 //default position for rotating the camera around the room
-scene->cam_pos = point(11, 6, -40);
+scene->cam_pos = point(25, 3, -1.5);
 scene->cam_pos =  scene->cam_pos;
 scene->cam_gaze_point = point(0, 0, 0);
-scene->cam_gaze = RotX(0.05*PI) * RotY(-0.05*PI) * point(0, 0, 1);
+scene->cam_gaze = point(-1, 0, 0);
 
 //cam pos similar to refernce image
 // scene->cam_pos = point(0, 0, -16);

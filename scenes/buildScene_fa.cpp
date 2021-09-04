@@ -4,24 +4,32 @@ point p;
 PointLS *l;
 matrix t;
 
-//Salle de bain
-const std::string outside_window_light = "scenes/backyard.png";
+//fancy appartment scene
 
-const std::string room_mesh = "scenes/salle_de_bain/salle_de_bain.obj";
+const std::string room_mesh = "scenes/fancy_apartment/Svetaine.obj";
 
 //default position for rotating the camera around the room
-scene->cam_pos = point(11, 6, -40);
-scene->cam_pos =  scene->cam_pos;
-scene->cam_gaze_point = point(0, 0, 0);
-scene->cam_gaze = RotX(0.05*PI) * RotY(-0.05*PI) * point(0, 0, 1);
+// scene->cam_pos = point(0, 0, -10);
+// scene->cam_pos = RotY(-scene->frame * PI/120) * scene->cam_pos;
+// scene->cam_gaze_point = point(0, 0, 0);
 
-//cam pos similar to refernce image
-// scene->cam_pos = point(0, 0, -16);
-// scene->cam_pos = Tr(-2,0,0) * RotY(-15 * PI/120) * scene->cam_pos;
-// scene->cam_gaze_point = point(0, -4, 0);
-// scene->cam_gaze = scene->cam_gaze_point - scene->cam_pos;
-// scene->cam_gaze = {-6.8883, -4, 16.6298};
-//std::cout << "cam_gaze: " << scene->cam_gaze << std::endl;
+/* kitchen camera angle */
+scene->cam_pos = point(5, -7.5, -11);
+//scene->cam_pos = Tr(-2,0,0) * RotY(-15 * PI/120) * scene->cam_pos;
+scene->cam_gaze = RotY(15 * PI/120) * point(0, 0, 1);
+
+
+/* living room angle 
+scene->cam_pos = point(22, -5.5, 15);
+//scene->cam_pos = Tr(-2,0,0) * RotY(-15 * PI/120) * scene->cam_pos;
+scene->cam_gaze = RotY(30 * PI/120) * point(0, 0, -1);
+*/
+
+/* upstairs camera angle 
+scene->cam_pos = point(5, 7, 15);
+//scene->cam_pos = Tr(-2,0,0) * RotY(-15 * PI/120) * scene->cam_pos;
+scene->cam_gaze = RotY(0 * PI/120) * point(-1, 0, 0);
+*/
 
 //scene->cam_up = point(0, 1, 0);
 scene->cam_focal = -5;
@@ -30,20 +38,19 @@ scene->exposure = 1;
 
 scene->meshFactory.setDefaultColor(74 / 255.0, 255 / 255.0, 249 / 255.0);
 
-scene->meshFactory.setTransform(Tr(0,0,0) * Sc(40));
+scene->meshFactory.setTransform(Tr(0,0,0) * RotX(PI/2) * RotZ(PI/2) * Sc(80));
 scene->meshFactory.loadMeshFile(room_mesh);
 
 // Planar light source outside window
-o = new Plane(20, 20, 20);
+o = new Plane(40, 40, 40);
 o->set_pathTrace_properties(1.0, 0.0, 0.0);
-//setTexture(o, outside_window_light, 1, scene->texture_list);
+//setTexture(o, world_mask_texture, 1, scene->texture_list);
 o->refl_sig = 0.0;
 o->r_index = 1.54;
 o->name = "Window Light";
-o->T *= Sc(5, 5, 1);
+o->T *= Sc(9.6, 5.4, 1);
 o->T *= RotX(PI);
-o->T *= RotZ(PI);
-o->T *= Tr(5.2, 10.55, 18);
+o->T *= Tr(-4.6, 0.8, 12);
 o->isLightSource = 1;
 o->pt.LSweight *= 6 * 1 * 1;  // <- scale weight by scale
 o->invert_and_bound();
@@ -64,7 +71,7 @@ o->pt.LSweight *= 0.5 * 2.5 * 1;  // <- scale weight by scale
 o->invert_and_bound();
 //scene->insertObject(o);
 
-p.x = 5;
+p.x = 0;
 p.y = 0;
 p.z = 0;
 p.w = 1;

@@ -4,16 +4,16 @@ point p;
 PointLS *l;
 matrix t;
 
-//Salle de bain
+//breakfast room
 const std::string outside_window_light = "scenes/backyard.png";
 
-const std::string room_mesh = "scenes/salle_de_bain/salle_de_bain.obj";
+const std::string room_mesh = "scenes/breakfast_room/breakfast_room.obj";
 
 //default position for rotating the camera around the room
-scene->cam_pos = point(11, 6, -40);
-scene->cam_pos =  scene->cam_pos;
+scene->cam_pos = point(0, 3, -29);
+scene->cam_pos = scene->cam_pos;
 scene->cam_gaze_point = point(0, 0, 0);
-scene->cam_gaze = RotX(0.05*PI) * RotY(-0.05*PI) * point(0, 0, 1);
+scene->cam_gaze = point(0, 0, 1);
 
 //cam pos similar to refernce image
 // scene->cam_pos = point(0, 0, -16);
@@ -24,7 +24,7 @@ scene->cam_gaze = RotX(0.05*PI) * RotY(-0.05*PI) * point(0, 0, 1);
 //std::cout << "cam_gaze: " << scene->cam_gaze << std::endl;
 
 //scene->cam_up = point(0, 1, 0);
-scene->cam_focal = -5;
+scene->cam_focal = -6;
 
 scene->exposure = 1;
 
@@ -40,32 +40,17 @@ o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->refl_sig = 0.0;
 o->r_index = 1.54;
 o->name = "Window Light";
-o->T *= Sc(5, 5, 1);
-o->T *= RotX(PI);
-o->T *= RotZ(PI);
-o->T *= Tr(5.2, 10.55, 18);
+o->T *= Sc(15, 10, 1);
+o->T *= RotX(3 * PI/4);
+o->T *= RotY(PI/2);
+o->T *= Tr(35, 30, 0);
 o->isLightSource = 1;
 o->pt.LSweight *= 6 * 1 * 1;  // <- scale weight by scale
 o->invert_and_bound();
-//scene->insertObject(o);
+scene->insertObject(o);
 
-
-// Planar light source at top
-o = new Plane(40.0, 40.0, 40.0);
-o->set_pathTrace_properties(1.0, 0.0, 0.0);
-o->refl_sig = 0.0;
-o->r_index = 1.54;
-o->name = "Top Light";
-o->T *= Sc(0.5, 2.5, 1);
-o->T *= RotX(PI / 2);
-o->T *= Tr(0, 9.995, 0);
-o->isLightSource = 1;
-o->pt.LSweight *= 0.5 * 2.5 * 1;  // <- scale weight by scale
-o->invert_and_bound();
-//scene->insertObject(o);
-
-p.x = 5;
-p.y = 0;
+p.x = 0;
+p.y = 5;
 p.z = 0;
 p.w = 1;
 l = new PointLS(p, .95, .95, .95);
