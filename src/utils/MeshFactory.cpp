@@ -210,7 +210,12 @@ void MeshFactory::loadMeshFile(const std::string& filename){
                     face_string += " " + line.substr(start_index, end_index-start_index);
                 }
                 end_index = start_index;//go back so the last vertex is repeated
-                //printf("flin: [%s]\n", face_string.c_str());
+                
+                // determine material of certain face
+                //if (f == 1232600){
+                //    std::cout << "mtl: " << mtl_name << "\n";
+                //}
+                
                 faces[f] = buildFace(face_string);
                 f++;
                 num_faces_in_object++;
@@ -327,7 +332,10 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
                 //for (material m: mtl_list){
                 //    std::cout << m << ",";
                 //}std::cout << "]\n";
-                mtl_list.front().im = loadTexture(texture_name, 1, texture_list)->im;
+                textureNode *texture = loadTexture(texture_name, 1, texture_list);
+                if(texture){
+                    mtl_list.front().im = texture->im;
+                }
                 //mesh->texImg = mtl_list.front().im; 
                 
                 //set_texture(mesh, texture_name, 1, texture_list);
@@ -338,6 +346,7 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
 }
 
 void MeshFactory::buildMesh(){
+    // std::cout << "mtl name: " << mtl_name << "\n";
     material mtl = *std::find(mtl_list.begin(), mtl_list.end(), mtl_name);
     color col = mtl.col_ambient + mtl.col_diffuse + mtl.col_specular;
     double diffuse, reflect, refract, refl_sig;
@@ -355,13 +364,16 @@ void MeshFactory::buildMesh(){
     double specular_length = sqrt(mtl.col_specular.R * mtl.col_specular.R +
                                   mtl.col_specular.G * mtl.col_specular.G +
                                   mtl.col_specular.B * mtl.col_specular.B);
+    refl_sig = MAX_REFL_SIG;
     if (specular_length > 0) {
-        if( 0 <= mtl.Ns && mtl.Ns <= 999){
+        if( 0 <= mtl.Ns && mtl.Ns < 1000){
             // convert 0 - 1000 range to 0 to 1 where 1000 maps to 0
-            refl_sig = MAX_REFL_SIG - (MAX_REFL_SIG * (mtl.Ns/1000.0));
+            refl_sig -= (MAX_REFL_SIG * (mtl.Ns/1000.0));
+        } else if (1000 <= mtl.Ns){
+            refl_sig = 0;
         }
     }
-
+    
     diffuse = mtl.alpha * diffuse;
     reflect = mtl.alpha * reflect;
     refract = 1 - mtl.alpha;
@@ -379,7 +391,7 @@ void MeshFactory::buildMesh(){
     }
 
     if (mtl.is_light_source){
-        std::cout << "col: " << col << "\n";
+        //std::cout << "col: " << col << "\n";
         MeshLight* ml = new MeshLight(col); 
         ml->isLightSource = mtl.is_light_source;
         ml->pt.LSweight = 10;
@@ -415,7 +427,6 @@ void MeshFactory::buildMesh(){
     std::cout << "refl_sig: " << mesh->refl_sig << "\n";
     std::cout << "r_index: "<< mesh->r_index << "\n";
     */
-   
     
     mesh->texImg = mtl.im;
     mesh->invert_and_bound();

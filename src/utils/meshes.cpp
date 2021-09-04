@@ -509,7 +509,7 @@ void MeshLight::randomPoint(double *x, double *y, double *z){
 
 void MeshLight::buildLightFaceList(){
     traverseBVH(bvh.root, lightFaceList);
-    std::cout << "lightFaceList size: " << lightFaceList.size() << "\n";
+    //std::cout << "lightFaceList size: " << lightFaceList.size() << "\n";
     double total_area = 0;
     for(auto it = lightFaceList.begin(); it != lightFaceList.end(); it++){
         total_area += it->faceWeight;
@@ -517,7 +517,7 @@ void MeshLight::buildLightFaceList(){
 
     for(auto it = lightFaceList.begin(); it != lightFaceList.end(); it++){
         it->faceWeight /= total_area;
-        std::cout << "lightFace Surface Area: " << it->faceWeight << "\n";
+        //std::cout << "lightFace Surface Area: " << it->faceWeight << "\n";
     }
 }
 

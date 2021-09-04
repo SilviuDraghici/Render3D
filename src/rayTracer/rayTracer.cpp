@@ -81,11 +81,14 @@ void rayTraceMain(int argc, char *argv[]) {
 
     scene->cam_focal = -1;
 
+    std::cout << "Running in RayTracing mode\n";
+    std::cout << "Building scene...\n";
+
     Timer buildscene_timer("Buildscene");
     buildscene_timer.start();
     buildScene(scene);
     buildscene_timer.end();
-    buildscene_timer.print_elapsed_time(std::cerr);
+    buildscene_timer.print_elapsed_time(std::cout);
 
     view *cam;  // Camera and view for this scene
     double wleft,wtop,wwidth,wheight;
@@ -154,7 +157,7 @@ void rayTraceMain(int argc, char *argv[]) {
     free(cam);
     
     //debug :
-    raytracing_timer.print_elapsed_time(std::cerr);
+    raytracing_timer.print_elapsed_time(std::cout);
     std::cerr << "Average number of intersection tests: " << num_intersection_tests / num_bvh_searches << "\n";
 }
 

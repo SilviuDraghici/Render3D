@@ -7,6 +7,7 @@
 
 #include <string>
 #include <algorithm>
+#include <iomanip>
 #include <sstream>
 #include <list>
 
@@ -26,6 +27,7 @@
 static Scene *scene;
 
 int samples_per_update = 25;
+int counter = 1;
 
 unsigned long int NUM_RAYS;
 
@@ -93,7 +95,6 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
 
 void pathTraceMain(int argc, char *argv[]) {
     color col;  // Return color for pixels
-    fprintf(stderr, "PathTracing\n");
     if (argc < 5) {
         fprintf(stderr, "PathTracer: Can not parse input parameters\n");
         fprintf(stderr, "USAGE: Render3D 1 size num_samples output_name\n");
@@ -168,11 +169,14 @@ void pathTraceMain(int argc, char *argv[]) {
 
     scene->cam_focal = -1;
 
+    std::cout << "Running in PathTracing mode\n";
+    std::cout << "Building scene...\n";
+
     Timer buildscene_timer("Buildscene");
     buildscene_timer.start();
     buildScene(scene);
     buildscene_timer.end();
-    buildscene_timer.print_elapsed_time(std::cerr);
+    buildscene_timer.print_elapsed_time(std::cout);
 
     // count number of lights
     num_lights = 0;
@@ -213,11 +217,11 @@ void pathTraceMain(int argc, char *argv[]) {
 
     NUM_RAYS = 0;
 
-    fprintf(stderr, "Rendering...\n");
     Ray ray;
     int k, j, i;
     double is, js;
 
+    std::cout << "\nRendering...\n";
     Timer pathtracing_timer("Path Tracing");
     pathtracing_timer.start();
 
@@ -279,6 +283,17 @@ void pathTraceMain(int argc, char *argv[]) {
         if (k % samples_per_update == 0) {  // update output image
             LinerToSRGB<double> colorTransform = LinerToSRGB<double>(k, scene->exposure);
             //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
+            
+            /*
+            std::stringstream ss;
+            ss << "frames/" << std::setw(3) << std::setfill('0') << counter << ".png";
+            std::string s = ss.str();
+            counter++;
+            if(k >= 100) samples_per_update = 5;
+            std::cout << "\nWriting frame to " << s << std::endl;
+            output_name = s.c_str();
+            */
+
             image transformedImage = {colorTransform(*outImage), outImage->sx, outImage->sy};
             PNGImageOutput(&transformedImage, output_name);
         }

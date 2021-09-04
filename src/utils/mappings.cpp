@@ -64,6 +64,8 @@ textureNode* loadTexture(const std::string& filename, int type, std::list<textur
         texture_node->im = im;
         // Insert into linked list
         texture_list.push_front(texture_node);
+    } else {
+        texture_node = NULL;
     }
     return texture_node;
 }

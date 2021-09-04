@@ -21,6 +21,7 @@ void warn_fn(png_structp, png_const_charp) {  }
 struct image *readPNGimage(const char *filename){
     FILE *fp = fopen(filename, "rb");
   if (!fp) {
+      std::cout << "Could not open PNG file " << filename << "\n";
     return NULL;
   }
   png_structp png_ptr =
@@ -279,7 +280,7 @@ struct image *newImage(int size_x, int size_y, int pixel_size) {
  * Save the image stored in `img` into the given PNG file
  */
 bool PNGImageOutput(image *img, const char *filename) {
-    printf("\nSaving Image\n");
+    std::cout << "\nSaving image to " << filename << std::endl;
     double* color_data = (double*)img->rgbdata;
     FILE *fp = fopen(filename, "wb");
     if (!fp) {
@@ -328,7 +329,7 @@ bool PFMImageOutput(image *im, const char *filename){
     // run magick convert out.pfm out.hdr to convert pfm to format LuminanceHDR can edit.
     std::string pfmname = std::string(filename);
     pfmname.replace(pfmname.find_last_of(".") + 1, pfmname.size(), "pfm");
-    std::cout << "Saving " << pfmname << std::endl;
+    std::cout << "Saving floating point map to " << pfmname << std::endl;
     
     FILE *f;
     float *output = new float[im->sx * im->sy * 3];
@@ -372,7 +373,7 @@ void PPMImageOutput(image *im, const char *filename) {
     //
     // Assumes a 24 bit per pixel image stored as unsigned chars
     //
-    printf("Saving Image\n");
+    std::cout << "\nSaving Image to " << filename << std::endl;
     FILE *f;
 
     if (im != NULL)
