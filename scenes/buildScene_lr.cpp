@@ -45,7 +45,7 @@ o->set_pathTrace_properties(1.0, 0.0, 0.0);
 o->refl_sig = 0.0;
 o->r_index = 1.54;
 o->name = "Window Light";
-o->T *= Sc(9, 4, 1);
+o->T *= Sc(9.6, 5.4, 1);
 o->T *= RotX(PI);
 o->T *= Tr(-4.6, 0.8, 12);
 o->isLightSource = 1;

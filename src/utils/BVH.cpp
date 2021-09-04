@@ -246,9 +246,11 @@ Primitive *BVH::bfs(struct Ray *ray) {
 
         //std::cout << "root:" << lambda << "\n";
 
-        // debug :
-        num_bvh_searches++;
-        num_intersection_tests++;
+      #ifdef DEBUG
+      // debug :
+      num_bvh_searches++;
+      num_intersection_tests++;
+     #endif
     }
 
     Primitive *currentNode;
@@ -262,8 +264,11 @@ Primitive *BVH::bfs(struct Ray *ray) {
             break;
         }
 
+        #ifdef DEBUG
         // debug :
         num_intersection_tests += 2;
+        #endif
+
 
         currentBox = ((BoundingBox *)currentNode);
 
@@ -285,26 +290,32 @@ Primitive *BVH::bfs(struct Ray *ray) {
 }
 
 Primitive *BVH::dfs(struct Ray *ray) {
-    double lambda = INFINITY, l1, l2;
+    double lambda = INFINITY, l1 = INFINITY, l2 = INFINITY;
     Primitive *closest_prim = NULL;
 
-    std::stack<Search_Node> bvh_stack;
+    Search_Node bvh_stack[256]; 
+    size_t stack_idx = 0;
+
+    // std::stack<Search_Node> bvh_stack;
 
     l1 = root->intersect(ray, l1);
     if (l1 < INFINITY) {
-        bvh_stack.emplace(l1, root);
+        // bvh_stack.emplace(l1, root);
+        bvh_stack[stack_idx++] = Search_Node(l1, root);
 
         // debug :
+      #ifdef DEBUG
         num_bvh_searches++;
         num_intersection_tests++;
+      #endif
     }
 
     Primitive *currentNode;
     BoundingBox *currentBox;
-    while (!bvh_stack.empty()) {
-        currentNode = bvh_stack.top().node;
-        l1 = bvh_stack.top().lambda;
-        bvh_stack.pop();
+    while (stack_idx > 0) {
+        Search_Node &snode = bvh_stack[--stack_idx];
+        currentNode = snode.node;
+        l1 = snode.lambda;
 
         if (l1 < lambda) {
             if (currentNode->isprim()) {
@@ -312,7 +323,9 @@ Primitive *BVH::dfs(struct Ray *ray) {
                 lambda = l1;
             } else {
                 // debug :
+              #ifdef DEBUG
                 num_intersection_tests += 2;
+              #endif
 
                 currentBox = ((BoundingBox *)currentNode);
 
@@ -323,11 +336,15 @@ Primitive *BVH::dfs(struct Ray *ray) {
                 l2 = currentBox->c2->intersect(ray, l2);
 
                 if (l1 < l2) {
-                    if (l2 < lambda) bvh_stack.emplace(l2, currentBox->c2);
-                    if (l1 < lambda) bvh_stack.emplace(l1, currentBox->c1);
+                    // if (l2 < lambda) bvh_stack.emplace(l2, currentBox->c2);
+                    // if (l1 < lambda) bvh_stack.emplace(l1, currentBox->c1);
+                    if (l2 < lambda) bvh_stack[stack_idx++] = Search_Node(l2, currentBox->c2);
+                    if (l1 < lambda) bvh_stack[stack_idx++] = Search_Node(l1, currentBox->c1);
                 } else {
-                    if (l1 < lambda) bvh_stack.emplace(l1, currentBox->c1);
-                    if (l2 < lambda) bvh_stack.emplace(l2, currentBox->c2);
+                    // if (l1 < lambda) bvh_stack.emplace(l1, currentBox->c1);
+                    // if (l2 < lambda) bvh_stack.emplace(l2, currentBox->c2);
+                    if (l1 < lambda) bvh_stack[stack_idx++] = Search_Node(l1, currentBox->c1);
+                    if (l2 < lambda) bvh_stack[stack_idx++] = Search_Node(l2, currentBox->c2);
                 }
             }
         }

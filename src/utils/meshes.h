@@ -30,6 +30,8 @@ class TriangleFace : public Primitive {
     double max_z() const;
     virtual point normal(point *bary_coords);
     virtual void texture_coordinates(double *a, double *b, point *bary_coords);
+    double surfaceArea();
+    void surfaceCoordinates(double a, double b, point& p);
 };
 
 class TriangleFace_N : virtual public TriangleFace {
@@ -77,8 +79,6 @@ class Mesh : public Object {
 
     point bary_coords;
 
-    
-
     TriangleFace* buildFace(std::string& line);
 
     std::string dir;
@@ -93,6 +93,21 @@ class Mesh : public Object {
     void set_canonical_bounds();
     void intersect(struct Ray *r, double *lambda, struct point *p,
                    struct point *n, double *a, double *b);
+};
+
+class MeshLight: public Mesh {
+  public:
+    using Mesh::Mesh;
+    void randomPoint(double *x, double *y, double *z);
+    void buildLightFaceList();
+  private:
+    
+    struct LightFace {
+        double faceWeight;
+        TriangleFace* face;
+    };
+    std::list<LightFace> lightFaceList;
+    void traverseBVH(Primitive* bvhNode, std::list<LightFace>& lightFaceList);
 };
 
 //I will probably delete these

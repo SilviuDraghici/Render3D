@@ -7,6 +7,7 @@
 
 #include <string>
 #include <algorithm>
+#include <iomanip>
 #include <sstream>
 #include <list>
 
@@ -21,10 +22,12 @@
 #include "../utils/utils.h"
 #include "../utils/timer.h"
 #include "../utils/ColorTransform.h"
+#include "../utils/random.h"
 
 static Scene *scene;
 
 int samples_per_update = 25;
+int counter = 1;
 
 unsigned long int NUM_RAYS;
 
@@ -67,32 +70,21 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
     point nls;
     double La, Lb;
 
+    normalize(&pToLight.d);
+
+    double ls_dot_n = dot(&pToLight.d, n);
+    if (ls_dot_n < 0) return;
+
     findFirstHit(scene, &pToLight, &light_lambda, obj, &obstruction,
                  &lightp, &nls, &La, &Lb);
 
-    #ifdef DEBUG
-        if (obstruction->name == "Window Light") {
-            std::cout << "Object:\n";
-            std::cout << "\tname: " << obj->name << "\n";
-            std::cout << "\tnormal: " << *n << "\n";
-            std::cout << "Light:\n";
-            std::cout << "\tname: " << obstruction->name << "\n";
-            std::cout << "\tnormal: " << nls << "\n";
-            std::cout << "\ndot(object.normal, light.normal): " << dot(n, &nls) << "\n";
-        }
-    #endif
+    double ls_dot_nls = dot(&pToLight.d, &nls);
+    if (obstruction != light_listt[curr_light] || ls_dot_nls > 0) return;
 
-    if (obstruction != light_listt[curr_light] || dot(&pToLight.d, n) < 0) return;
-    #ifdef DEBUG
-        std::cout << "Explicit light sample\n";
-    #endif
     *explt = light_listt[curr_light];
     double A = total_weight * light_listt[curr_light]->pt.surface_area;
-    double dxd = pToLight.d * pToLight.d;
-    normalize(&pToLight.d);
-    double n_dot_l = fabs(dot(n, &pToLight.d));
-    double nls_dot_l = fabs(dot(&nls, &pToLight.d));
-    double w = MIN(1, (A * n_dot_l * nls_dot_l) / (dxd));
+    double light_contrib = (A * ls_dot_n * -ls_dot_nls) / (light_lambda * light_lambda);
+    double w = MIN(1, light_contrib);
 
     color light_col;
     // set light color
@@ -103,7 +95,6 @@ inline void explicit_light_sample(Ray *ray, Object *obj, point *p,
 
 void pathTraceMain(int argc, char *argv[]) {
     color col;  // Return color for pixels
-    fprintf(stderr, "PathTracing\n");
     if (argc < 5) {
         fprintf(stderr, "PathTracer: Can not parse input parameters\n");
         fprintf(stderr, "USAGE: Render3D 1 size num_samples output_name\n");
@@ -178,7 +169,15 @@ void pathTraceMain(int argc, char *argv[]) {
 
     scene->cam_focal = -1;
 
+    std::cout << "Running in PathTracing mode\n";
+    std::cout << "Building scene...\n";
+
+    Timer buildscene_timer("Buildscene");
+    buildscene_timer.start();
     buildScene(scene);
+    buildscene_timer.end();
+    buildscene_timer.print_elapsed_time(std::cout);
+
     // count number of lights
     num_lights = 0;
     for(Object* const& curr_obj : scene->object_list){
@@ -218,11 +217,11 @@ void pathTraceMain(int argc, char *argv[]) {
 
     NUM_RAYS = 0;
 
-    fprintf(stderr, "Rendering...\n");
     Ray ray;
     int k, j, i;
     double is, js;
 
+    std::cout << "\nRendering...\n";
     Timer pathtracing_timer("Path Tracing");
     pathtracing_timer.start();
 
@@ -284,6 +283,17 @@ void pathTraceMain(int argc, char *argv[]) {
         if (k % samples_per_update == 0) {  // update output image
             LinerToSRGB<double> colorTransform = LinerToSRGB<double>(k, scene->exposure);
             //LinerToPacosFunction<double> colorTransform = LinerToPacosFunction<double>();
+            
+            /*
+            std::stringstream ss;
+            ss << "frames/" << std::setw(3) << std::setfill('0') << counter << ".png";
+            std::string s = ss.str();
+            counter++;
+            if(k >= 100) samples_per_update = 5;
+            std::cout << "\nWriting frame to " << s << std::endl;
+            output_name = s.c_str();
+            */
+
             image transformedImage = {colorTransform(*outImage), outImage->sx, outImage->sy};
             PNGImageOutput(&transformedImage, output_name);
         }
@@ -300,12 +310,18 @@ void pathTraceMain(int argc, char *argv[]) {
         PNGImageOutput(&transformedImage, output_name);
     }
 
+    for(int i = 0; i < scene->sx * scene->sy * 3; i++){
+        rgbIm[i] /= k;
+    }
+    PFMImageOutput(outImage, output_name);
+
     free(cam);
     fprintf(stderr, "\nPath Tracing Done!\n");
     fprintf(stderr, "Total number of rays created: %ld\n", NUM_RAYS);
     pathtracing_timer.print_elapsed_time(std::cerr);
 }
 
+__attribute__((flatten))
 void PathTrace(Ray *ray, int depth, color *col, Object *Os,
                Object *explicit_l) {
     // Trace one light path through the scene.
@@ -394,7 +410,7 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
         n.z *= -1;
     }
 
-    memcpy(&ray->p0, &p, sizeof(point));
+    ray->p0 = p;
 
     dice = xor128();
     if (dice <= diffuse) {  // diffuse
@@ -429,10 +445,14 @@ void PathTrace(Ray *ray, int depth, color *col, Object *Os,
     }
 
     dice = xor128();
-    max_col = MAX(MAX(ray->pt.ray_col.R, ray->pt.ray_col.G),
-                  MAX(ray->pt.ray_col.R, ray->pt.ray_col.B));
-    if (sqrt(dice) < max_col) {
-        return PathTrace(ray, depth + 1, col, obj, explt);
+    max_col = MAX(MAX(ray->pt.ray_col.R, ray->pt.ray_col.G), ray->pt.ray_col.B);
+    if (dice < max_col * max_col) {
+        double ratio = 1 / (max_col * max_col);
+        PathTrace(ray, depth + 1, col, obj, explt);
+        //col->R *= ratio;
+        //col->G *= ratio;
+        //col->B *= ratio;
+        return;
     } else {
         *col = ray->pt.expl_col;
         return;

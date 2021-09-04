@@ -21,6 +21,7 @@ void warn_fn(png_structp, png_const_charp) {  }
 struct image *readPNGimage(const char *filename){
     FILE *fp = fopen(filename, "rb");
   if (!fp) {
+      std::cout << "Could not open PNG file " << filename << "\n";
     return NULL;
   }
   png_structp png_ptr =
@@ -279,7 +280,7 @@ struct image *newImage(int size_x, int size_y, int pixel_size) {
  * Save the image stored in `img` into the given PNG file
  */
 bool PNGImageOutput(image *img, const char *filename) {
-    printf("\nSaving Image\n");
+    std::cout << "\nSaving image to " << filename << std::endl;
     double* color_data = (double*)img->rgbdata;
     FILE *fp = fopen(filename, "wb");
     if (!fp) {
@@ -324,6 +325,43 @@ bool PNGImageOutput(image *img, const char *filename) {
     return true;
 }
 
+bool PFMImageOutput(image *im, const char *filename){
+    // run magick convert out.pfm out.hdr to convert pfm to format LuminanceHDR can edit.
+    std::string pfmname = std::string(filename);
+    pfmname.replace(pfmname.find_last_of(".") + 1, pfmname.size(), "pfm");
+    std::cout << "Saving floating point map to " << pfmname << std::endl;
+    
+    FILE *f;
+    float *output = new float[im->sx * im->sy * 3];
+    
+    double* rgbdata = (double* )im->rgbdata;
+    
+    size_t num_vals = im->sx * im->sy * 3;
+    for (size_t y = 0; y < im->sy; y++) {
+        for (size_t x = 0; x < im->sx; x++) {
+            size_t i_inp = (x + y * im->sx) * 3;
+            size_t i_out = (x + (im->sy - y - 1) * im->sx) * 3;
+            output[i_out + 0] = (float)rgbdata[i_inp + 0];
+            output[i_out + 1] = (float)rgbdata[i_inp + 1];
+            output[i_out + 2] = (float)rgbdata[i_inp + 2];
+        }
+    }
+
+    f = fopen(pfmname.c_str(), "wb+");
+    if (f == NULL) {
+    std::cerr << "Unable to open file " << pfmname << "\n";
+    return false;
+    }
+
+    fprintf(f, "PF\n");
+    fprintf(f, "%d %d\n", im->sx, im->sy);
+    fprintf(f, "-1.0\n");
+    fwrite(output, im->sx * im->sy * 3 * sizeof(float), 1, f);
+    fclose(f);
+    delete[] output;
+    return true;
+}
+
 void PPMImageOutput(image *im, const char *filename) {
     // Writes out a .ppm file from the image data contained in 'im'.
     // Note that Windows typically doesn't know how to open .ppm
@@ -335,7 +373,7 @@ void PPMImageOutput(image *im, const char *filename) {
     //
     // Assumes a 24 bit per pixel image stored as unsigned chars
     //
-    printf("Saving Image\n");
+    std::cout << "\nSaving Image to " << filename << std::endl;
     FILE *f;
 
     if (im != NULL)

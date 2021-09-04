@@ -7,8 +7,7 @@
 #include <algorithm>
 
 #include "ray.h"
-
-//#define DEBUG
+#include "random.h"
 
 int count_vertices(std::string &face){
     int n = 0;
@@ -148,6 +147,20 @@ point TriangleFace::normal(point *bary_coords) {
 }
 
 void TriangleFace::texture_coordinates(double *a, double *b, point *bary_coords) {return;}
+
+double TriangleFace::surfaceArea(){
+    point e12 = p2 - p1;
+    point e23 = p3 - p2;
+
+    point normal = cross(&e12, &e23);
+    return normal.length()/2.0;
+}
+
+void TriangleFace::surfaceCoordinates(double a, double b, point& p){
+    //https://math.stackexchange.com/questions/18686/uniform-random-point-in-triangle-in-3d
+    double sqrt_a = sqrt(a);
+    p = (1 - sqrt_a) * p1 + (sqrt_a * (1 - b)) * p2 + (b * sqrt_a) * p3;
+}
 
 std::ostream &operator<<(std::ostream &strm, const TriangleFace &a) {
     return strm << "p1: " << a.p1 << " p2: " << a.p2 << " p3: " << a.p3;
@@ -464,14 +477,60 @@ void Mesh::intersect(struct Ray *ray, double *lambda, struct point *p,
     if (closest_face != NULL) {
         closest_face->intersect(&ray_transformed, lambda, &bary_coords);
         *n = closest_face->normal(&bary_coords);
-        #ifdef DEBUG
-            std::cout << "untransformed normal: " << *n << "\n";
-        #endif
         normalTransform(n, n, this);
         normalize(n);
         closest_face->texture_coordinates(a, b, &bary_coords);
         rayPosition(ray, *lambda, p);
     }
+}
+
+void MeshLight::randomPoint(double *x, double *y, double *z){
+    point p;
+
+    TriangleFace* face = lightFaceList.front().face;
+    
+    double a = xor128();
+    double b = xor128();
+    
+    double prob = 0;
+    for (MeshLight::LightFace& light : lightFaceList) {
+        prob += light.faceWeight;
+        if (a < prob) {
+            face = light.face;
+            break;
+        }
+    }
+    face->surfaceCoordinates(a,b, p);
+    p = T * p;
+    *x = p.x;
+    *y = p.y;
+    *z = p.z;
+}
+
+void MeshLight::buildLightFaceList(){
+    traverseBVH(bvh.root, lightFaceList);
+    //std::cout << "lightFaceList size: " << lightFaceList.size() << "\n";
+    double total_area = 0;
+    for(auto it = lightFaceList.begin(); it != lightFaceList.end(); it++){
+        total_area += it->faceWeight;
+    }
+
+    for(auto it = lightFaceList.begin(); it != lightFaceList.end(); it++){
+        it->faceWeight /= total_area;
+        //std::cout << "lightFace Surface Area: " << it->faceWeight << "\n";
+    }
+}
+
+void MeshLight::traverseBVH(Primitive* bvhNode, std::list<LightFace>& lightFaceList){
+    if(bvhNode == NULL) return;
+    if(bvhNode->isprim()){
+        TriangleFace* face = (TriangleFace* )bvhNode;
+        lightFaceList.push_back({face->surfaceArea(), face});
+        return;
+    }
+    BoundingBox *currentBox = (BoundingBox* )bvhNode;
+    traverseBVH(currentBox->c1, lightFaceList);
+    traverseBVH(currentBox->c2, lightFaceList);
 }
 
 void adjust_indexes(int& i1, int& i2, int& i3, int array_size){

@@ -116,7 +116,7 @@ void MeshFactory::loadMeshFile(const std::string& filename){
         } else if (line.rfind("f ", 0) == 0) {
             //count faces
             num_faces += count_vertices(line) - 2;
-        } else if (line.rfind("o ", 0) == 0){
+        } else if (line.rfind("usemtl ", 0) == 0){
             num_objects++;
         }
     }
@@ -161,23 +161,17 @@ void MeshFactory::loadMeshFile(const std::string& filename){
             line.erase(line.find('\r'));
         }
         
-        if (line.rfind("o ", 0) == 0){
+        if (line.rfind("usemtl ", 0) == 0){
             //build the previous object if it isnt null and has more than 0 faces.
-            
-            //std::cout << "Object: " << object_name << " num faces: " << num_faces_in_object;
-            //std::cout << " faces built: " << f << " first face: " << first_face_in_object << "\n";
-            //std::cout << "material: " << mtl_name << "\n";
             
             if(!object_name.empty() && num_faces_in_object > 0){
                 buildMesh();
                 object_list.push_front(mesh);
             }
-            start_index = line.find_first_not_of(" ", 1);
-            object_name = line.substr(start_index);
-            num_faces_in_object = 0;
-        } else if(line.rfind("usemtl ", 0) == 0){
             start_index = line.find_first_not_of(" ", 6);
+            object_name = material_file_name + "::" + line.substr(start_index);
             mtl_name = material_file_name + "::" + line.substr(start_index);
+            num_faces_in_object = 0;
         } else if (line.rfind("v ", 0) == 0) {
             sscanf(line.c_str(), "v %lf %lf %lf", &x, &y, &z);
             x = (x - avg_x) / scale, y = (y - avg_y) / scale,
@@ -216,7 +210,12 @@ void MeshFactory::loadMeshFile(const std::string& filename){
                     face_string += " " + line.substr(start_index, end_index-start_index);
                 }
                 end_index = start_index;//go back so the last vertex is repeated
-                //printf("flin: [%s]\n", face_string.c_str());
+                
+                // determine material of certain face
+                //if (f == 1232600){
+                //    std::cout << "mtl: " << mtl_name << "\n";
+                //}
+                
                 faces[f] = buildFace(face_string);
                 f++;
                 num_faces_in_object++;
@@ -225,8 +224,10 @@ void MeshFactory::loadMeshFile(const std::string& filename){
         //if( f > 5) break;
     }
 
-    buildMesh();
-    object_list.push_front(mesh);
+    if(num_faces_in_object > 0){
+        buildMesh();
+        object_list.push_front(mesh);
+    }
 
     //print the materials in this object
     //std::cout << mtl_list.size() << "[\n";
@@ -289,7 +290,7 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
                 double r,g,b;
                 sscanf(line.c_str(), "Ke %lf %lf %lf", &r, &g, &b);
                 mtl_list.front().col_diffuse = {r,g,b};
-                //mtl_list.front().is_light_source = 1;
+                mtl_list.front().is_light_source = 1;
             } else if(line.rfind("Ka ", 0) == 0){
                 double r,g,b;
                 sscanf(line.c_str(), "Ka %lf %lf %lf", &r, &g, &b);
@@ -331,7 +332,10 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
                 //for (material m: mtl_list){
                 //    std::cout << m << ",";
                 //}std::cout << "]\n";
-                mtl_list.front().im = loadTexture(texture_name, 1, texture_list)->im;
+                textureNode *texture = loadTexture(texture_name, 1, texture_list);
+                if(texture){
+                    mtl_list.front().im = texture->im;
+                }
                 //mesh->texImg = mtl_list.front().im; 
                 
                 //set_texture(mesh, texture_name, 1, texture_list);
@@ -342,6 +346,7 @@ void MeshFactory::loadMaterialFile(const std::string &mtllib_line){
 }
 
 void MeshFactory::buildMesh(){
+    // std::cout << "mtl name: " << mtl_name << "\n";
     material mtl = *std::find(mtl_list.begin(), mtl_list.end(), mtl_name);
     color col = mtl.col_ambient + mtl.col_diffuse + mtl.col_specular;
     double diffuse, reflect, refract, refl_sig;
@@ -359,13 +364,16 @@ void MeshFactory::buildMesh(){
     double specular_length = sqrt(mtl.col_specular.R * mtl.col_specular.R +
                                   mtl.col_specular.G * mtl.col_specular.G +
                                   mtl.col_specular.B * mtl.col_specular.B);
+    refl_sig = MAX_REFL_SIG;
     if (specular_length > 0) {
-        if( 0 <= mtl.Ns && mtl.Ns <= 999){
+        if( 0 <= mtl.Ns && mtl.Ns < 1000){
             // convert 0 - 1000 range to 0 to 1 where 1000 maps to 0
-            refl_sig = MAX_REFL_SIG - (MAX_REFL_SIG * (mtl.Ns/1000.0));
+            refl_sig -= (MAX_REFL_SIG * (mtl.Ns/1000.0));
+        } else if (1000 <= mtl.Ns){
+            refl_sig = 0;
         }
     }
-
+    
     diffuse = mtl.alpha * diffuse;
     reflect = mtl.alpha * reflect;
     refract = 1 - mtl.alpha;
@@ -376,13 +384,30 @@ void MeshFactory::buildMesh(){
     refract /= sum;
 
     double max_col = max(col.R, max(col.G, col.B));
-    if (max_col > 1) {
+    if (max_col > 1 && !mtl.is_light_source) {
         col.R /= max_col;
         col.G /= max_col;
         col.B /= max_col;
     }
 
-    mesh = new Mesh(col);
+    if (mtl.is_light_source){
+        //std::cout << "col: " << col << "\n";
+        MeshLight* ml = new MeshLight(col); 
+        ml->isLightSource = mtl.is_light_source;
+        ml->pt.LSweight = 10;
+        ml->bvh.set_build_method(BuildMethod::MidSplit);
+        ml->bvh.set_search_method(SearchMethod::DFS);
+        ml->bvh.build(faces + first_face_in_object, num_faces_in_object);
+        ml->buildLightFaceList();
+        mesh = ml;
+    } else {
+        mesh = new Mesh(col);
+        mesh->bvh.set_build_method(BuildMethod::MidSplit);
+        mesh->bvh.set_search_method(SearchMethod::DFS);
+        mesh->bvh.build(faces + first_face_in_object, num_faces_in_object);
+    }
+    first_face_in_object += num_faces_in_object;
+    
     //mesh->set_rayTrace_properties(0.1, double diffuse,
     //                                 double specular, double global,
     //                                 double alpha, double shiny)
@@ -402,13 +427,7 @@ void MeshFactory::buildMesh(){
     std::cout << "refl_sig: " << mesh->refl_sig << "\n";
     std::cout << "r_index: "<< mesh->r_index << "\n";
     */
-   
-    mesh->isLightSource = mtl.is_light_source;
-    mesh->pt.LSweight = 1;
-    mesh->bvh.set_build_method(BuildMethod::MidSplit);
-    mesh->bvh.set_search_method(SearchMethod::BFS);
-    mesh->bvh.build(faces + first_face_in_object, num_faces_in_object);
-    first_face_in_object += num_faces_in_object;
+    
     mesh->texImg = mtl.im;
     mesh->invert_and_bound();
 }

@@ -18,8 +18,6 @@
 #include "../utils/timer.h"
 #include "../utils/utils.h"
 
-//#define DEBUG
-
 static Scene *scene;
 void rayTraceMain(int argc, char *argv[]) {
     if (argc < 5) {
@@ -83,11 +81,14 @@ void rayTraceMain(int argc, char *argv[]) {
 
     scene->cam_focal = -1;
 
+    std::cout << "Running in RayTracing mode\n";
+    std::cout << "Building scene...\n";
+
     Timer buildscene_timer("Buildscene");
     buildscene_timer.start();
     buildScene(scene);
     buildscene_timer.end();
-    buildscene_timer.print_elapsed_time(std::cerr);
+    buildscene_timer.print_elapsed_time(std::cout);
 
     view *cam;  // Camera and view for this scene
     double wleft,wtop,wwidth,wheight;
@@ -109,7 +110,7 @@ void rayTraceMain(int argc, char *argv[]) {
     Ray ray;
     double depth;
     color col;
-    color background = 0;
+    color background = {0, 0, 0};
 
     std::cout << "Rendering...\n";
 
@@ -156,7 +157,7 @@ void rayTraceMain(int argc, char *argv[]) {
     free(cam);
     
     //debug :
-    raytracing_timer.print_elapsed_time(std::cerr);
+    raytracing_timer.print_elapsed_time(std::cout);
     std::cerr << "Average number of intersection tests: " << num_intersection_tests / num_bvh_searches << "\n";
 }
 
@@ -319,7 +320,7 @@ void rtShade(Object *obj, point *p, point *n, Ray *ray,
     rayReflect(ray, p, n, &cam_reflection);
 
     if (obj->refl_sig > 0 && 0) {
-        rt_brandished_trace(&cam_reflection, obj, &global, depth);
+        //rt_brandished_trace(&cam_reflection, obj, &global, depth);
     } else {
         rayTrace(&cam_reflection, depth + 1, &global, obj);
     }
