@@ -4,6 +4,7 @@
 #include "pathTracer/pathTracer.h"
 #include "rayTracer/rayTracer.h"
 #include "normalsDisplay/normalsDisplay.h"
+#include "colorsDisplay/colorsDisplay.h"
 
 void modeError();
 
@@ -18,6 +19,8 @@ int main(int argc, char *argv[]) {
             pathTraceMain(argc, argv);
         } else if (mode == 2) {
             normalsDisplayMain(argc, argv);
+        } else if (mode == 3) {
+            colorsDisplayMain(argc, argv);
         } else {
             modeError();
         }
