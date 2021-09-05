@@ -8,6 +8,7 @@ SRC      = src
 SRCS     = $(wildcard $(SRC)/pathTracer/*.cpp)
 SRCS    += $(wildcard $(SRC)/rayTracer/*.cpp)
 SRCS    += $(wildcard $(SRC)/normalsDisplay/*.cpp)
+SRCS    += $(wildcard $(SRC)/colorsDisplay/*.cpp)
 SRCS    += $(wildcard $(SRC)/utils/*.cpp)
 SRCS    += $(SRC)/Render3D.cpp
 DEP     := deps
