@@ -22,7 +22,7 @@ static Scene *scene;
 void normalsDisplayMain(int argc, char *argv[]) {
     if (argc < 5) {
         fprintf(stderr, "Normals Display: Can not parse input parameters\n");
-        fprintf(stderr, "USAGE: Render3D 0 size antialias output_name\n");
+        fprintf(stderr, "USAGE: Render3D 2 size antialias output_name\n");
         fprintf(stderr, "   size = Image size (both along x and y)\n");
         fprintf(stderr,
                 "   antialias = A single digit, 0 disables antialiasing. "

@@ -51,7 +51,7 @@ o->T *= Tr(-4.6, 0.8, 12);
 o->isLightSource = 1;
 o->pt.LSweight *= 6 * 1 * 1;  // <- scale weight by scale
 o->invert_and_bound();
-scene->insertObject(o);
+//scene->insertObject(o);
 
 
 // Planar light source at top

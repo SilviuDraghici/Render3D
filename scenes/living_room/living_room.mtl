@@ -18,12 +18,13 @@ Ka 0 0 0
 Ks 0.0 0.0 0.0
 
 newmtl BlackMarble
-Kd 0 0 0
+Kd 0.5 0.5 0.5
 Ns 20
 d 1
 illum 2
 Ka 0 0 0
-Ks 0.01 0.01 0.01
+Ks 0.5 0.5 0.5
+map_Kd textures\marble.png
 
 
 newmtl BlackWroughtIron
@@ -33,6 +34,7 @@ d 1
 illum 2
 Ka 0 0 0
 Ks 0.1 0.09 0.09
+map_Kd textures\blackWroughtIron.png
 
 newmtl BlindMaterial
 Kd 0.95 0.95 0.95
